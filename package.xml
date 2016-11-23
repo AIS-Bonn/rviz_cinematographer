@@ -1,0 +1,14 @@
+<package format="2">
+  <name>velodyne_object_detector</name>
+  <description>Detect small objects in velodyne data for the MBZIRC challenge</description>
+  <version>0.0.1</version>
+  <license>BSD</license>
+  <maintainer email="jan.razlaw@gmx.de">Jan</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>rospy</depend>
+  <depend>std_msgs</depend>
+  <depend>pcl_ros</depend>
+  <depend>config_server</depend>
+</package>

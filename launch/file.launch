@@ -1,0 +1,26 @@
+<launch>
+  <node pkg="rosbag" type="play" name="player" output="screen" args="--clock -r 0.1 -s 0 /home/razlaw/bags/dji_velodyne_object_detection_2016-11-23-15-14-39.bag"/>
+
+  <!-- will try to read an initial configuration file form CONFIGPATH/config_ROBOTNAME -->
+  <node name="config_server" pkg="config_server" type="config_server" output="screen" required="true">
+    <param name="config_path" value="CONFIGPATH" />
+    <param name="robot_name" value="ROBOTNAME" />
+    <param name="robot_type" value="ROBOTTYPE" />
+  </node>
+
+  <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" required="true" args="">
+  </node>
+
+  <node name="velodyne_object_detector" pkg="velodyne_object_detector" type="velodyne_object_detector" output="screen">
+    <param name="points_topic" value="/velodyne_points"/>
+
+    <param name="cluster_distance_threshold" value="1.0"/>
+    <param name="max_internal_distance" value="2.0"/>
+    <param name="cluster_radius_threshold" value="0.9"/> <!-- or 0.2-->
+    <param name="init_cluster_size" value="50"/>
+    <param name="min_cluster_radius" value="0.1"/>
+    <param name="max_cluster_radius" value="0.5"/>
+  </node>
+
+  <node if="0" name="rivz" pkg="rviz" type="rviz" />
+</launch>
