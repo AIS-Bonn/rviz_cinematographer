@@ -23,7 +23,7 @@ VelodyneObjectDetector::VelodyneObjectDetector()
    m_nh.getParam("points_topic", m_points_topic);
    m_velodyne_sub = m_nh.subscribe(m_points_topic, 1000, &VelodyneObjectDetector::velodyneCallback, this);
 
-   m_pub = m_nh.advertise<pcl::PointCloud<velodyne_pointcloud::PointXYZIR> >("output", 1);
+   m_pub = m_nh.advertise<pcl::PointCloud<velodyne_pointcloud::PointXYZIRDetection> >("output", 1);
    m_pub_median = m_nh.advertise<std_msgs::Float32>("median", 1);
    m_pub_cluster_marker = m_nh.advertise<visualization_msgs::Marker>("cluster_marker",0 );
 
@@ -58,136 +58,136 @@ void VelodyneObjectDetector::splitCloudByRing(PointCloudVelodyne &cloud, std::ve
    }
 }
 
-void VelodyneObjectDetector::detectObstacles(pcl::PointCloud<velodyne_pointcloud::PointXYZIR> &cloud,
-                     std::vector<velodyne_pointcloud::PointXYZIR> &currentObstaclesList,
-                     pcl::PointCloud<velodyne_pointcloud::PointXYZIR> &modifiedCloud,
-                     std::map<uint16_t, std::vector<double> > &distanceByPrevious)
-{
-   int order = 0;
-   // a map between a ring and the last point seen so far
-   std::map<uint16_t, velodyne_pointcloud::PointXYZIR> ringPointMap;
+// void VelodyneObjectDetector::detectObstacles(pcl::PointCloud<velodyne_pointcloud::PointXYZIR> &cloud,
+//                      std::vector<velodyne_pointcloud::PointXYZIR> &currentObstaclesList,
+//                      pcl::PointCloud<velodyne_pointcloud::PointXYZIR> &modifiedCloud,
+//                      std::map<uint16_t, std::vector<double> > &distanceByPrevious)
+// {
+//    int order = 0;
+//    // a map between a ring and the last point seen so far
+//    std::map<uint16_t, velodyne_pointcloud::PointXYZIR> ringPointMap;
+// 
+//    //std::vector<velodyne_pointcloud::PointXYZIR, Eigen::aligned_allocator<velodyne_pointcloud::PointXYZIR> >::iterator iter = cloud.points.begin();
+//    
+//    std::vector<uint32_t > index_per_ring(16, 0);
+//    // at first detect the obstacle points
+//    for(int index = 0; index < cloud.points.size()/10; index++){
+//       velodyne_pointcloud::PointXYZIR currentPoint = cloud.points[index];
+//       int currentIndex = currentPoint.ring;
+// 
+//       // Hacky way to exclude points that are not on the ground, for one specific dataset
+//       //if(currentIndex > 7) continue;
+// 
+//       // ???
+//       int previousIndex = currentIndex - 1;
+//       if(currentIndex == 0) previousIndex = 1;
+// 
+// 
+//       if(ringPointMap.count(previousIndex) > 0){
+//          // compute distances from current and previous point to the laser and the expected distance of the current point
+//          velodyne_pointcloud::PointXYZIR prevPoint = ringPointMap[previousIndex];
+//          double prevNorm = prevPoint.getVector4fMap().norm();
+// 
+// 
+//          // 	    int ring_angle = 75+previousIndex*2;
+//          // 	    float angle_to_next = (180-90-ring_angle)*M_PI/180;
+//          // 	    float expected_dist = prevPoint.getVector4fMap().norm() / sin(M_PI-(M_PI-angle_to_next)-(2*M_PI/180)) * sin(M_PI-angle_to_next);
+// 
+// 
+//          float height = 0.95f;
+//          float delta_angle = (2 * M_PI / 180);
+//          float r_delta = height / sin(asin(height / prevNorm) - delta_angle) - prevNorm;
+// 
+//          float expected_dist = prevNorm + r_delta;
+// 
+//          double currentTrueNorm = currentPoint.getVector4fMap().norm();
+//          double distanceFromPrevious = prevNorm - currentTrueNorm;
+//          double scaleFactor = prevNorm;//pow(prevNorm, 2);
+//          //             double expected_dist = g_medianFactorByRing[currentIndex]*scaleFactor;
+//          //             double difference = distanceFromPrevious - expected_dist;
+//          double difference = (expected_dist - currentTrueNorm) / (prevNorm * prevNorm);
+//          currentPoint.expected_dist = expected_dist;
+//          currentPoint.difference = difference;
+//          currentPoint.true_distance = currentTrueNorm;
+// 
+//          // ???
+//          if(currentIndex == 0){
+//             difference *= -1;
+//          }
+// 
+//          // use the difference between the actual and expected distance of the current point to detect obstacles
+//          if(difference > 0.008){ // this is an obstacle;
+//             currentPoint.obstacle = 10000.f;
+//             currentObstaclesList.push_back(currentPoint);
+//          }
+// 
+//          currentPoint.order = index_per_ring[currentIndex];
+//          index_per_ring[currentIndex] += 1;
+// 
+//          modifiedCloud.push_back(currentPoint);
+// 
+//          // save the scaled difference of the current to the previous point BEWARE, the scaleFactor is computed differently than for the "difference"-variable, don't know why
+//          distanceByPrevious[currentIndex].push_back(distanceFromPrevious / scaleFactor);
+//       }
+// 
+//       ringPointMap[currentIndex] = currentPoint;
+//       // ??? probably does nothing ?
+// //      if(currentPoint.ring == 15){
+// //         currentPoint.order = order++;
+// //      }
+//    }
+// 
+//    for(int ring = 0; ring < index_per_ring.size(); ring++)
+//    {
+//       std::cout << "points in ring " << ring << " = " << index_per_ring[ring] << std::endl;
+//    }
+//    std::cout << "all points in cloud " << cloud.points.size() << " per ring should be " << cloud.points.size()/15 << std::endl;
+// 
+// }
 
-   //std::vector<velodyne_pointcloud::PointXYZIR, Eigen::aligned_allocator<velodyne_pointcloud::PointXYZIR> >::iterator iter = cloud.points.begin();
-   
-   std::vector<uint32_t > index_per_ring(16, 0);
-   // at first detect the obstacle points
-   for(int index = 0; index < cloud.points.size()/10; index++){
-      velodyne_pointcloud::PointXYZIR currentPoint = cloud.points[index];
-      int currentIndex = currentPoint.ring;
-
-      // Hacky way to exclude points that are not on the ground, for one specific dataset
-      //if(currentIndex > 7) continue;
-
-      // ???
-      int previousIndex = currentIndex - 1;
-      if(currentIndex == 0) previousIndex = 1;
-
-
-      if(ringPointMap.count(previousIndex) > 0){
-         // compute distances from current and previous point to the laser and the expected distance of the current point
-         velodyne_pointcloud::PointXYZIR prevPoint = ringPointMap[previousIndex];
-         double prevNorm = prevPoint.getVector4fMap().norm();
-
-
-         // 	    int ring_angle = 75+previousIndex*2;
-         // 	    float angle_to_next = (180-90-ring_angle)*M_PI/180;
-         // 	    float expected_dist = prevPoint.getVector4fMap().norm() / sin(M_PI-(M_PI-angle_to_next)-(2*M_PI/180)) * sin(M_PI-angle_to_next);
-
-
-         float height = 0.95f;
-         float delta_angle = (2 * M_PI / 180);
-         float r_delta = height / sin(asin(height / prevNorm) - delta_angle) - prevNorm;
-
-         float expected_dist = prevNorm + r_delta;
-
-         double currentTrueNorm = currentPoint.getVector4fMap().norm();
-         double distanceFromPrevious = prevNorm - currentTrueNorm;
-         double scaleFactor = prevNorm;//pow(prevNorm, 2);
-         //             double expected_dist = g_medianFactorByRing[currentIndex]*scaleFactor;
-         //             double difference = distanceFromPrevious - expected_dist;
-         double difference = (expected_dist - currentTrueNorm) / (prevNorm * prevNorm);
-         currentPoint.expected_dist = expected_dist;
-         currentPoint.difference = difference;
-         currentPoint.true_distance = currentTrueNorm;
-
-         // ???
-         if(currentIndex == 0){
-            difference *= -1;
-         }
-
-         // use the difference between the actual and expected distance of the current point to detect obstacles
-         if(difference > 0.008){ // this is an obstacle;
-            currentPoint.obstacle = 10000.f;
-            currentObstaclesList.push_back(currentPoint);
-         }
-
-         currentPoint.order = index_per_ring[currentIndex];
-         index_per_ring[currentIndex] += 1;
-
-         modifiedCloud.push_back(currentPoint);
-
-         // save the scaled difference of the current to the previous point BEWARE, the scaleFactor is computed differently than for the "difference"-variable, don't know why
-         distanceByPrevious[currentIndex].push_back(distanceFromPrevious / scaleFactor);
-      }
-
-      ringPointMap[currentIndex] = currentPoint;
-      // ??? probably does nothing ?
-//      if(currentPoint.ring == 15){
-//         currentPoint.order = order++;
-//      }
-   }
-
-   for(int ring = 0; ring < index_per_ring.size(); ring++)
-   {
-      std::cout << "points in ring " << ring << " = " << index_per_ring[ring] << std::endl;
-   }
-   std::cout << "all points in cloud " << cloud.points.size() << " per ring should be " << cloud.points.size()/15 << std::endl;
-
-}
-
-void VelodyneObjectDetector::detectSegments(PointCloudVelodyne &cloud,
-                                            std::vector<std::vector<unsigned int> > &clouds_per_ring,
-                                            std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud)
-{
-   unsigned int segment_counter = 0;
-
-   for(unsigned int ring_index = 0; ring_index < clouds_per_ring.size(); ring_index++)
-   {
-      std::vector<std::pair<unsigned int, unsigned int> > segment_indices_ring(0);
-      std::pair<unsigned int, unsigned int> segment_index;
-      segment_index.first = 0;
-      segment_counter = 0;
-      for(unsigned int point_index = 0; point_index < clouds_per_ring[ring_index].size() - 1; point_index++)
-      {
-         unsigned int index_of_first_point = clouds_per_ring[ring_index][point_index];
-         unsigned int index_of_second_point = clouds_per_ring[ring_index][point_index + 1];
-
-         float dist_first_point = cloud.points[index_of_first_point].getVector3fMap().norm();
-         float dist_second_point = cloud.points[index_of_second_point].getVector3fMap().norm();
-         float normalized_dist = static_cast<float>(fabs((dist_first_point - dist_second_point)/dist_first_point));
-
-         int intensity_first_point = cloud.points[index_of_first_point].intensity;
-         int intensity_second_point = cloud.points[index_of_second_point].intensity;
-         int abs_intensity_difference = abs(intensity_first_point - intensity_second_point);
-         // cap the intensity difference
-         abs_intensity_difference = std::min(abs_intensity_difference, m_intensity_diff_cap());
-
-         float certainty_value = normalized_dist * m_dist_coeff() + static_cast<float>(abs_intensity_difference) * m_intensity_coeff();
-
-         if(certainty_value > m_certainty_threshold())
-         {
-            segment_index.second = point_index;
-            segment_indices_ring.push_back(segment_index);
-            segment_index.first = point_index + 1;
-            segment_counter++;
-         }
-
-         cloud.points[index_of_first_point].difference = normalized_dist;
-         cloud.points[index_of_first_point].obstacle = certainty_value;
-      }
-      segment_indices_cloud.push_back(segment_indices_ring);
-   }
-}
+// void VelodyneObjectDetector::detectSegments(PointCloudVelodyne &cloud,
+//                                             std::vector<std::vector<unsigned int> > &clouds_per_ring,
+//                                             std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud)
+// {
+//    unsigned int segment_counter = 0;
+// 
+//    for(unsigned int ring_index = 0; ring_index < clouds_per_ring.size(); ring_index++)
+//    {
+//       std::vector<std::pair<unsigned int, unsigned int> > segment_indices_ring(0);
+//       std::pair<unsigned int, unsigned int> segment_index;
+//       segment_index.first = 0;
+//       segment_counter = 0;
+//       for(unsigned int point_index = 0; point_index < clouds_per_ring[ring_index].size() - 1; point_index++)
+//       {
+//          unsigned int index_of_first_point = clouds_per_ring[ring_index][point_index];
+//          unsigned int index_of_second_point = clouds_per_ring[ring_index][point_index + 1];
+// 
+//          float dist_first_point = cloud.points[index_of_first_point].getVector3fMap().norm();
+//          float dist_second_point = cloud.points[index_of_second_point].getVector3fMap().norm();
+//          float normalized_dist = static_cast<float>(fabs((dist_first_point - dist_second_point)/dist_first_point));
+// 
+//          int intensity_first_point = cloud.points[index_of_first_point].intensity;
+//          int intensity_second_point = cloud.points[index_of_second_point].intensity;
+//          int abs_intensity_difference = abs(intensity_first_point - intensity_second_point);
+//          // cap the intensity difference
+//          abs_intensity_difference = std::min(abs_intensity_difference, m_intensity_diff_cap());
+// 
+//          float certainty_value = normalized_dist * m_dist_coeff() + static_cast<float>(abs_intensity_difference) * m_intensity_coeff();
+// 
+//          if(certainty_value > m_certainty_threshold())
+//          {
+//             segment_index.second = point_index;
+//             segment_indices_ring.push_back(segment_index);
+//             segment_index.first = point_index + 1;
+//             segment_counter++;
+//          }
+// 
+//          cloud.points[index_of_first_point].difference = normalized_dist;
+//          cloud.points[index_of_first_point].obstacle = certainty_value;
+//       }
+//       segment_indices_cloud.push_back(segment_indices_ring);
+//    }
+// }
 
 void VelodyneObjectDetector::medianFilter(std::vector<float> &input,
                                           std::vector<float> &filtered_output,
@@ -289,8 +289,8 @@ void VelodyneObjectDetector::detectSegmentsMedian(PointCloudVelodyne &cloud,
          certainty_value = std::max(certainty_value, 0.0f);
 
          unsigned int index_of_current_point = clouds_per_ring[ring_index][point_index];
-         cloud.points[index_of_current_point].difference = difference_distances;
-         cloud.points[index_of_current_point].obstacle = difference_intensities;
+         cloud.points[index_of_current_point].detection_distance = difference_distances;
+         cloud.points[index_of_current_point].detection_intensity = difference_intensities;
 
 //         float certainty_value = -difference_distances * m_dist_coeff() + static_cast<float>(difference_intensities) * m_intensity_coeff();
 
@@ -302,7 +302,7 @@ void VelodyneObjectDetector::detectSegmentsMedian(PointCloudVelodyne &cloud,
             segment_counter++;
          }
 
-         cloud.points[index_of_current_point].expected_dist = certainty_value;
+         cloud.points[index_of_current_point].detection = certainty_value;
       }
       segment_indices_cloud.push_back(segment_indices_ring);
    }
@@ -368,7 +368,7 @@ void VelodyneObjectDetector::filterSegmentsBySize(PointCloudVelodyne &cloud,
             for(unsigned int counter = index_of_first_point_in_ring; counter <= index_of_last_point_in_ring; counter++)
             {
                unsigned int index_of_point_in_cloud = clouds_per_ring[ring_index][counter];
-               cloud.points[index_of_point_in_cloud].order = 10000;
+//                cloud.points[index_of_point_in_cloud].order = 10000;
             }
 //            }
          }

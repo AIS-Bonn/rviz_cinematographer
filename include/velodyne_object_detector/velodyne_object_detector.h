@@ -38,10 +38,11 @@ class VelodyneObjectDetector
 public:
    typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
    typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudRGB;
-   typedef velodyne_pointcloud::PointXYZIR PointVelodyne;
    typedef pcl::PointCloud<pcl::PointXYZI> PointCloudIntensity;
+   
+   typedef velodyne_pointcloud::PointXYZIRDetection PointVelodyne;
    typedef pcl::PointCloud<PointVelodyne> PointCloudVelodyne;
-
+   
    VelodyneObjectDetector();
    virtual ~VelodyneObjectDetector(){};
 
@@ -49,9 +50,9 @@ public:
 
    void splitCloudByRing(PointCloudVelodyne &cloud, std::vector<std::vector<unsigned int> > &clouds_per_ring);
 
-   void detectSegments(PointCloudVelodyne &cloud,
-                       std::vector<std::vector<unsigned int> > &clouds_per_ring,
-                       std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud);
+//    void detectSegments(PointCloudVelodyne &cloud,
+//                        std::vector<std::vector<unsigned int> > &clouds_per_ring,
+//                        std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud);
 
    void medianFilter(std::vector<float> &input,
                      std::vector<float> &filtered_output,
@@ -66,12 +67,12 @@ public:
                              std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud,
                              float size_filter);
 
-   void velodyneCallback(const pcl::PointCloud<velodyne_pointcloud::PointXYZIR>& input_cloud);
+   void velodyneCallback(const PointCloudVelodyne& input_cloud);
 
-   void detectObstacles(pcl::PointCloud<velodyne_pointcloud::PointXYZIR> &cloud,
-                        std::vector<velodyne_pointcloud::PointXYZIR> &currentObstaclesList,
-                        pcl::PointCloud<velodyne_pointcloud::PointXYZIR> &modifiedCloud,
-                        std::map<uint16_t, std::vector<double> > &distanceByPrevious);
+//    void detectObstacles(pcl::PointCloud<velodyne_pointcloud::PointXYZIR> &cloud,
+//                         std::vector<velodyne_pointcloud::PointXYZIR> &currentObstaclesList,
+//                         pcl::PointCloud<velodyne_pointcloud::PointXYZIR> &modifiedCloud,
+//                         std::map<uint16_t, std::vector<double> > &distanceByPrevious);
 private:
    ros::NodeHandle m_nh;
    //tf::TransformListener m_tf;

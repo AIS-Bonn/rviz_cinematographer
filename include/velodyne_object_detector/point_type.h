@@ -23,40 +23,30 @@
 
 namespace velodyne_pointcloud
 {
+ 
   /** Euclidean Velodyne coordinate, including intensity and ring number. */
-  struct PointXYZIR
+  struct PointXYZIRDetection
   {
     PCL_ADD_POINT4D;                    // quad-word XYZ
-    float    intensity;                 ///< laser intensity reading
-    uint16_t ring;                      ///< laser ring number
-    /*float average;                      ///< laser ring number*/
-    float true_distance;                      ///< laser ring number
-    float difference;                      ///< laser ring number
-    float expected_dist;                      ///< laser ring number
-    float obstacle;                      ///< laser ring number
-    uint32_t order;                      ///< laser ring number
-    int cluster_id; 
-    PCL_ADD_RGB
+    float    intensity;                 // laser intensity reading
+    uint16_t ring;                      // laser ring number
+    float detection;                    // detection probability
+    float detection_distance; 		// debug info distance
+    float detection_intensity;          // debug info intensity
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
   } EIGEN_ALIGN16;
 
 }; // namespace velodyne_pointcloud
 
-
-POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZIR,
+POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZIRDetection,
                                   (float, x, x)
                                   (float, y, y)
                                   (float, z, z)
                                   (float, intensity, intensity)
                                   (uint16_t, ring, ring)
-				 /* (float, average, average)*/
-				  (float, true_distance, true_distance)
-				  (float, difference, difference)
-				  (float, expected_dist, expected_dist)
-				  (float, obstacle, obstacle)
-				  (uint32_t, order , order)
-				  (int, cluster_id, cluster_id)
-				  (uint32_t, rgb, rgb)
+				  (float, detection, detection)
+				  (float, detection_distance, detection_distance)
+				  (float, detection_intensity, detection_intensity)
 )
 
 #endif // __VELODYNE_POINTCLOUD_POINT_TYPES_H
