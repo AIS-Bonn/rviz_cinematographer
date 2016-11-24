@@ -62,10 +62,10 @@ public:
                        std::vector<std::vector<unsigned int> > &clouds_per_ring,
                        std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud);
 
-   void filterSegmentsBySize(PointCloudVelodyne &cloud,
-                             std::vector<std::vector<unsigned int> > &clouds_per_ring,
-                             std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud,
-                             float size_filter);
+//   void filterSegmentsBySize(PointCloudVelodyne &cloud,
+//                             std::vector<std::vector<unsigned int> > &clouds_per_ring,
+//                             std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud,
+//                             float size_filter);
 
    void velodyneCallback(const PointCloudVelodyne& input_cloud);
 
@@ -96,11 +96,11 @@ private:
    config_server::Parameter<float> m_certainty_threshold;
    config_server::Parameter<float> m_dist_coeff;
    config_server::Parameter<float> m_intensity_coeff;
-   config_server::Parameter<float> m_max_box_width;
-   config_server::Parameter<int> m_min_box_intensity;
-   config_server::Parameter<int> m_max_box_intensity;
-   config_server::Parameter<int> m_min_box_intensity_diff;
-   config_server::Parameter<int> m_intensity_diff_cap;
+//   config_server::Parameter<float> m_max_box_width;
+//   config_server::Parameter<int> m_min_box_intensity;
+//   config_server::Parameter<int> m_max_box_intensity;
+//   config_server::Parameter<int> m_min_box_intensity_diff;
+//   config_server::Parameter<int> m_intensity_diff_cap;
 
    config_server::Parameter<float> m_median_min_dist;
    config_server::Parameter<float> m_median_thresh1_dist;

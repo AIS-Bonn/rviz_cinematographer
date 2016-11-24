@@ -9,15 +9,15 @@ VelodyneObjectDetector::VelodyneObjectDetector()
  , m_certainty_threshold("certainty_threshold", 0.0, 0.1, 4.0, 0.5)
  , m_dist_coeff("dist_coeff", 0.0, 0.1, 10.0, 1.0)
  , m_intensity_coeff("intensity_coeff", 0.0, 0.0001, 0.01, 0.003)
- , m_max_box_width("max_box_width", 0.0, 0.05, 0.9, 0.4)
- , m_min_box_intensity("min_box_intensity", 0, 10, 400, 30)
- , m_max_box_intensity("max_box_intensity", 0, 10, 500, 50)
- , m_min_box_intensity_diff("min_box_intensity_diff", 0, 2, 200, 20)
- , m_intensity_diff_cap("intensity_diff_cap", 0, 2, 150, 20)
- , m_median_min_dist("median_min_dist", 0.0, 0.01, .2, 0.05)
- , m_median_thresh1_dist("median_thresh1_dist", 0.0, 0.05, 0.5, 0.1)
- , m_median_thresh2_dist("median_thresh2_dist", 0.0, 0.1, 2.0, 0.4)
- , m_median_max_dist("median_max_dist", 0.0, 0.5, 3.0, 1.0)
+// , m_max_box_width("max_box_width", 0.0, 0.05, 0.9, 0.4)
+// , m_min_box_intensity("min_box_intensity", 0, 10, 400, 30)
+// , m_max_box_intensity("max_box_intensity", 0, 10, 500, 50)
+// , m_min_box_intensity_diff("min_box_intensity_diff", 0, 2, 200, 20)
+// , m_intensity_diff_cap("intensity_diff_cap", 0, 2, 150, 20)
+ , m_median_min_dist("median_min_dist", 0.0, 0.01, .2, 0.1)
+ , m_median_thresh1_dist("median_thresh1_dist", 0.0, 0.05, 0.5, 0.4)
+ , m_median_thresh2_dist("median_thresh2_dist", 0.0, 0.1, 2.0, 1.7)
+ , m_median_max_dist("median_max_dist", 0.0, 0.5, 3.0, 3.0)
  , m_points_topic("/velodyne_points")
 {
    m_nh.getParam("points_topic", m_points_topic);
@@ -37,11 +37,11 @@ VelodyneObjectDetector::VelodyneObjectDetector()
    m_certainty_threshold.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
    m_dist_coeff.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
    m_intensity_coeff.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
-   m_max_box_width.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
-   m_min_box_intensity.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
-   m_max_box_intensity.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
-   m_min_box_intensity_diff.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
-   m_intensity_diff_cap.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
+//   m_max_box_width.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
+//   m_min_box_intensity.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
+//   m_max_box_intensity.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
+//   m_min_box_intensity_diff.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
+//   m_intensity_diff_cap.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
 
    m_median_min_dist.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
    m_median_thresh1_dist.setCallback(boost::bind(&VelodyneObjectDetector::nop, this));
@@ -263,9 +263,9 @@ void VelodyneObjectDetector::detectSegmentsMedian(PointCloudVelodyne &cloud,
                                         - intensities_ring_filtered_more[point_index - distance_to_comparison_points]
                                         - intensities_ring_filtered_more[point_index + distance_to_comparison_points];
          // cap and shift difference to 0 - 100
-//         difference_intensities = std::min(difference_intensities, 50.0f);
-//         difference_intensities = std::max(difference_intensities, -50.0f);
-//         difference_intensities += 50.0f;
+         difference_intensities = std::min(difference_intensities, 50.0f);
+         difference_intensities = std::max(difference_intensities, -50.0f);
+         difference_intensities += 50.0f;
 
          if(difference_distances < m_median_min_dist() || difference_distances > m_median_max_dist())
          {
@@ -274,7 +274,7 @@ void VelodyneObjectDetector::detectSegmentsMedian(PointCloudVelodyne &cloud,
          else{
             if(difference_distances >= m_median_min_dist() && difference_distances < m_median_thresh1_dist())
             {
-               certainty_value = difference_distances * m_dist_coeff() * (0.7f/m_median_min_dist()) + difference_intensities * m_intensity_coeff();
+               certainty_value = difference_distances * m_dist_coeff() * (0.7f/m_median_thresh1_dist()) + difference_intensities * m_intensity_coeff();
             }
             if(difference_distances >= m_median_thresh1_dist() && difference_distances < m_median_thresh2_dist())
             {
@@ -282,7 +282,7 @@ void VelodyneObjectDetector::detectSegmentsMedian(PointCloudVelodyne &cloud,
             }
             if(difference_distances >= m_median_thresh2_dist() && difference_distances < m_median_max_dist())
             {
-               certainty_value = 1.0f - (difference_distances * m_dist_coeff() - difference_intensities * m_intensity_coeff());
+               certainty_value = (0.7f / (m_median_max_dist() - m_median_thresh2_dist())) * (m_median_max_dist() - difference_distances * m_dist_coeff()) + difference_intensities * m_intensity_coeff();
             }
          }
          certainty_value = std::min(certainty_value, 1.0f);
@@ -307,74 +307,74 @@ void VelodyneObjectDetector::detectSegmentsMedian(PointCloudVelodyne &cloud,
       segment_indices_cloud.push_back(segment_indices_ring);
    }
 }
-
-void VelodyneObjectDetector::filterSegmentsBySize(PointCloudVelodyne &cloud,
-                                                   std::vector<std::vector<unsigned int> > &clouds_per_ring,
-                                                   std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud,
-                                                   float size_filter)
-{
-   for(unsigned int ring_index = 0; ring_index < segment_indices_cloud.size(); ring_index++)
-   {
-      for(unsigned int point_index = 0; point_index < segment_indices_cloud[ring_index].size(); point_index++)
-      {
-         unsigned int index_of_first_point_in_ring = segment_indices_cloud[ring_index][point_index].first;
-         unsigned int index_of_first_point_in_cloud = clouds_per_ring[ring_index][index_of_first_point_in_ring];
-         unsigned int index_of_last_point_in_ring = segment_indices_cloud[ring_index][point_index].second;
-         unsigned int index_of_last_point_in_cloud = clouds_per_ring[ring_index][index_of_last_point_in_ring];
-
-         auto first_point_eigen = cloud.points[index_of_first_point_in_cloud].getVector3fMap();
-         auto last_point_eigen = cloud.points[index_of_last_point_in_cloud].getVector3fMap();
-         auto difference_of_points = first_point_eigen - last_point_eigen;
-
-         if(difference_of_points.norm() < m_max_box_width())
-         {
-//            // compare intensity of segment to intensity near the segment
-//            int segment_intensity_sum = 0;
+//
+//void VelodyneObjectDetector::filterSegmentsBySize(PointCloudVelodyne &cloud,
+//                                                   std::vector<std::vector<unsigned int> > &clouds_per_ring,
+//                                                   std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud,
+//                                                   float size_filter)
+//{
+//   for(unsigned int ring_index = 0; ring_index < segment_indices_cloud.size(); ring_index++)
+//   {
+//      for(unsigned int point_index = 0; point_index < segment_indices_cloud[ring_index].size(); point_index++)
+//      {
+//         unsigned int index_of_first_point_in_ring = segment_indices_cloud[ring_index][point_index].first;
+//         unsigned int index_of_first_point_in_cloud = clouds_per_ring[ring_index][index_of_first_point_in_ring];
+//         unsigned int index_of_last_point_in_ring = segment_indices_cloud[ring_index][point_index].second;
+//         unsigned int index_of_last_point_in_cloud = clouds_per_ring[ring_index][index_of_last_point_in_ring];
+//
+//         auto first_point_eigen = cloud.points[index_of_first_point_in_cloud].getVector3fMap();
+//         auto last_point_eigen = cloud.points[index_of_last_point_in_cloud].getVector3fMap();
+//         auto difference_of_points = first_point_eigen - last_point_eigen;
+//
+//         if(difference_of_points.norm() < m_max_box_width())
+//         {
+////            // compare intensity of segment to intensity near the segment
+////            int segment_intensity_sum = 0;
+////            for(unsigned int counter = index_of_first_point_in_ring; counter <= index_of_last_point_in_ring; counter++)
+////            {
+////               unsigned int index_of_point_in_cloud = clouds_per_ring[ring_index][counter];
+////               segment_intensity_sum += cloud.points[index_of_point_in_cloud].intensity;
+////            }
+////            if((index_of_last_point_in_ring - index_of_first_point_in_ring) == 0) continue;
+////            int segment_intensity_avrg = segment_intensity_sum / (index_of_last_point_in_ring - index_of_first_point_in_ring);
+////
+////            int neighborhood_width = 3;
+////            int outer_segment_intensity_sum = 0;
+////            int neighbor_counter = 0;
+////            for(unsigned int counter = 1; counter <= neighborhood_width; counter++)
+////            {
+////               if(index_of_first_point_in_ring >= counter)
+////               {
+////                  unsigned int index_of_point_in_cloud = clouds_per_ring[ring_index][index_of_first_point_in_ring - counter];
+////                  outer_segment_intensity_sum += cloud.points[index_of_point_in_cloud].intensity;
+////                  neighbor_counter++;
+////               }
+////               if((index_of_last_point_in_ring + counter) < clouds_per_ring[ring_index].size())
+////               {
+////                  unsigned int index_of_point_in_cloud = clouds_per_ring[ring_index][index_of_last_point_in_ring + counter];
+////                  outer_segment_intensity_sum += cloud.points[index_of_point_in_cloud].intensity;
+////                  neighbor_counter++;
+////               }
+////            }
+////            if(neighbor_counter == 0) continue;
+////            int outer_segment_intensity_avrg = outer_segment_intensity_sum / neighbor_counter;
+////
+////            int abs_avrg_intensity_difference = abs(segment_intensity_avrg - outer_segment_intensity_avrg);
+////
+////            //ROS_INFO_STREAM("I was here ##################################################" << abs_avrg_intensity_difference);
+////
+////            if(abs_avrg_intensity_difference > m_min_box_intensity_diff())
+////            {
 //            for(unsigned int counter = index_of_first_point_in_ring; counter <= index_of_last_point_in_ring; counter++)
 //            {
 //               unsigned int index_of_point_in_cloud = clouds_per_ring[ring_index][counter];
-//               segment_intensity_sum += cloud.points[index_of_point_in_cloud].intensity;
+////                cloud.points[index_of_point_in_cloud].order = 10000;
 //            }
-//            if((index_of_last_point_in_ring - index_of_first_point_in_ring) == 0) continue;
-//            int segment_intensity_avrg = segment_intensity_sum / (index_of_last_point_in_ring - index_of_first_point_in_ring);
-//
-//            int neighborhood_width = 3;
-//            int outer_segment_intensity_sum = 0;
-//            int neighbor_counter = 0;
-//            for(unsigned int counter = 1; counter <= neighborhood_width; counter++)
-//            {
-//               if(index_of_first_point_in_ring >= counter)
-//               {
-//                  unsigned int index_of_point_in_cloud = clouds_per_ring[ring_index][index_of_first_point_in_ring - counter];
-//                  outer_segment_intensity_sum += cloud.points[index_of_point_in_cloud].intensity;
-//                  neighbor_counter++;
-//               }
-//               if((index_of_last_point_in_ring + counter) < clouds_per_ring[ring_index].size())
-//               {
-//                  unsigned int index_of_point_in_cloud = clouds_per_ring[ring_index][index_of_last_point_in_ring + counter];
-//                  outer_segment_intensity_sum += cloud.points[index_of_point_in_cloud].intensity;
-//                  neighbor_counter++;
-//               }
-//            }
-//            if(neighbor_counter == 0) continue;
-//            int outer_segment_intensity_avrg = outer_segment_intensity_sum / neighbor_counter;
-//
-//            int abs_avrg_intensity_difference = abs(segment_intensity_avrg - outer_segment_intensity_avrg);
-//
-//            //ROS_INFO_STREAM("I was here ##################################################" << abs_avrg_intensity_difference);
-//
-//            if(abs_avrg_intensity_difference > m_min_box_intensity_diff())
-//            {
-            for(unsigned int counter = index_of_first_point_in_ring; counter <= index_of_last_point_in_ring; counter++)
-            {
-               unsigned int index_of_point_in_cloud = clouds_per_ring[ring_index][counter];
-//                cloud.points[index_of_point_in_cloud].order = 10000;
-            }
-//            }
-         }
-      }
-   }
-}
+////            }
+//         }
+//      }
+//   }
+//}
 
 void VelodyneObjectDetector::velodyneCallback(const PointCloudVelodyne& input_cloud)
 {
@@ -394,7 +394,7 @@ void VelodyneObjectDetector::velodyneCallback(const PointCloudVelodyne& input_cl
    detectSegmentsMedian(cloud, clouds_per_ring, segment_indices_cloud);
 
    // check for each segment if it exceeds the width of a box
-   filterSegmentsBySize(cloud, clouds_per_ring, segment_indices_cloud, m_max_box_width());
+//   filterSegmentsBySize(cloud, clouds_per_ring, segment_indices_cloud, m_max_box_width());
 
    // compute angle between two consecutive points in one ring
 //   for(int height_index = 0; height_index < clouds_per_ring.size(); height_index++)
