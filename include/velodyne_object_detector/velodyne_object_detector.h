@@ -56,7 +56,8 @@ public:
 
    void medianFilter(std::vector<float> &input,
                      std::vector<float> &filtered_output,
-                     int kernel_size);
+                     int kernel_size,
+                     float max_distance_difference = 0.f);
 
    void detectSegmentsMedian(PointCloudVelodyne &cloud,
                        std::vector<std::vector<unsigned int> > &clouds_per_ring,
@@ -81,31 +82,27 @@ private:
 
    ros::Subscriber m_velodyne_sub;
    ros::Publisher m_pub;
-   ros::Publisher m_pub_median;
+   ros::Publisher m_pub_obstacle_cloud;
    ros::Publisher m_pub_cluster_marker;
 
-   float m_cluster_distance_threshold;
-   float m_max_internal_distance;
-   float m_cluster_radius_threshold;
-   int m_init_cluster_size;
-   float m_min_cluster_radius;
-   float m_max_cluster_radius;
+   float m_max_prob_by_distance;
+   float m_max_intensity_range;
+
+   float m_certainty_threshold_launch;
 
    std::string m_points_topic;
 
    config_server::Parameter<float> m_certainty_threshold;
    config_server::Parameter<float> m_dist_coeff;
    config_server::Parameter<float> m_intensity_coeff;
-//   config_server::Parameter<float> m_max_box_width;
-//   config_server::Parameter<int> m_min_box_intensity;
-//   config_server::Parameter<int> m_max_box_intensity;
-//   config_server::Parameter<int> m_min_box_intensity_diff;
-//   config_server::Parameter<int> m_intensity_diff_cap;
+   config_server::Parameter<float> m_weight_for_small_intensities;
 
    config_server::Parameter<float> m_median_min_dist;
    config_server::Parameter<float> m_median_thresh1_dist;
    config_server::Parameter<float> m_median_thresh2_dist;
    config_server::Parameter<float> m_median_max_dist;
+
+   config_server::Parameter<float> m_max_dist_for_median_computation;
 
 };
 
