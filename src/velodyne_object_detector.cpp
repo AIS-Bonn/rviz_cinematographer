@@ -378,7 +378,7 @@ void VelodyneObjectDetector::detectSegmentsMedian(PointCloudVelodyne &cloud,
 
 void VelodyneObjectDetector::velodyneCallback(const PointCloudVelodyne& input_cloud)
 {
-   ROS_INFO_STREAM("callback with thresh " << m_certainty_threshold());
+   ROS_DEBUG_STREAM("callback with thresh " << m_certainty_threshold());
    PointCloudVelodyne cloud = input_cloud;
 
    // save indices of points in one ring in one vector
