@@ -247,7 +247,7 @@ void VelodyneObjectDetector::detectSegmentsMedian(PointCloudVelodyne &cloud,
       medianFilter(intensities_ring, intensities_ring_filtered_more, 10);
 
       int distance_to_comparison_points = 10;
-      for(unsigned int point_index = distance_to_comparison_points; point_index < clouds_per_ring[ring_index].size() - distance_to_comparison_points; point_index++)
+      for(int point_index = distance_to_comparison_points; point_index < (int)clouds_per_ring[ring_index].size() - distance_to_comparison_points; point_index++)
       {
          float certainty_value = 0.f;
 
