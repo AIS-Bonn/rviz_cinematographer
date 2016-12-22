@@ -87,6 +87,7 @@ void VelodyneObjectDetector::medianFilter(std::vector<float> &input,
    }
 }
 
+// TODO: delete segment_indices_cloud, because unused 
 void VelodyneObjectDetector::detectSegmentsMedian(PointCloudVelodyne &cloud,
                                             std::vector<std::vector<unsigned int> > &clouds_per_ring,
                                             std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud)
@@ -197,6 +198,7 @@ void VelodyneObjectDetector::velodyneCallback(const PointCloudVelodyne& input_cl
    // save first and last index of a segment within a ring in a pair
    // all segments of a ring in a vector
    // and all rings in another vector
+// TODO: delete segment_indices_cloud, because unused 
    std::vector<std::vector<std::pair<unsigned int, unsigned int> > > segment_indices_cloud(0, std::vector<std::pair<unsigned int, unsigned int> >(0));
    detectSegmentsMedian(cloud, clouds_per_ring, segment_indices_cloud);
 

@@ -1,7 +1,7 @@
 <launch>
 
 
-  <node pkg="rosbag" type="play" name="player" output="screen" args="--clock -r 0.2 -s 10 /home/razlaw/bags/blackbox2.bag"/>
+  <node pkg="rosbag" type="play" name="player" output="screen" args="--clock -r 0.2 -s 10 /home/razlaw/bags/obstacle_detection_dji/blackbox2.bag"/>
 
   <!-- will try to read an initial configuration file form CONFIGPATH/config_ROBOTNAME -->
   <node name="config_server" pkg="config_server" type="config_server" output="screen" required="true">
