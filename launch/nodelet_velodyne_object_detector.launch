@@ -1,0 +1,44 @@
+<launch>
+
+  <!-- ========= Bagplayer ========== -->
+  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/velodyne_dji_016-11-08-16-57-12_object_detection.bag"/>
+  <arg name="rate" default="0.2"/>
+  <arg name="start" default="0"/>
+
+  <node pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
+    <remap from="/velodyne_points" to="/velodyne_points_frombag" />
+  </node>
+
+
+  <!-- ========= Config Server ========== -->
+  <!-- will try to read an initial configuration file form CONFIGPATH/config_ROBOTNAME -->
+  <node name="config_server" pkg="config_server" type="config_server" output="screen" required="true">
+    <param name="config_path" value="CONFIGPATH" />
+    <param name="robot_name" value="ROBOTNAME" />
+    <param name="robot_type" value="ROBOTTYPE" />
+  </node>
+
+
+  <!-- ============= Pointcloud Conversion (incl. nodelet_manager) =============  -->
+  <arg name="frame_id" default="velodyne" />
+  <include file="$(find velodyne_pointcloud)/launch/VLP16_points.launch">
+    <arg name="frame_id" value="$(arg frame_id)"/>
+    <arg name="min_range" default="0.01" />
+  </include>
+
+
+  <!-- ============= Object Detection =============  -->
+  <node pkg="nodelet" type="nodelet" name="velodyne_object_detector_nodelet" args="load velodyne_object_detector/velodyne_object_detector_nodelet $(arg frame_id)_nodelet_manager" output="screen" >
+    <param name="points_topic" value="/velodyne_points"/>
+    <param name="certainty_threshold_launch" value="0.0"/>
+    <param name="median_small_kernel_size_launch" value="5"/>
+    <param name="median_big_kernel_size_launch" value="21"/>
+    <param name="distance_to_comparison_points_launch" value="3"/>
+  </node>
+
+
+  <!-- ============= Rviz =============  -->
+  <arg name="use_rqt" default="true"/>
+  <node unless="$(arg use_rqt)" name="rivz" pkg="rviz" type="rviz" />
+  <node if="$(arg use_rqt)" name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" required="true" args=""/>
+</launch>
