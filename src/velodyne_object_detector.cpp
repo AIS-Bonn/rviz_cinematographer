@@ -95,15 +95,15 @@ void VelodyneObjectDetector::detectSegmentsMedian(PointCloudVelodyne &cloud,
    PointCloudVelodyne obstacle_cloud;
    obstacle_cloud.header = cloud.header;
 
-   unsigned int segment_counter = 0;
+//   unsigned int segment_counter = 0;
 
    for(unsigned int ring_index = 0; ring_index < clouds_per_ring.size(); ring_index++)
    {
-      std::vector<std::pair<unsigned int, unsigned int> > segment_indices_ring(0);
+/*      std::vector<std::pair<unsigned int, unsigned int> > segment_indices_ring(0);
       std::pair<unsigned int, unsigned int> segment_index;
       segment_index.first = 0;
       segment_counter = 0;
-
+*/
       // median filter on distances
       std::vector<float> distances_ring(clouds_per_ring[ring_index].size(), 0.f);
       for(unsigned int point_index = 0; point_index < clouds_per_ring[ring_index].size(); point_index++)
@@ -171,15 +171,18 @@ void VelodyneObjectDetector::detectSegmentsMedian(PointCloudVelodyne &cloud,
          certainty_value = std::min(certainty_value, 1.0f);
          certainty_value = std::max(certainty_value, 0.0f);
 
-         unsigned int index_of_current_point = clouds_per_ring[ring_index][point_index];
-         cloud.points[index_of_current_point].detection_distance = difference_distances;
-         cloud.points[index_of_current_point].detection_intensity = difference_intensities;
+	 if(certainty_value >= m_certainty_threshold())
+	 {
+		 unsigned int index_of_current_point = clouds_per_ring[ring_index][point_index];
+		 cloud.points[index_of_current_point].detection_distance = difference_distances;
+		 cloud.points[index_of_current_point].detection_intensity = difference_intensities;
 
-         cloud.points[index_of_current_point].detection = certainty_value;
+		 cloud.points[index_of_current_point].detection = certainty_value;
 
-         if(certainty_value >= m_certainty_threshold()) obstacle_cloud.push_back(cloud.points[index_of_current_point]);
+		 obstacle_cloud.push_back(cloud.points[index_of_current_point]);
+	 }
       }
-      segment_indices_cloud.push_back(segment_indices_ring);
+//      segment_indices_cloud.push_back(segment_indices_ring);
    }
    m_pub_obstacle_cloud.publish(obstacle_cloud);
 }

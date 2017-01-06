@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(velodyne_object_detector)
+
 add_definitions(-std=c++11)
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
@@ -13,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   pcl_ros
   config_server
+  nodelet
 )
 
 ## System dependencies are found with CMake's conventions
@@ -123,9 +125,9 @@ include_directories(
 )
 
 ## Declare a C++ library
-# add_library(cognitive_robotics
-#   src/${PROJECT_NAME}/cognitive_robotics.cpp
-# )
+add_library(velodyne_object_detector_nodelet
+        src/velodyne_object_detector_nodelet.cpp
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -133,17 +135,28 @@ include_directories(
 # add_dependencies(cognitive_robotics ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(velodyne_object_detector src/velodyne_object_detector.cpp
-        #src/utility.cpp
-        )
+add_executable(velodyne_object_detector
+        src/velodyne_object_detector.cpp
+)
 
 ## Add cmake target dependencies of the executable
-## same as for the library above
-add_dependencies(velodyne_object_detector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(velodyne_object_detector
+        ${${PROJECT_NAME}_EXPORTED_TARGETS}
+        ${catkin_EXPORTED_TARGETS}
+)
+
+add_dependencies(velodyne_object_detector_nodelet
+        ${${PROJECT_NAME}_EXPORTED_TARGETS}
+        ${catkin_EXPORTED_TARGETS}
+)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(velodyne_object_detector
-  ${catkin_LIBRARIES}
+        ${catkin_LIBRARIES}
+)
+
+target_link_libraries(velodyne_object_detector_nodelet
+        ${catkin_LIBRARIES}
 )
 
 #############
