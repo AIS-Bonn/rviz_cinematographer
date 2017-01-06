@@ -31,9 +31,11 @@
   <node pkg="nodelet" type="nodelet" name="velodyne_object_detector_nodelet" args="load velodyne_object_detector/velodyne_object_detector_nodelet $(arg frame_id)_nodelet_manager" output="screen" >
     <param name="points_topic" value="/velodyne_points"/>
     <param name="certainty_threshold_launch" value="0.0"/>
-    <param name="median_small_kernel_size_launch" value="5"/>
-    <param name="median_big_kernel_size_launch" value="21"/>
+    <param name="median_small_kernel_size_launch" value="9"/>
+    <param name="median_big_kernel_size_launch" value="41"/>
     <param name="distance_to_comparison_points_launch" value="3"/>
+
+    <param name="publish_filtered_cloud" value="true"/>
   </node>
 
 

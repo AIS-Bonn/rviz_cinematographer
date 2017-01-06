@@ -32,6 +32,7 @@ VelodyneObjectDetectorNodelet::VelodyneObjectDetectorNodelet()
  , m_median_max_dist("median_max_dist", 0.0, 0.5, 3.0, 3.0)
  , m_max_dist_for_median_computation("max_dist_for_median_computation", 0.0, 0.25, 10.0, 6.0)
  , m_points_topic("/velodyne_points")
+ , m_publish_filtered_cloud(false)
 {
    ROS_INFO("Initializing velodyne object detector nodelet.. ");
 }
@@ -45,7 +46,10 @@ void VelodyneObjectDetectorNodelet::onInit()
    ph.getParam("points_topic", m_points_topic);
    m_velodyne_sub = ph.subscribe(m_points_topic, 1000, &VelodyneObjectDetectorNodelet::velodyneCallback, this);
 
+   ph.getParam("publish_filtered_cloud", m_publish_filtered_cloud);
    m_pub_obstacle_cloud = ph.advertise<OutputPointCloud >("obstacles", 1);
+   if(m_publish_filtered_cloud)
+      m_pub_filtered_cloud = ph.advertise<InputPointCloud >("filtered", 1);
 
    if(ph.getParam("certainty_threshold_launch", m_certainty_threshold_launch))
       m_certainty_threshold.set(m_certainty_threshold_launch);
@@ -208,6 +212,9 @@ void VelodyneObjectDetectorNodelet::detectObstacles(InputPointCloud &cloud,
    OutputPointCloud obstacle_cloud;
    obstacle_cloud.header = cloud.header;
 
+   InputPointCloud filtered_cloud;
+   filtered_cloud.header = cloud.header;
+
    for(unsigned int ring_index = 0; ring_index < clouds_per_ring.size(); ring_index++)
    {
       bool compute_median_on_distances = true;
@@ -217,6 +224,27 @@ void VelodyneObjectDetectorNodelet::detectObstacles(InputPointCloud &cloud,
       medianFilter(cloud, clouds_per_ring[ring_index], distances_ring_filtered_small_kernel, m_median_small_kernel_size(), compute_median_on_distances, m_max_dist_for_median_computation());
       // TODO: Test: change this to a kernelsize of ~20cm
       medianFilter(cloud, clouds_per_ring[ring_index], distances_ring_filtered_big_kernel, m_median_big_kernel_size(), compute_median_on_distances, m_max_dist_for_median_computation());
+
+      if(m_publish_filtered_cloud)
+      {
+         // move the cloud points to the place they would have been if the median filter would have been applied to them
+         for(int ring_point_index = 0; ring_point_index < (int) clouds_per_ring[ring_index].size(); ring_point_index++)
+         {
+            int current_cloud_point_index = clouds_per_ring[ring_index][ring_point_index];
+            float factor = distances_ring_filtered_big_kernel[ring_point_index] /
+                           cloud.points[current_cloud_point_index].distance;
+
+            InputPoint inputPoint;
+            inputPoint.x = cloud.points[current_cloud_point_index].x * factor;
+            inputPoint.y = cloud.points[current_cloud_point_index].y * factor;
+            inputPoint.z = cloud.points[current_cloud_point_index].z * factor;
+            inputPoint.intensity = cloud.points[current_cloud_point_index].intensity;
+            inputPoint.ring = cloud.points[current_cloud_point_index].ring;
+            inputPoint.distance = cloud.points[current_cloud_point_index].distance;
+
+            filtered_cloud.push_back(inputPoint);
+         }
+      }
 
       compute_median_on_distances = false;
       // median filter on intensities
@@ -267,6 +295,9 @@ void VelodyneObjectDetectorNodelet::detectObstacles(InputPointCloud &cloud,
       }
    }
    m_pub_obstacle_cloud.publish(obstacle_cloud);
+
+   if(m_publish_filtered_cloud)
+      m_pub_filtered_cloud.publish(filtered_cloud);
 }
 
 }

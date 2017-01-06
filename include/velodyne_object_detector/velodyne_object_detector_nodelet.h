@@ -85,6 +85,7 @@ private:
 
    ros::Subscriber m_velodyne_sub;
    ros::Publisher m_pub_obstacle_cloud;
+   ros::Publisher m_pub_filtered_cloud;
 
    float m_max_prob_by_distance;
    float m_max_intensity_range;
@@ -111,6 +112,8 @@ private:
    config_server::Parameter<float> m_max_dist_for_median_computation;
 
    std::string m_points_topic;
+
+   bool m_publish_filtered_cloud;
 };
 
 }
