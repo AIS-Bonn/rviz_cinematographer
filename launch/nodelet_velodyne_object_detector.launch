@@ -1,8 +1,9 @@
+<!--  -->
 <launch>
 
   <!-- ========= Bagplayer ========== -->
   <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/velodyne_dji_016-11-08-16-57-12_object_detection.bag"/>
-  <arg name="rate" default="0.2"/>
+  <arg name="rate" default="0.1"/>
   <arg name="start" default="0"/>
 
   <node pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
@@ -20,12 +21,30 @@
 
 
   <!-- ============= Pointcloud Conversion (incl. nodelet_manager) =============  -->
-  <arg name="frame_id" default="velodyne" />
-  <include file="$(find velodyne_pointcloud)/launch/VLP16_points.launch">
-    <arg name="frame_id" value="$(arg frame_id)"/>
-    <arg name="min_range" default="0.01" />
-  </include>
 
+  <!-- declare arguments with default values -->
+  <arg name="pcap" default="" />
+  <arg name="calibration" default="$(find velodyne_pointcloud)/params/VLP16db.yaml"/>
+  <arg name="min_range" default="0.4" />
+  <arg name="max_range" default="130.0" />
+
+  <node pkg="nodelet" type="nodelet" name="velodyne_nodelet_manager"
+        args="manager" output="screen" />
+  <arg name="read_once" default="false" />
+  <arg name="read_fast" default="false" />
+  <arg name="repeat_delay" default="0.0" />
+  
+  
+
+  <arg name="frame_id" default="velodyne" />
+
+  <node pkg="nodelet" type="nodelet" name="transform_nodelet"
+        args="load velodyne_pointcloud/TransformNodelet velodyne_nodelet_manager"  output="screen">
+    <param name="calibration" value="$(arg calibration)"/>
+    <param name="min_range" value="$(arg min_range)"/>
+    <param name="max_range" value="$(arg max_range)"/>
+    <param name="frame_id" value="$(arg frame_id)"/>
+  </node>
 
   <!-- ============= Object Detection =============  -->
   <node pkg="nodelet" type="nodelet" name="velodyne_object_detector_nodelet" args="load velodyne_object_detector/velodyne_object_detector_nodelet $(arg frame_id)_nodelet_manager" output="screen" >
