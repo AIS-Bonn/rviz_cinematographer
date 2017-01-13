@@ -25,6 +25,7 @@
 #include <pcl/conversions.h>
 
 #include <boost/circular_buffer.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include <velodyne_object_detector/point_type.h>
 
@@ -33,7 +34,6 @@
 #include <config_server/parameter.h>
 
 #include <pcl/common/time.h>
-
 
 namespace velodyne_object_detector
 {
@@ -51,34 +51,37 @@ public:
    typedef velodyne_pointcloud::PointXYZIRDetection PointVelodyneWithDetection;
    typedef pcl::PointCloud<PointVelodyneWithDetection> PointCloudVelodyneWithDetection;
 
-   typedef PointVelodyneWithDist             InputPoint;
-   typedef PointVelodyneWithDetection        OutputPoint;
+   typedef PointVelodyneWithDist                   InputPoint;
+   typedef PointVelodyneWithDetection              OutputPoint;
 
-   typedef pcl::PointCloud<InputPoint>       InputPointCloud;
-   typedef pcl::PointCloud<OutputPoint>      OutputPointCloud;
+   typedef pcl::PointCloud<InputPoint>             InputPointCloud;
+   typedef pcl::PointCloud<OutputPoint>            OutputPointCloud;
 
    VelodyneObjectDetectorNodelet();
    virtual ~VelodyneObjectDetectorNodelet(){};
    virtual void onInit();
 
-   void nop(){ROS_INFO_STREAM("new threshold");};
+   void changeParameterSavely();
+   void resizeBuffers();
 
-   void splitCloudByRing(InputPointCloud &cloud,
-                         std::vector<std::vector<unsigned int> > &clouds_per_ring);
+   void velodyneCallback(const InputPointCloud::ConstPtr &input_cloud);
 
-   void medianFilter(InputPointCloud &cloud,
-                     std::vector<unsigned int> &indices_of_ring,
-                     std::vector<float> &filtered_output,
-                     int kernel_size,
-                     bool median_of_distances = true,
-                     float max_distance_difference = 0.f);
+   void splitCloudByRing(const InputPointCloud::ConstPtr &cloud,
+                         std::shared_ptr<std::vector<std::vector<unsigned int> > > clouds_per_ring);
+
+   void filterRing(const InputPointCloud::ConstPtr &cloud,
+                   const std::vector<unsigned int> &indices_of_ring,
+                   int ring_index,
+                   std::shared_ptr<std::vector<float> > distances_ring_filtered_small_kernel,
+                   std::shared_ptr<std::vector<float> > distances_ring_filtered_big_kernel,
+                   std::shared_ptr<std::vector<float> > intensities_ring_filtered_small_kernel,
+                   std::shared_ptr<std::vector<float> > intensities_ring_filtered_big_kernel);
 
    float computeCertainty(float difference_distances, float difference_intensities);
 
-   void detectObstacles(InputPointCloud &cloud,
-                             std::vector<std::vector<unsigned int> > &clouds_per_ring);
+   void detectObstacles(const InputPointCloud::ConstPtr &cloud,
+                        const std::shared_ptr<std::vector<std::vector<unsigned int> > > clouds_per_ring);
 
-   void velodyneCallback(const InputPointCloud& input_cloud);
 
 private:
    const int PUCK_NUM_RINGS;
@@ -101,7 +104,8 @@ private:
    config_server::Parameter<float> m_weight_for_small_intensities;
 
    config_server::Parameter<int> m_median_small_kernel_size;
-   config_server::Parameter<int> m_median_big_kernel_size;
+   config_server::Parameter<int> m_median_big_kernel_size_parameter;
+   int m_median_big_kernel_size;
    config_server::Parameter<int> m_distance_to_comparison_points;
 
    config_server::Parameter<float> m_median_min_dist;
@@ -114,6 +118,22 @@ private:
    std::string m_points_topic;
 
    bool m_publish_filtered_cloud;
+
+   boost::mutex m_parameter_change_lock;
+   std::vector<boost::circular_buffer<float> > m_distance_median_circ_buffer_vector;
+   std::vector<boost::circular_buffer<float> > m_intensity_median_circ_buffer_vector;
+
+   std::shared_ptr<std::vector<std::vector<unsigned int> > > m_clouds_per_ring;
+   std::shared_ptr<std::vector<std::vector<unsigned int> > > m_old_clouds_per_ring;
+
+   std::vector<std::shared_ptr<std::vector<float> > > m_old_distances_all_rings_filtered_small_kernel;
+   std::vector<std::shared_ptr<std::vector<float> > > m_old_distances_all_rings_filtered_big_kernel;
+   std::vector<std::shared_ptr<std::vector<float> > > m_old_intensities_all_rings_filtered_small_kernel;
+   std::vector<std::shared_ptr<std::vector<float> > > m_old_intensities_all_rings_filtered_big_kernel;
+
+   InputPointCloud::ConstPtr m_old_cloud;
+
+   std::vector<int> m_ring_counter;
 };
 
 }
