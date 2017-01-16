@@ -7,16 +7,15 @@
 - git:
     local-name: laser_mapping
     uri: git@git.ais.uni-bonn.de:droeschel/mrs_laser_map.git
-    version: velodyne_obstacle
 - git:
-    local-name: velodyne_object_detector
-    uri: git@git.ais.uni-bonn.de:MBZIRC/velodyne_object_detector.git
+    local-name: mav_base
+    uri: git@git.ais.uni-bonn.de:MBZIRC/mav_base.git
+- git:
+    local-name: mbzirc_laser_perception
+    uri: git@git.ais.uni-bonn.de:MBZIRC/mbzirc_laser_perception.git
 - git:
     local-name: nimbro_config_server
     uri: git@git.ais.uni-bonn.de:nimbroshared/nimbro_config_server
-- git:
-    local-name: mav_base 
-    uri: git@git.ais.uni-bonn.de:MBZIRC/mav_base.git
 - git:
     local-name: velodyne
     uri: git@git.ais.uni-bonn.de:MBZIRC/velodyne.git
