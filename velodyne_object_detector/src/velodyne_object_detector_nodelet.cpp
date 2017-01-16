@@ -16,8 +16,8 @@ VelodyneObjectDetectorNodelet::VelodyneObjectDetectorNodelet()
  , m_max_prob_by_distance(0.75f)
  , m_max_intensity_range(100.f)
  , m_certainty_threshold_launch(0.5)
- , m_median_small_kernel_size_launch(5)
- , m_median_big_kernel_size_launch(21)
+ , m_median_small_kernel_size_launch(9)
+ , m_median_big_kernel_size_launch(41)
  , m_distance_to_comparison_points_launch(10)
  , m_certainty_threshold("certainty_threshold", 0.0, 0.01, 1.0, m_certainty_threshold_launch)
  , m_dist_coeff("dist_coeff", 0.0, 0.1, 10.0, 1.0)
@@ -66,9 +66,9 @@ void VelodyneObjectDetectorNodelet::onInit()
 
    for(int i = 0; i < PUCK_NUM_RINGS; i++)
    {
-      boost::circular_buffer<float> distances_circ_buffer(m_median_big_kernel_size_launch);
+      boost::circular_buffer<float> distances_circ_buffer(m_median_big_kernel_size_parameter());
       m_distance_median_circ_buffer_vector.push_back(distances_circ_buffer);
-      boost::circular_buffer<float> intensities_circ_buffer(m_median_big_kernel_size_launch);
+      boost::circular_buffer<float> intensities_circ_buffer(m_median_big_kernel_size_parameter());
       m_intensity_median_circ_buffer_vector.push_back(intensities_circ_buffer);
 
       std::shared_ptr<std::vector<float> > tmp_pointer(new std::vector<float>());
@@ -78,10 +78,11 @@ void VelodyneObjectDetectorNodelet::onInit()
       m_old_intensities_all_rings_filtered_big_kernel.push_back(tmp_pointer);
    }
 
+   // TODO: probably not necessary
    for(int i = 0; i < PUCK_NUM_RINGS; i++)
    {
-      m_distance_median_circ_buffer_vector[i].set_capacity(m_median_big_kernel_size);
-      m_intensity_median_circ_buffer_vector[i].set_capacity(m_median_big_kernel_size);
+      m_distance_median_circ_buffer_vector[i].set_capacity(m_median_big_kernel_size_parameter());
+      m_intensity_median_circ_buffer_vector[i].set_capacity(m_median_big_kernel_size_parameter());
       m_distance_median_circ_buffer_vector[i].clear();
       m_intensity_median_circ_buffer_vector[i].clear();
    }
