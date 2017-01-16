@@ -19,16 +19,28 @@
 
   <!-- ========= Config Server ========== -->
   <!-- will try to read an initial configuration file form CONFIGPATH/config_ROBOTNAME -->
-  <node if="$(arg use_rqt)" name="config_server" pkg="config_server" type="config_server" output="screen" required="true">
+   <node if="$(arg use_rqt)" name="config_server" pkg="config_server" type="config_server" output="screen" required="true"> -->
     <param name="config_path" value="CONFIGPATH" />
     <param name="robot_name" value="ROBOTNAME" />
     <param name="robot_type" value="ROBOTTYPE" />
-  </node>
+  </node> 
 
+  
+  <param name="robot_description" command="$(find xacro)/xacro.py $(find mbzirc_urdf)/urdf/m600/m600.urdf.xacro" />
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+    <param name="publish_frequency" type="double" value="100.0" />
+    <param name="tf_prefix" type="string" value="" />
+  </node>
+  
+  <node pkg="mbzirc_msg_bridge" type="mbzirc_msg_bridge" name="mbzirc_msg_bridge" output="screen">
+    <remap from="~odom_in" to="/dji_sdk/odometry" />
+    <remap from="~global_position_in" to="/dji_sdk/global_position" />
+    <remap from="~attitude_in" to="/dji_sdk/attitude_quaternion" />
+    <param name="base_frame" value="base_link" />
+  </node>
 
   <!-- ============= Pointcloud Conversion (incl. nodelet_manager) =============  -->
   <!-- declare arguments with default values -->
-  <arg name="frame_id" default="velodyne" />
 
   <arg name="pcap" default="" />
   <arg name="calibration" default="$(find velodyne_pointcloud)/params/VLP16db.yaml"/>
@@ -40,7 +52,7 @@
   <arg name="read_once" default="false" />
   <arg name="read_fast" default="false" />
   <arg name="repeat_delay" default="0.0" />
-  <arg name="frame_id" default="velodyne" />
+  <arg name="frame_id" default="odom" />
 
   <node pkg="nodelet" type="nodelet" name="transform_nodelet"
         args="load velodyne_pointcloud/TransformNodelet velodyne_nodelet_manager"  output="screen">
