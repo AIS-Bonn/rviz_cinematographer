@@ -1,0 +1,24 @@
+<package format="2">
+  <name>detection_height_mapper</name>
+  <description>Create a 2D map with height encoded in green and detections encoded in red</description>
+  <version>0.0.1</version>
+  <license>BSD</license>
+  <maintainer email="jan.razlaw@gmx.de">Jan</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>rospy</depend>
+  <depend>std_msgs</depend>
+  <depend>pcl_ros</depend>
+  <depend>config_server</depend>
+  <depend>nodelet</depend>
+  <depend>cv_bridge</depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- You can specify that this package is a metapackage here: -->
+    <!-- <metapackage/> -->
+    <nodelet plugin="${prefix}/nodelet_plugins.xml" />
+    <!-- Other tools can request additional information be placed here -->
+  </export>
+</package>
