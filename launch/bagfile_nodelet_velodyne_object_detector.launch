@@ -27,30 +27,13 @@
 
 
   <!-- ============= Pointcloud Conversion (incl. nodelet_manager) =============  -->
-  <!-- declare arguments with default values -->
   <arg name="frame_id" default="velodyne" />
+  <include file="$(find velodyne_pointcloud)/launch/VLP16_points.launch">
+    <arg name="frame_id" value="$(arg frame_id)"/>
+    <arg name="min_range" value="0.01" />
+  </include>
 
-  <arg name="pcap" default="" />
-  <arg name="calibration" default="$(find velodyne_pointcloud)/params/VLP16db.yaml"/>
-  <arg name="min_range" default="0.01" />
-  <arg name="max_range" default="130.0" />
 
-  <node pkg="nodelet" type="nodelet" name="velodyne_nodelet_manager"
-        args="manager" output="screen" />
-  <arg name="read_once" default="false" />
-  <arg name="read_fast" default="false" />
-  <arg name="repeat_delay" default="0.0" />
-  <arg name="frame_id" default="velodyne" />
-
-  <node pkg="nodelet" type="nodelet" name="transform_nodelet"
-        args="load velodyne_pointcloud/TransformNodelet velodyne_nodelet_manager"  output="screen">
-    <param name="calibration" value="$(arg calibration)"/>
-    <param name="min_range" value="$(arg min_range)"/>
-    <param name="max_range" value="$(arg max_range)"/>
-    <param name="frame_id" value="$(arg frame_id)"/>
-  </node>
-
-  
   <!-- ============= Object Detection =============  -->
   <arg name="manager" default="velodyne_nodelet_manager" />
   <arg name="points_topic" default="/velodyne_points" />
