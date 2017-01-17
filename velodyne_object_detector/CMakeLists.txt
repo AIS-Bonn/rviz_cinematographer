@@ -107,7 +107,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES cognitive_robotics
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
@@ -157,6 +157,11 @@ target_link_libraries(velodyne_object_detector
 
 target_link_libraries(velodyne_object_detector_nodelet
         ${catkin_LIBRARIES}
+)
+
+## Install project namespaced headers
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
 
 #############

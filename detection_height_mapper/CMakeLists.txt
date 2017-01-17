@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   config_server
   nodelet
   cv_bridge
+  velodyne_object_detector
 )
 
 ## System dependencies are found with CMake's conventions
@@ -110,7 +111,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES cognitive_robotics
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+  CATKIN_DEPENDS velodyne_object_detector
 #  DEPENDS system_lib
 )
 
@@ -129,6 +130,7 @@ include_directories(
 add_executable(detection_height_mapper_node 
   src/detection_height_mapper_node.cpp 
   src/mapper.cpp
+  src/height_image.cpp
 )
 add_dependencies(detection_height_mapper_node 
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
@@ -143,6 +145,7 @@ install(TARGETS detection_height_mapper_node
 add_library(detection_height_mapper_nodelet 
   src/detection_height_mapper_nodelet.cpp 
   src/mapper.cpp
+  src/height_image.cpp
 )
 add_dependencies(detection_height_mapper_nodelet 
   ${${PROJECT_NAME}_EXPORTED_TARGETS}

@@ -13,6 +13,7 @@
   <depend>config_server</depend>
   <depend>nodelet</depend>
   <depend>cv_bridge</depend>
+  <depend>velodyne_object_detector</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
