@@ -84,4 +84,12 @@
     <arg name="publish_debug_cloud" value="$(arg publish_filtered_cloud)" />
   </include>
 
+  <!-- self filter -->    
+  <node pkg="ais_laser_filters" type="cloud_to_cloud_filter_chain" output="screen" name="cloud_filters">
+    <remap from="~input" to="/velodyne_points" />
+    <remap from="~output" to="/velodyne_points_filtered" />
+    <param name="tf_message_filter_target_frame" type="string" value="base_link"/>
+    <rosparam command="load" file="$(find mrs_laser_mapping)/config/dji_velodyne_filter.yaml" />
+  </node>
+  
 </launch>
