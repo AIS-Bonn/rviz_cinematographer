@@ -90,8 +90,6 @@ private:
 
    float m_certainty_threshold_launch;
 
-   std::string m_points_topic;
-
    config_server::Parameter<float> m_certainty_threshold;
    config_server::Parameter<float> m_dist_coeff;
    config_server::Parameter<float> m_intensity_coeff;
@@ -104,6 +102,7 @@ private:
 
    config_server::Parameter<float> m_max_dist_for_median_computation;
 
+   std::string m_points_topic;
 };
 
 }

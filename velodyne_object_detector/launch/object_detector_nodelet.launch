@@ -9,6 +9,7 @@
     <arg name="median_big_kernel_size" default="41" />
     <arg name="distance_to_comparison_points" default="3" />
     <arg name="publish_filtered_cloud" default="false" />
+    <arg name="publish_debug_cloud" default="false" />
 
     <node pkg="nodelet" type="nodelet" name="velodyne_object_detector_nodelet"
           args="load velodyne_object_detector/velodyne_object_detector_nodelet $(arg manager)" output="screen" >
@@ -19,5 +20,6 @@
         <param name="distance_to_comparison_points_launch" value="$(arg distance_to_comparison_points)"/>
 
         <param name="publish_filtered_cloud" value="$(arg publish_filtered_cloud)"/>
+        <param name="publish_debug_cloud" value="$(arg publish_filtered_cloud)"/>
     </node>
 </launch>

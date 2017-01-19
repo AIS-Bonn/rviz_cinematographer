@@ -56,7 +56,7 @@ void VelodyneObjectDetector::medianFilter(std::vector<float> &input,
                                           int kernel_size,
                                           float max_distance_difference)
 {
-   for(int point_index = 0; point_index < input.size(); point_index++)
+   for(int point_index = 0; point_index < (int)input.size(); point_index++)
    {
       int point_index_neighborhood_start = std::max(0, point_index - kernel_size);
       int point_index_neighborhood_end = std::min((int)input.size(), point_index + kernel_size);

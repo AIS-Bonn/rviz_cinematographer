@@ -1,5 +1,5 @@
 //
-// Created by razlaw on 1/4/17.
+// Nodelet to detect small obstacles in velodyne point clouds 
 //
 
 #include "velodyne_object_detector/velodyne_object_detector_nodelet.h"
@@ -34,6 +34,7 @@ VelodyneObjectDetectorNodelet::VelodyneObjectDetectorNodelet()
  , m_max_dist_for_median_computation("max_dist_for_median_computation", 0.0, 0.25, 10.0, 6.0)
  , m_points_topic("/velodyne_points")
  , m_publish_filtered_cloud(false)
+ , m_publish_debug_cloud(false)
 {
    ROS_INFO("Initializing velodyne object detector nodelet.. ");
 }
@@ -48,7 +49,13 @@ void VelodyneObjectDetectorNodelet::onInit()
    m_velodyne_sub = ph.subscribe(m_points_topic, 1000, &VelodyneObjectDetectorNodelet::velodyneCallback, this);
 
    ph.getParam("publish_filtered_cloud", m_publish_filtered_cloud);
-   m_pub_obstacle_cloud = ph.advertise<OutputPointCloud >("obstacles", 1);
+   ph.getParam("publish_debug_cloud", m_publish_debug_cloud);
+
+   if(m_publish_debug_cloud)
+      m_pub_obstacle_cloud = ph.advertise<DebugOutputPointCloud >("debug_obstacles", 1);
+   else
+      m_pub_obstacle_cloud = ph.advertise<OutputPointCloud >("obstacles", 1);
+
    if(m_publish_filtered_cloud)
       m_pub_filtered_cloud = ph.advertise<InputPointCloud >("filtered", 1);
 
@@ -109,7 +116,7 @@ void VelodyneObjectDetectorNodelet::onInit()
 void VelodyneObjectDetectorNodelet::changeParameterSavely()
 {
    boost::mutex::scoped_lock lock(m_parameter_change_lock);
-   NODELET_INFO("New parameter");
+   NODELET_DEBUG("New parameter");
 }
 
 void VelodyneObjectDetectorNodelet::resizeBuffers()
@@ -152,7 +159,7 @@ void VelodyneObjectDetectorNodelet::velodyneCallback(const InputPointCloud::Cons
    splitCloudByRing(input_cloud, m_clouds_per_ring);
 
    detectObstacles(input_cloud, m_clouds_per_ring);
-   NODELET_INFO_STREAM("Computation time for obstacle detection in ms " << (timer.getTime()- start) << "   \n");
+   NODELET_DEBUG_STREAM("Computation time for obstacle detection in ms " << (timer.getTime()- start) << "   \n");
 
    m_old_cloud = input_cloud;
    m_old_clouds_per_ring = m_clouds_per_ring;
@@ -335,6 +342,9 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
 {
    boost::mutex::scoped_lock lock(m_parameter_change_lock);
 
+   DebugOutputPointCloud::Ptr debug_obstacle_cloud (new DebugOutputPointCloud);
+   debug_obstacle_cloud->header = cloud->header;
+
    OutputPointCloud::Ptr obstacle_cloud (new OutputPointCloud);
    obstacle_cloud->header = cloud->header;
 
@@ -384,8 +394,6 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
          continue;
       }
 
-      ros::Time start_median = ros::Time::now();
-
       // median filter on distances
       std::shared_ptr<std::vector<float> > distances_ring_filtered_small_kernel(new std::vector<float>((*clouds_per_ring)[ring_index].size(), 0.f));
       std::shared_ptr<std::vector<float> > distances_ring_filtered_big_kernel(new std::vector<float>((*clouds_per_ring)[ring_index].size(), 0.f));
@@ -394,9 +402,6 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
       filterRing(cloud, (*clouds_per_ring)[ring_index], ring_index, distances_ring_filtered_small_kernel,
                  distances_ring_filtered_big_kernel, intensities_ring_filtered_small_kernel,
                  intensities_ring_filtered_big_kernel);
-
-      ros::Duration split_dur = ros::Time::now() - start_median;
-//      NODELET_INFO_STREAM("Computation time for 4 times median in ns " << split_dur.toNSec() << "   \n");
 
       if(m_publish_filtered_cloud)
       {
@@ -420,8 +425,6 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
          }
          m_pub_filtered_cloud.publish(filtered_cloud);
       }
-
-      ros::Time start_cert_comp = ros::Time::now();
 
       int last_index = (int)(*clouds_per_ring)[ring_index].size() - m_median_big_kernel_size/2 - m_distance_to_comparison_points();
       int first_index = (-m_median_big_kernel_size/2) - m_distance_to_comparison_points();
@@ -497,28 +500,54 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
 
          if(certainty_value >= m_certainty_threshold())
          {
-            OutputPoint outputPoint;
-            if(ring_point_index < 0)
+            if(m_publish_debug_cloud)
             {
-               int ring_point_index_for_old = (int)(*m_old_clouds_per_ring)[ring_index].size() + ring_point_index;
-               unsigned int index_of_current_point = (*m_old_clouds_per_ring)[ring_index][ring_point_index_for_old];
-               outputPoint.x = m_old_cloud->points[index_of_current_point].x;
-               outputPoint.y = m_old_cloud->points[index_of_current_point].y;
-               outputPoint.z = m_old_cloud->points[index_of_current_point].z;
+               DebugOutputPoint debug_output_point;
+               if(ring_point_index < 0)
+               {
+                  int ring_point_index_for_old = (int)(*m_old_clouds_per_ring)[ring_index].size() + ring_point_index;
+                  unsigned int index_of_current_point = (*m_old_clouds_per_ring)[ring_index][ring_point_index_for_old];
+                  debug_output_point.x = m_old_cloud->points[index_of_current_point].x;
+                  debug_output_point.y = m_old_cloud->points[index_of_current_point].y;
+                  debug_output_point.z = m_old_cloud->points[index_of_current_point].z;
+               }
+               else
+               {
+                  unsigned int index_of_current_point = (*clouds_per_ring)[ring_index][ring_point_index];
+                  debug_output_point.x = cloud->points[index_of_current_point].x;
+                  debug_output_point.y = cloud->points[index_of_current_point].y;
+                  debug_output_point.z = cloud->points[index_of_current_point].z;
+               }
+
+               debug_output_point.detection_distance = difference_distances;
+               debug_output_point.detection_intensity = difference_intensities;
+               debug_output_point.detection = certainty_value;
+
+               debug_obstacle_cloud->push_back(debug_output_point);
             }
             else
             {
-               unsigned int index_of_current_point = (*clouds_per_ring)[ring_index][ring_point_index];
-               outputPoint.x = cloud->points[index_of_current_point].x;
-               outputPoint.y = cloud->points[index_of_current_point].y;
-               outputPoint.z = cloud->points[index_of_current_point].z;
+               OutputPoint outputPoint;
+               if(ring_point_index < 0)
+               {
+                  int ring_point_index_for_old = (int)(*m_old_clouds_per_ring)[ring_index].size() + ring_point_index;
+                  unsigned int index_of_current_point = (*m_old_clouds_per_ring)[ring_index][ring_point_index_for_old];
+                  outputPoint.x = m_old_cloud->points[index_of_current_point].x;
+                  outputPoint.y = m_old_cloud->points[index_of_current_point].y;
+                  outputPoint.z = m_old_cloud->points[index_of_current_point].z;
+               }
+               else
+               {
+                  unsigned int index_of_current_point = (*clouds_per_ring)[ring_index][ring_point_index];
+                  outputPoint.x = cloud->points[index_of_current_point].x;
+                  outputPoint.y = cloud->points[index_of_current_point].y;
+                  outputPoint.z = cloud->points[index_of_current_point].z;
+               }
+
+               outputPoint.detection = certainty_value;
+
+               obstacle_cloud->push_back(outputPoint);
             }
-
-            outputPoint.detection_distance = difference_distances;
-            outputPoint.detection_intensity = difference_intensities;
-            outputPoint.detection = certainty_value;
-
-            obstacle_cloud->push_back(outputPoint);
          }
       }
       m_ring_counter[ring_index] += 1;
@@ -527,12 +556,12 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
       m_old_distances_all_rings_filtered_big_kernel[ring_index] = distances_ring_filtered_big_kernel;
       m_old_intensities_all_rings_filtered_small_kernel[ring_index] = intensities_ring_filtered_small_kernel;
       m_old_intensities_all_rings_filtered_big_kernel[ring_index] = intensities_ring_filtered_big_kernel;
-
-      split_dur = ros::Time::now() - start_cert_comp;
-//      NODELET_INFO_STREAM("Computation time for certainty of 1 ring in ns " << split_dur.toNSec() << "   \n");
-
    }
-   m_pub_obstacle_cloud.publish(obstacle_cloud);
+
+   if(m_publish_debug_cloud)
+      m_pub_obstacle_cloud.publish(debug_obstacle_cloud);
+   else
+      m_pub_obstacle_cloud.publish(obstacle_cloud);
 }
 
 }

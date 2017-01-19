@@ -1,5 +1,5 @@
 //
-// Created by razlaw on 1/4/17.
+// Nodelet to detect small obstacles in velodyne point clouds 
 //
 
 #ifndef VELODYNE_OBJECT_DETECTOR_NODELET_H
@@ -12,15 +12,6 @@
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-
-#include <ros/package.h>
-
-#include "std_msgs/String.h"
-#include "std_msgs/Float32.h"
-
-#include <pcl_ros/point_cloud.h>
-#include <pcl/common/distances.h>
-#include <pcl/point_types.h>
 #include <pcl/common/time.h>
 #include <pcl/conversions.h>
 
@@ -29,11 +20,8 @@
 
 #include <velodyne_object_detector/point_type.h>
 
-#include <visualization_msgs/Marker.h>
-
 #include <config_server/parameter.h>
 
-#include <pcl/common/time.h>
 
 namespace velodyne_object_detector
 {
@@ -45,17 +33,18 @@ public:
    typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudRGB;
    typedef pcl::PointCloud<pcl::PointXYZI> PointCloudIntensity;
 
-   typedef velodyne_pointcloud::PointXYZIDR PointVelodyneWithDist;
-   typedef pcl::PointCloud<PointVelodyneWithDist> PointCloudVelodyneWithDist;
+   typedef velodyne_pointcloud::PointXYZIDR           PointVelodyneWithDist;
+   typedef velodyne_pointcloud::PointXYZIRDetection   PointVelodyneWithDetection;
+   typedef velodyne_pointcloud::PointXYZDetection     PointWithDetection;
 
-   typedef velodyne_pointcloud::PointXYZIRDetection PointVelodyneWithDetection;
-   typedef pcl::PointCloud<PointVelodyneWithDetection> PointCloudVelodyneWithDetection;
 
-   typedef PointVelodyneWithDist                   InputPoint;
-   typedef PointVelodyneWithDetection              OutputPoint;
+   typedef PointVelodyneWithDist                      InputPoint;
+   typedef PointVelodyneWithDetection                 DebugOutputPoint;
+   typedef PointWithDetection                         OutputPoint;
 
-   typedef pcl::PointCloud<InputPoint>             InputPointCloud;
-   typedef pcl::PointCloud<OutputPoint>            OutputPointCloud;
+   typedef pcl::PointCloud<InputPoint>                InputPointCloud;
+   typedef pcl::PointCloud<DebugOutputPoint>          DebugOutputPointCloud;
+   typedef pcl::PointCloud<OutputPoint>               OutputPointCloud;
 
    VelodyneObjectDetectorNodelet();
    virtual ~VelodyneObjectDetectorNodelet(){};
@@ -118,6 +107,7 @@ private:
    std::string m_points_topic;
 
    bool m_publish_filtered_cloud;
+   bool m_publish_debug_cloud;
 
    boost::mutex m_parameter_change_lock;
    std::vector<boost::circular_buffer<float> > m_distance_median_circ_buffer_vector;
