@@ -44,20 +44,9 @@ void Mapper::callback(const InputPointCloud::ConstPtr &input_cloud)
    height_image.setSize(m_height_image_size_x(), m_height_image_size_y());
    height_image.setResolution(m_height_image_resolution(), m_height_image_resolution());
 
-   InputPointCloud::Ptr obstacle_points(new InputPointCloud());
-
-   // TODO evtl raus
-   for(auto& point : input_cloud->points)
-   {
-      if(point.z > m_height_image_min_z() && point.z < m_height_image_max_z())
-      {
-         obstacle_points->points.push_back(point);
-      }
-   }
-
    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
    transform.translate(Eigen::Vector3f(m_height_image_size_x()/2, m_height_image_size_y()/2, 0.f));
-   height_image.processPointcloud(*obstacle_points, transform, m_height_image_obstacle_thresh(), m_height_image_obstacle_odds_hit(), m_height_image_obstacle_odds_miss(), m_height_image_obstacle_clamp_thresh_min(), m_height_image_obstacle_clamp_thresh_max());
+   height_image.processPointcloud(*input_cloud, transform, m_height_image_obstacle_thresh(), m_height_image_obstacle_odds_hit(), m_height_image_obstacle_odds_miss(), m_height_image_obstacle_clamp_thresh_min(), m_height_image_obstacle_clamp_thresh_max());
 
    // TODO ab hier weiter
    height_image.detectObstacles(0.2, m_height_image_min_obstacle_points(), m_height_image_obstacle_thresh());

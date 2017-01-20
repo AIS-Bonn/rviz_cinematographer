@@ -71,6 +71,16 @@ void HeightImage::setSize(double size_x, double size_y)
 	resizeStorage();
 }
 
+void HeightImage::setMinHeight(float min_height)
+{
+   m_min_height_threshold = min_height;
+}
+
+void HeightImage::setMaxHeight(float max_height)
+{
+   m_max_height_threshold = max_height;
+}
+
 template<class T>
 T limited(T val)
 {
@@ -484,11 +494,11 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
       // compute min and max height for current bin
       float* binval_min_height = &m_min_height(bin_y, bin_x);
       float* binval_max_height = &m_max_height(bin_y, bin_x);
-      if(std::isnan(*binval_min_height) || point.z < *binval_min_height)
+      if((std::isnan(*binval_min_height) || point.z < *binval_min_height) && point.z > m_min_height_threshold)
       {
          *binval_min_height = point.z;
       }
-      if(std::isnan(*binval_max_height) || point.z > *binval_max_height)
+      if((std::isnan(*binval_max_height) || point.z > *binval_max_height) && point.z < m_max_height_threshold)
       {
          *binval_max_height = point.z;
       }
@@ -516,11 +526,11 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
          *binval_detection += odds_hit;
 
          // update min and max height of obstacle for this bin
-         if(point.z < *binval_obstacle_min_height)
+         if(point.z < *binval_obstacle_min_height && point.z > m_min_height_threshold)
          {
             *binval_obstacle_min_height = point.z;
          }
-         if(point.z > *binval_obstacle_max_height)
+         if(point.z > *binval_obstacle_max_height && point.z < m_max_height_threshold)
          {
             *binval_obstacle_max_height = point.z;
          }

@@ -40,7 +40,9 @@ public:
 	~HeightImage();
 
 	void setResolution(double res_x, double res_y);
-	void setSize(double size_x, double size_y);
+   void setSize(double size_x, double size_y);
+   void setMinHeight(float min_height);
+   void setMaxHeight(float max_height);
 
 	void processPointcloud(const InputPointCloud& cloud,
                           const Eigen::Affine3f& transform,
@@ -64,6 +66,8 @@ private:
 	double m_length_y;
 	int m_buckets_x;
 	int m_buckets_y;
+   float m_min_height_threshold;
+   float m_max_height_threshold;
 	cv::Mat_<float> m_median_height;
 	cv::Mat_<float> m_min_height;
 	cv::Mat_<float> m_max_height;
