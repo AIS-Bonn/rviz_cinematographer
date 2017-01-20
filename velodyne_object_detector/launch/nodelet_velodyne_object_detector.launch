@@ -90,7 +90,7 @@
     <arg name="median_big_kernel_size" value="$(arg median_big_kernel_size)" />
     <arg name="distance_to_comparison_points" value="$(arg distance_to_comparison_points)" />
     <arg name="publish_filtered_cloud" value="$(arg publish_filtered_cloud)" />
-    <arg name="publish_debug_cloud" value="$(arg publish_filtered_cloud)" />
+    <arg name="publish_debug_cloud" value="$(arg publish_debug_cloud)" />
   </include>
   
   <include file="$(find mrs_laser_mapping)/launch/velodyne_mapping.launch">

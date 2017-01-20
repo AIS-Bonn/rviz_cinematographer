@@ -20,6 +20,6 @@
         <param name="distance_to_comparison_points_launch" value="$(arg distance_to_comparison_points)"/>
 
         <param name="publish_filtered_cloud" value="$(arg publish_filtered_cloud)"/>
-        <param name="publish_debug_cloud" value="$(arg publish_filtered_cloud)"/>
+        <param name="publish_debug_cloud" value="$(arg publish_debug_cloud)"/>
     </node>
 </launch>

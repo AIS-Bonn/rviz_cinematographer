@@ -77,6 +77,7 @@ private:
 
    ros::Subscriber m_velodyne_sub;
    ros::Publisher m_pub_obstacle_cloud;
+   ros::Publisher m_pub_debug_obstacle_cloud;
    ros::Publisher m_pub_filtered_cloud;
 
    float m_max_prob_by_distance;

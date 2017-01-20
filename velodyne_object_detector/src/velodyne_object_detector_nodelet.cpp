@@ -52,12 +52,12 @@ void VelodyneObjectDetectorNodelet::onInit()
    ph.getParam("publish_debug_cloud", m_publish_debug_cloud);
 
    if(m_publish_debug_cloud)
-      m_pub_obstacle_cloud = ph.advertise<DebugOutputPointCloud >("debug_obstacles", 1);
-   else
-      m_pub_obstacle_cloud = ph.advertise<OutputPointCloud >("obstacles", 1);
+      m_pub_debug_obstacle_cloud = ph.advertise<DebugOutputPointCloud >("debug_obstacles", 1);
 
    if(m_publish_filtered_cloud)
       m_pub_filtered_cloud = ph.advertise<InputPointCloud >("filtered", 1);
+
+   m_pub_obstacle_cloud = ph.advertise<OutputPointCloud >("obstacles", 1);
 
    if(ph.getParam("certainty_threshold_launch", m_certainty_threshold_launch))
       m_certainty_threshold.set(m_certainty_threshold_launch);
@@ -510,6 +510,8 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
                   debug_output_point.x = m_old_cloud->points[index_of_current_point].x;
                   debug_output_point.y = m_old_cloud->points[index_of_current_point].y;
                   debug_output_point.z = m_old_cloud->points[index_of_current_point].z;
+                  debug_output_point.intensity = m_old_cloud->points[index_of_current_point].intensity;
+                  debug_output_point.ring = m_old_cloud->points[index_of_current_point].ring;
                }
                else
                {
@@ -517,6 +519,8 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
                   debug_output_point.x = cloud->points[index_of_current_point].x;
                   debug_output_point.y = cloud->points[index_of_current_point].y;
                   debug_output_point.z = cloud->points[index_of_current_point].z;
+                  debug_output_point.intensity = cloud->points[index_of_current_point].intensity;
+                  debug_output_point.ring = cloud->points[index_of_current_point].ring;
                }
 
                debug_output_point.detection_distance = difference_distances;
@@ -525,29 +529,27 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
 
                debug_obstacle_cloud->push_back(debug_output_point);
             }
+
+            OutputPoint outputPoint;
+            if(ring_point_index < 0)
+            {
+               int ring_point_index_for_old = (int)(*m_old_clouds_per_ring)[ring_index].size() + ring_point_index;
+               unsigned int index_of_current_point = (*m_old_clouds_per_ring)[ring_index][ring_point_index_for_old];
+               outputPoint.x = m_old_cloud->points[index_of_current_point].x;
+               outputPoint.y = m_old_cloud->points[index_of_current_point].y;
+               outputPoint.z = m_old_cloud->points[index_of_current_point].z;
+            }
             else
             {
-               OutputPoint outputPoint;
-               if(ring_point_index < 0)
-               {
-                  int ring_point_index_for_old = (int)(*m_old_clouds_per_ring)[ring_index].size() + ring_point_index;
-                  unsigned int index_of_current_point = (*m_old_clouds_per_ring)[ring_index][ring_point_index_for_old];
-                  outputPoint.x = m_old_cloud->points[index_of_current_point].x;
-                  outputPoint.y = m_old_cloud->points[index_of_current_point].y;
-                  outputPoint.z = m_old_cloud->points[index_of_current_point].z;
-               }
-               else
-               {
-                  unsigned int index_of_current_point = (*clouds_per_ring)[ring_index][ring_point_index];
-                  outputPoint.x = cloud->points[index_of_current_point].x;
-                  outputPoint.y = cloud->points[index_of_current_point].y;
-                  outputPoint.z = cloud->points[index_of_current_point].z;
-               }
-
-               outputPoint.detection = certainty_value;
-
-               obstacle_cloud->push_back(outputPoint);
+               unsigned int index_of_current_point = (*clouds_per_ring)[ring_index][ring_point_index];
+               outputPoint.x = cloud->points[index_of_current_point].x;
+               outputPoint.y = cloud->points[index_of_current_point].y;
+               outputPoint.z = cloud->points[index_of_current_point].z;
             }
+
+            outputPoint.detection = certainty_value;
+
+            obstacle_cloud->push_back(outputPoint);
          }
       }
       m_ring_counter[ring_index] += 1;
@@ -559,9 +561,9 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
    }
 
    if(m_publish_debug_cloud)
-      m_pub_obstacle_cloud.publish(debug_obstacle_cloud);
-   else
-      m_pub_obstacle_cloud.publish(obstacle_cloud);
+      m_pub_debug_obstacle_cloud.publish(debug_obstacle_cloud);
+
+   m_pub_obstacle_cloud.publish(obstacle_cloud);
 }
 
 }
