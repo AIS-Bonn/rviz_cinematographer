@@ -43,7 +43,7 @@ namespace detection_height_mapper
       ~Mapper() {}
 
    private:
-      void processPointCloud(const InputPointCloud::ConstPtr &input_cloud);
+      void callback(const InputPointCloud::ConstPtr &input_cloud);
 
       ros::Subscriber m_cloud_sub;
 

@@ -42,15 +42,13 @@ public:
 	void setResolution(double res_x, double res_y);
 	void setSize(double size_x, double size_y);
 
-	void processMedianFiltered(const InputPointCloud& cloud, const Eigen::Affine3f& transform);
-
-	void processObstaclesWithTransform(const InputPointCloud& cloud,
-												  const Eigen::Affine3f& transform,
-												  float obstacle_thresh,
-												  float odds_hit,
-												  float odds_miss,
-												  float clamp_thresh_min,
-												  float clamp_thresh_max);
+	void processPointcloud(const InputPointCloud& cloud,
+                          const Eigen::Affine3f& transform,
+                          float obstacle_thresh,
+                          float odds_hit,
+                          float odds_miss,
+                          float clamp_thresh_min,
+                          float clamp_thresh_max);
 
 	void fillObstacleColorImage(sensor_msgs::Image* img, double min_height, double max_height, double min_diff, double max_diff, double height_diff_thresh, int num_min_count, float obstacle_thresh);
 	void fillObstacleMap(nav_msgs::OccupancyGrid* map, double min_value, double max_value, uint8_t max_map_value, double height_diff_thresh, int num_min_count, float obstacle_thresh);
@@ -66,12 +64,12 @@ private:
 	double m_length_y;
 	int m_buckets_x;
 	int m_buckets_y;
-	cv::Mat_<float> m_absolute;
-	cv::Mat_<float> m_absolute_min;
-	cv::Mat_<float> m_absolute_max;
-	cv::Mat_<float> m_obstacle_min;
-	cv::Mat_<float> m_obstacle_max;
-	cv::Mat_<float> m_obstacle;
+	cv::Mat_<float> m_median_height;
+	cv::Mat_<float> m_min_height;
+	cv::Mat_<float> m_max_height;
+	cv::Mat_<float> m_obstacle_min_height;
+	cv::Mat_<float> m_obstacle_max_height;
+	cv::Mat_<float> m_obstacle_detection;
 	cv::Mat_<float> m_obstacles_inflated;
 	cv::Mat_<int> m_obstacle_count;
 	cv::Mat_<int> m_obstacle_last_scan_id;

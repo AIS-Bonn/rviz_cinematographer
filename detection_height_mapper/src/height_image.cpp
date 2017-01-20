@@ -26,12 +26,12 @@ void HeightImage::resizeStorage()
 	m_buckets_x = std::ceil(m_length_x / m_res_x);
 	m_buckets_y = std::ceil(m_length_y / m_res_y);
 
-	m_absolute.create(m_buckets_y, m_buckets_x);
-	m_absolute_min.create(m_buckets_y, m_buckets_x);
-	m_absolute_max.create(m_buckets_y, m_buckets_x);
-	m_obstacle.create(m_buckets_y, m_buckets_x);
-	m_obstacle_min.create(m_buckets_y, m_buckets_x);
-	m_obstacle_max.create(m_buckets_y, m_buckets_x);
+	m_median_height.create(m_buckets_y, m_buckets_x);
+	m_min_height.create(m_buckets_y, m_buckets_x);
+	m_max_height.create(m_buckets_y, m_buckets_x);
+	m_obstacle_detection.create(m_buckets_y, m_buckets_x);
+	m_obstacle_min_height.create(m_buckets_y, m_buckets_x);
+	m_obstacle_max_height.create(m_buckets_y, m_buckets_x);
 	m_obstacle_count.create(m_buckets_y, m_buckets_x);
 	m_obstacle_last_scan_id.create(m_buckets_y, m_buckets_x);
 	m_obstacle_scans_count.create(m_buckets_y, m_buckets_x);
@@ -44,12 +44,12 @@ void HeightImage::resizeStorage()
 	// Setup robot mask
 	m_mask.setTo(cv::Scalar(0.0f));
 
-	m_absolute = NAN;
-	m_absolute_min = NAN;
-	m_absolute_max = NAN;
-	m_obstacle = NAN;
-	m_obstacle_min = NAN;
-	m_obstacle_max = NAN;
+	m_median_height = NAN;
+	m_min_height = NAN;
+	m_max_height = NAN;
+	m_obstacle_detection = NAN;
+	m_obstacle_min_height = NAN;
+	m_obstacle_max_height = NAN;
 	m_obstacles_inflated = NAN;
 	m_obstacle_count = 0;
 	m_obstacle_scans_count = 0;
@@ -94,10 +94,10 @@ void HeightImage::detectObstacles(double height_diff_thresh, int num_min_count, 
 	{
 		for(int x = 0; x < m_buckets_x; ++x)
 		{
-			double detection = m_obstacle(y, x);
+			double detection = m_obstacle_detection(y, x);
 			int num_detections = m_obstacle_scans_count(y, x);
-			double diff = fabs(m_obstacle_max(y, x) - m_obstacle_min(y, x));
-			double diff_to_abs_min = fabs(m_obstacle_max(y, x) - m_absolute_min(y, x));
+			double diff = fabs(m_obstacle_max_height(y, x) - m_obstacle_min_height(y, x));
+			double diff_to_abs_min = fabs(m_obstacle_max_height(y, x) - m_min_height(y, x));
 			
 			if(std::isfinite(detection))
 			{
@@ -262,13 +262,13 @@ void HeightImage::detectObstacles(double height_diff_thresh, int num_min_count, 
 					if(dx*dx+dy*dy > robot_radius*robot_radius)
 						continue;
 
-					if(m_absolute_min(_y, _x) < local_min_height)
+					if(m_min_height(_y, _x) < local_min_height)
 					{
-						local_min_height = m_absolute_min(_y, _x);
+						local_min_height = m_min_height(_y, _x);
 					}
-					if(m_absolute_max(_y, _x) > local_max_height)
+					if(m_max_height(_y, _x) > local_max_height)
 					{
-						local_max_height = m_absolute_max(_y, _x);
+						local_max_height = m_max_height(_y, _x);
 					}
 				}
 			}
@@ -309,9 +309,9 @@ void HeightImage::fillObstacleMap(nav_msgs::OccupancyGrid* map, double min_value
 
 			double detection = m_obstacles_inflated(m_buckets_y - y - 1, x);
 			int num_detections = m_obstacle_scans_count(m_buckets_y - y - 1, x);
-			double height = m_absolute(m_buckets_y - y - 1, x);
-			double diff = fabs(m_obstacle_max(m_buckets_y - y - 1, x)-m_obstacle_min(m_buckets_y - y - 1, x));
-			double diff_to_abs_min = fabs(m_obstacle_max(m_buckets_y - y - 1, x)-m_absolute_min(m_buckets_y - y - 1, x));
+			double height = m_median_height(m_buckets_y - y - 1, x);
+			double diff = fabs(m_obstacle_max_height(m_buckets_y - y - 1, x)-m_obstacle_min_height(m_buckets_y - y - 1, x));
+			double diff_to_abs_min = fabs(m_obstacle_max_height(m_buckets_y - y - 1, x)-m_min_height(m_buckets_y - y - 1, x));
 			
 			if(std::isnan(v))
 				*wptr = (int8_t)0 ;//-1; // Unknown
@@ -370,7 +370,7 @@ void HeightImage::fillObstacleColorImage(sensor_msgs::Image* img, double min_hei
 
 	// TODO: delete hack
 	cv::flip(m_obstacles_inflated, m_obstacles_inflated, -1);
-	cv::flip(m_absolute, m_absolute,-1);
+	cv::flip(m_median_height, m_median_height,-1);
 
 	for(int y = 0; y < m_buckets_y; ++y)
 	{
@@ -378,9 +378,9 @@ void HeightImage::fillObstacleColorImage(sensor_msgs::Image* img, double min_hei
 		{
 			double detection = m_obstacles_inflated(y, x);
 			int num_detections = m_obstacle_scans_count(y, x);
-			double height = m_absolute(y, x);
-			double diff = fabs(m_obstacle_max(y, x)-m_obstacle_min(y, x));
-			double diff_to_abs_min = fabs(m_obstacle_max(y, x)-m_absolute_min(y, x));
+			double height = m_median_height(y, x);
+			double diff = fabs(m_obstacle_max_height(y, x)-m_obstacle_min_height(y, x));
+			double diff_to_abs_min = fabs(m_obstacle_max_height(y, x)-m_min_height(y, x));
 
 			// background color if height in bin is not valid
 			if(!std::isfinite(height))
@@ -454,96 +454,20 @@ void HeightImage::filterObstaclesBySize(const cv::Mat& prob_mat, int min_size_of
 	}
 }
 
-// fill m_obstacle with some kind of detection probablity, which is the clamped sum of all detection probabilities of all points in one bin 
-// fill m_obstacle_min with the min height of each bin TODO: check if its usefull to take only the points with a high detection value 
-// fill m_obstacle_max with the max height of each bin TODO: check if its usefull to take only the points with a high detection value 
-// fill m_obstacle_count with the number of points that were in one bin ever // TODO same as above + really ever? or should it be per scan?  
-// fill m_obstacle_scans_count with the number of different scans that correspond to a bin // TODO same as above
-void HeightImage::processObstaclesWithTransform(const InputPointCloud& cloud,
-                                                const Eigen::Affine3f& transform,
-                                                float obstacle_thresh,
-                                                float odds_hit,
-                                                float odds_miss,
-                                                float clamp_thresh_min,
-                                                float clamp_thresh_max)
-{
-	for(typename InputPointCloud::const_iterator it = cloud.begin(); it != cloud.end(); ++it)
-	{
-		const InputPoint& point = *it;
-
-      // get corresponding bin
-		Eigen::Vector3f pos(point.x, point.y, point.z);
-		pos = transform * pos;
-		int bin_x = pos.x() / m_res_x;
-		int bin_y = m_buckets_y - pos.y() / m_res_y;
-
-		if(bin_x < 0 || bin_x >= m_buckets_x || bin_y < 0 || bin_y >= m_buckets_y)
-			continue;
-
-		float* binval = &m_obstacle(bin_y, bin_x);
-		float* binval_min = &m_obstacle_min(bin_y, bin_x);
-		float* binval_max = &m_obstacle_max(bin_y, bin_x);
-		int* binval_count = &m_obstacle_count(bin_y, bin_x);
-
-      // update detection "probability" for this bin
- 		if(std::isnan(*binval) )
- 		{
-		    *binval = point.detection;
-		}
-		else 
-		{
-		    if (point.detection > obstacle_thresh)
-		    {
-		      *binval += odds_hit;
-		    }
-		    else 
-		      *binval -= odds_miss;
-		    
-		    std::min<float>(*binval, clamp_thresh_max);
-		    std::max<float>(*binval, clamp_thresh_min);
-		}
-
-		// TODO: replace scanNr by something we have, maybe save timestamp and compare it to the current one
-		// TODO: access elements as above 
-		// check if this bin was seen in this scan 
-//		if ( m_obstacle_last_scan_id(bin_y, bin_x) != point.scanNr )
-//		{
-//		    // update current scan number
-//		    m_obstacle_last_scan_id(bin_y, bin_x) = point.scanNr;
-//		    // increment number of scans that this bin was seen in
-//		    m_obstacle_scans_count(bin_y, bin_x)++;
-//		}
-		
-		// increment number of points that were assigned to this bin ever 
-		binval_count++;
-		
-		//TODO: probably useless
-		m_source(bin_y,bin_x) = 4;
-		
-		// update min and max height for this bin 
-		if(std::isnan(*binval_min) || point.z < *binval_min)
-		{
-			*binval_min = point.z;
-			m_source(bin_y,bin_x) = 4;
-		}
-		if(std::isnan(*binval_max) || point.z > *binval_max)
-		{
-			*binval_max = point.z;
-			m_source(bin_y,bin_x) = 4;
-		}
-	}
-}
-
-// use transformed point cloud to fill m_absolute_min and -max with min and max height (z-coordinate)
-// of the points in each bin + fill m_absolute with median height for each bin
-void HeightImage::processMedianFiltered(const InputPointCloud& cloud, const Eigen::Affine3f& transform)
+// use transformed point cloud to fill m_min_height and -max with min and max height (z-coordinate)
+// of the points in each bin + fill m_median_height with median height for each bin
+void HeightImage::processPointcloud(const InputPointCloud& cloud,
+                                    const Eigen::Affine3f& transform,
+                                    float obstacle_thresh,
+                                    float odds_hit,
+                                    float odds_miss,
+                                    float clamp_thresh_min,
+                                    float clamp_thresh_max)
 {
    std::vector<std::vector<float> > storage(m_buckets_x * m_buckets_y);
 
-   for(typename InputPointCloud::const_iterator it = cloud.begin(); it != cloud.end(); ++it)
+   for(const auto& point : cloud.points)
    {
-      const InputPoint& point = *it;
-
       // transform point and compute corresponding bin
       Eigen::Vector3f pos(point.x, point.y, point.z);
       pos = transform * pos;
@@ -557,17 +481,68 @@ void HeightImage::processMedianFiltered(const InputPointCloud& cloud, const Eige
 
       storage[idx].push_back(point.z);
 
-      // compute min and max for current bin
-      float* binval_min = &m_absolute_min(bin_y, bin_x);
-      float* binval_max = &m_absolute_max(bin_y, bin_x);
-      if(std::isnan(*binval_min) || point.z < *binval_min)
+      // compute min and max height for current bin
+      float* binval_min_height = &m_min_height(bin_y, bin_x);
+      float* binval_max_height = &m_max_height(bin_y, bin_x);
+      if(std::isnan(*binval_min_height) || point.z < *binval_min_height)
       {
-         *binval_min = point.z;
+         *binval_min_height = point.z;
       }
-      if(std::isnan(*binval_max) || point.z > *binval_max)
+      if(std::isnan(*binval_max_height) || point.z > *binval_max_height)
       {
-         *binval_max = point.z;
+         *binval_max_height = point.z;
       }
+
+      float* binval_obstacle_min_height = &m_obstacle_min_height(bin_y, bin_x);
+      float* binval_obstacle_max_height = &m_obstacle_max_height(bin_y, bin_x);
+      int* binval_obstacle_count = &m_obstacle_count(bin_y, bin_x);
+      float* binval_detection = &m_obstacle_detection(bin_y, bin_x);
+      //if first point for bin and probably an obstacle, copy values
+      if(std::isnan(*binval_detection) )
+      {
+         if (point.detection > obstacle_thresh)
+         {
+            *binval_detection = point.detection;
+            *binval_obstacle_min_height = point.z;
+            *binval_obstacle_max_height = point.z;
+            *binval_obstacle_count = 1;
+            continue;
+         }
+      }
+
+      // compute min and max height for obstacles
+      if (point.detection > obstacle_thresh)
+      {
+         *binval_detection += odds_hit;
+
+         // update min and max height of obstacle for this bin
+         if(point.z < *binval_obstacle_min_height)
+         {
+            *binval_obstacle_min_height = point.z;
+         }
+         if(point.z > *binval_obstacle_max_height)
+         {
+            *binval_obstacle_max_height = point.z;
+         }
+
+         *binval_obstacle_count += 1;
+
+         // TODO access values as above + replace with a more accurate way to check to how many full scans
+         //       this bins corresponds to + evtl if they are all current scans or very old ones
+         //check if this bin was seen in this scan
+//         if ( m_obstacle_last_scan_id(bin_y, bin_x) != point.scanNr )
+//         {
+//             // update current scan number
+//             m_obstacle_last_scan_id(bin_y, bin_x) = point.scanNr;
+//             // increment number of scans that this bin was seen in
+//             m_obstacle_scans_count(bin_y, bin_x)++;
+//         }
+      }
+      else
+         *binval_detection -= odds_miss;
+
+      std::min<float>(*binval_detection, clamp_thresh_max);
+      std::max<float>(*binval_detection, clamp_thresh_min);
    }
 
    // compute median height for each bin
@@ -598,15 +573,11 @@ void HeightImage::processMedianFiltered(const InputPointCloud& cloud, const Eige
             }
 
             // compute the mean of both values and use this as the median
-            m_absolute(bin_y, bin_x) = (points[n]+(*it))/2;
-            // TODO: necessary?
-            m_source(bin_y, bin_x) = 0;
+            m_median_height(bin_y, bin_x) = (points[n]+(*it))/2;
          }
          else
          {
-            m_absolute(bin_y, bin_x) = points[n];
-            // TODO: necessary?
-            m_source(bin_y, bin_x) = 0;
+            m_median_height(bin_y, bin_x) = points[n];
          }
       }
    }
