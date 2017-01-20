@@ -10,7 +10,8 @@
     <remap from="/velodyne_points" to="/velodyne_points_frombag" />
   </node>
 
-    <param name="/use_sim_time" value="true" />
+  <param name="/use_sim_time" value="true" />
+
 
   <!-- ============= Rviz / rqt =============  -->
   <arg name="use_rqt" default="true"/>
@@ -64,7 +65,7 @@
   </node>
 
   
-  <!-- self filter -->    
+  <!-- ============= Self Filter =============  -->
   <node pkg="ais_laser_filters" type="cloud_to_cloud_filter_chain" output="screen" name="cloud_filters">
     <remap from="~input" to="/velodyne_points" />
     <remap from="~output" to="/velodyne_points_filtered" />
@@ -72,6 +73,7 @@
     <rosparam command="load" file="$(find mrs_laser_mapping)/config/dji_velodyne_filter.yaml" />
   </node>
   
+
   <!-- ============= Object Detection =============  -->
   <arg name="manager" default="velodyne_nodelet_manager" />
   <arg name="points_topic" default="/velodyne_points_filtered" />
@@ -93,6 +95,8 @@
     <arg name="publish_debug_cloud" value="$(arg publish_debug_cloud)" />
   </include>
   
+
+  <!-- ============= Mapping =============  -->
   <include file="$(find mrs_laser_mapping)/launch/velodyne_mapping.launch">
     <arg name="build_alloc_map" value="false"/>
     <arg name="scan_assembler_frame_id" value="odom"/> 
@@ -107,7 +111,12 @@
     <arg name="map_downsampled_resolution" value="20.0" /> 
     <arg name="map_downsampled_levels" value="6" /> 
     <arg name="map_downsampled_cell_capacity" value="100" /> -->
-  
+  </include>
+
+
+  <!-- ============= Detection Height Image =============  -->
+  <include file="$(find detection_height_mapper)/launch/detection_height_mapper_nodelet.launch">
+    <arg name="input_topic" value="/mapping_nodelet/pointcloud"/>
   </include>
   
 </launch>
