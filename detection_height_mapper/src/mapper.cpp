@@ -21,29 +21,34 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    , m_height_image_obstacle_odds_miss("obstacle_odds_miss", 0.0, 0.05, 1.0, 0.35)
    , m_height_image_obstacle_clamp_thresh_min("obstacle_clamp_min", -10.0, 0.1, 10.0, -2.8f)
    , m_height_image_obstacle_clamp_thresh_max("obstacle_clamp_max", -10.0, 0.1, 10.0, 5.8f)
+   , m_input_topic("/mrs_laser_mapping/pointcloud")
 {
+   ROS_INFO_STREAM("detection_height_mapper nodelet init");
+   private_nh.getParam("input_topic", m_input_topic);
+
    // TODO: change topic
-   m_cloud_sub = node.subscribe("velodyne_packets", 10, &Mapper::processPointCloud, this,
+   m_cloud_sub = node.subscribe(m_input_topic, 10, &Mapper::processPointCloud, this,
                   ros::TransportHints().tcpNoDelay(true));
 
    m_pub_height_image = node.advertise<sensor_msgs::Image>("height", 1);
    m_pub_height_image_grid = node.advertise<nav_msgs::OccupancyGrid>("obstacle_grid", 1);
-
 }
 
 /** @brief Callback for point clouds. */
 void Mapper::processPointCloud(const InputPointCloud::ConstPtr &input_cloud)
 {
+   ROS_INFO_STREAM("detection_height_mapper callback");
+
    if (m_pub_height_image.getNumSubscribers() == 0 && m_pub_height_image_grid.getNumSubscribers() == 0)
       return;
+
+   ROS_INFO_STREAM("detection_height_mapper callback 2 ");
 
    momaro_heightmap::HeightImage height_image;
    height_image.setSize(m_height_image_size_x(), m_height_image_size_y());
    height_image.setResolution(m_height_image_resolution(), m_height_image_resolution());
-   height_image.setOrigin(m_height_image_size_x()/2, m_height_image_size_y()/2);
 
    InputPointCloud::Ptr obstacle_points(new InputPointCloud());
-   InputPointCloud::Ptr points_cut(new InputPointCloud());
 
    for(auto& point : input_cloud->points)
    {

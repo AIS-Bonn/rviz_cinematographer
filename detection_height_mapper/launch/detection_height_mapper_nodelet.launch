@@ -1,0 +1,12 @@
+<!-- -*- mode: XML -*- -->
+<!-- run detection_height_mapper/DetectionHeightMapperNodelet in a nodelet manager -->
+
+<launch>
+    <arg name="manager" default="velodyne_nodelet_manager" />
+    <arg name="input_topic" default="/mapping_nodelet/pointcloud" />
+
+    <node pkg="nodelet" type="nodelet" name="detection_height_mapper_nodelet"
+          args="load detection_height_mapper/detection_height_mapper_nodelet $(arg manager)" output="screen" >
+        <param name="input_topic" value="$(arg input_topic)"/>
+    </node>
+</launch>

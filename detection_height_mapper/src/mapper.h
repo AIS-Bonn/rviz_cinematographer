@@ -20,7 +20,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 #include <visualization_msgs/Marker.h>
-#include <sensor_msgs/PointCloud2.h>
+
 #include <config_server/parameter.h>
 
 #include <nav_msgs/OccupancyGrid.h>
@@ -34,9 +34,9 @@ namespace detection_height_mapper
    class Mapper
    {
    public:
-      typedef velodyne_pointcloud::PointXYZIRDetection PointVelodyneWithDetection;
+      typedef velodyne_pointcloud::PointXYZDetection  PointWithDetection;
 
-      typedef PointVelodyneWithDetection              InputPoint;
+      typedef PointWithDetection                      InputPoint;
       typedef pcl::PointCloud<InputPoint>             InputPointCloud;
 
       Mapper(ros::NodeHandle node, ros::NodeHandle private_nh);
@@ -61,6 +61,8 @@ namespace detection_height_mapper
       config_server::Parameter<float> m_height_image_obstacle_odds_miss;
       config_server::Parameter<float> m_height_image_obstacle_clamp_thresh_min;
       config_server::Parameter<float> m_height_image_obstacle_clamp_thresh_max;
+
+      std::string m_input_topic;
    };
 
 } // namespace detection_height_mapper
