@@ -204,7 +204,9 @@ void VelodyneObjectDetectorNodelet::filterRing(const InputPointCloud::ConstPtr &
 
       // get distances of neighbors
       std::vector<float> neighborhood_distances;
+      neighborhood_distances.reserve(kernel_size);
       std::vector<float> neighborhood_distances_small_dist_kernel;
+      neighborhood_distances_small_dist_kernel.reserve(m_median_small_kernel_size());
 
       // filter if difference of distances of neighbor and the current point exceeds a threshold
       if(m_max_dist_for_median_computation() == 0.f)
