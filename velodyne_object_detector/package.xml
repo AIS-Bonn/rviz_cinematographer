@@ -12,6 +12,7 @@
   <depend>pcl_ros</depend>
   <depend>config_server</depend>
   <depend>nodelet</depend>
+  <depend>ais_laser_filters</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
