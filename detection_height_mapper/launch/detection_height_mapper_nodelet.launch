@@ -4,9 +4,19 @@
 <launch>
     <arg name="manager" default="velodyne_nodelet_manager" />
     <arg name="input_topic" default="/mapping_nodelet/pointcloud" />
+    <arg name="object_min_height" default="0.0" />
+    <arg name="object_max_height" default="0.3" />
+    <arg name="object_min_footprint_in_sqm" default="0.0025" />
+    <arg name="object_max_footprint_in_sqm" default="0.25" />
+    <arg name="object_max_altitude" default="0.5" />
 
     <node pkg="nodelet" type="nodelet" name="detection_height_mapper_nodelet"
           args="load detection_height_mapper/detection_height_mapper_nodelet $(arg manager)" output="screen" >
         <param name="input_topic" value="$(arg input_topic)"/>
+        <param name="object_min_height" value="$(arg object_min_height)"/>
+        <param name="object_max_height" value="$(arg object_max_height)"/>
+        <param name="object_min_footprint_in_sqm" value="$(arg object_min_footprint_in_sqm)"/>
+        <param name="object_max_footprint_in_sqm" value="$(arg object_max_footprint_in_sqm)"/>
+        <param name="object_max_altitude" value="$(arg object_max_altitude)"/>
     </node>
 </launch>

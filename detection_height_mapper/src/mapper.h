@@ -55,12 +55,19 @@ namespace detection_height_mapper
       config_server::Parameter<float> m_height_image_resolution;
       config_server::Parameter<float> m_height_image_min_z;
       config_server::Parameter<float> m_height_image_max_z;
-      config_server::Parameter<int> m_height_image_min_obstacle_points;
-      config_server::Parameter<float> m_height_image_obstacle_thresh;
-      config_server::Parameter<float> m_height_image_obstacle_odds_hit;
-      config_server::Parameter<float> m_height_image_obstacle_odds_miss;
-      config_server::Parameter<float> m_height_image_obstacle_clamp_thresh_min;
-      config_server::Parameter<float> m_height_image_obstacle_clamp_thresh_max;
+      config_server::Parameter<int> m_min_object_points_per_cell;
+      config_server::Parameter<float> m_object_detection_threshold;
+      config_server::Parameter<float> m_object_odds_hit;
+      config_server::Parameter<float> m_object_odds_miss;
+      config_server::Parameter<float> m_object_clamp_thresh_min;
+      config_server::Parameter<float> m_object_clamp_thresh_max;
+      config_server::Parameter<bool> m_inflate_objects;
+
+      float m_object_min_height;
+      float m_object_max_height;
+      float m_object_min_footprint_in_sqm;
+      float m_object_max_footprint_in_sqm;
+      float m_object_max_altitude;
 
       std::string m_input_topic;
    };

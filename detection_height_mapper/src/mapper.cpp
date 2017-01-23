@@ -10,28 +10,36 @@ namespace detection_height_mapper
 {
 /** @brief Constructor. */
 Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
-   : m_height_image_size_x("obstacle_image_size_x", 0, 16, 256, 32)
-   , m_height_image_size_y("obstacle_image_size_y", 0, 16, 256, 32)
-   , m_height_image_resolution("obstacle_image_resolution", 0.01, 0.01, 0.5, 0.05)
-   , m_height_image_min_z("obstacle_image_min_z", -5.f, 0.1f, 5.f, -1.0)
-   , m_height_image_max_z("obstacle_image_max_z", -5.f, 0.1f, 5.f, 2.0)
-   , m_height_image_min_obstacle_points("obstacle_min_points", 0, 1, 100, 10)
-   , m_height_image_obstacle_thresh("obstacle_thresh", 0.0, 0.05, 1.0, 0.9)
-   , m_height_image_obstacle_odds_hit("obstacle_odds_hit", 0.0, 0.05, 1.0, 0.7)
-   , m_height_image_obstacle_odds_miss("obstacle_odds_miss", 0.0, 0.05, 1.0, 0.35)
-   , m_height_image_obstacle_clamp_thresh_min("obstacle_clamp_min", -10.0, 0.1, 10.0, -2.8f)
-   , m_height_image_obstacle_clamp_thresh_max("obstacle_clamp_max", -10.0, 0.1, 10.0, 5.8f)
+   : m_height_image_size_x("object_image_size_x", 0, 16, 256, 32)
+   , m_height_image_size_y("object_image_size_y", 0, 16, 256, 32)
+   , m_height_image_resolution("object_image_resolution", 0.01, 0.01, 0.5, 0.05)
+   , m_height_image_min_z("object_image_min_z", -5.f, 0.1f, 5.f, -1.0)
+   , m_height_image_max_z("object_image_max_z", -5.f, 0.1f, 5.f, 2.0)
+   , m_min_object_points_per_cell("object_min_points", 0, 1, 100, 10)
+   , m_object_detection_threshold("object_thresh", 0.0, 0.05, 1.0, 0.9)
+   , m_object_odds_hit("object_odds_hit", 0.0, 0.05, 1.0, 0.7)
+   , m_object_odds_miss("object_odds_miss", 0.0, 0.05, 1.0, 0.35)
+   , m_object_clamp_thresh_min("object_clamp_min", -10.0, 0.1, 10.0, -2.8f)
+   , m_object_clamp_thresh_max("object_clamp_max", -10.0, 0.1, 10.0, 5.8f)
+   , m_inflate_objects("inflate_objects", true)
+   , m_object_min_height(0.05f)
+   , m_object_max_height(0.25f)
+   , m_object_max_altitude(0.05f)
    , m_input_topic("/mrs_laser_mapping/pointcloud")
 {
    ROS_INFO_STREAM("detection_height_mapper nodelet init");
    private_nh.getParam("input_topic", m_input_topic);
+   private_nh.getParam("object_min_height", m_object_min_height);
+   private_nh.getParam("object_max_height", m_object_max_height);
+   private_nh.getParam("object_min_footprint_in_sqm", m_object_min_footprint_in_sqm);
+   private_nh.getParam("object_max_footprint_in_sqm", m_object_max_footprint_in_sqm);
+   private_nh.getParam("object_max_altitude", m_object_max_altitude);
 
-   // TODO: change topic
    m_cloud_sub = node.subscribe(m_input_topic, 10, &Mapper::callback, this,
                   ros::TransportHints().tcpNoDelay(true));
 
-   m_pub_height_image = node.advertise<sensor_msgs::Image>("height", 1);
-   m_pub_height_image_grid = node.advertise<nav_msgs::OccupancyGrid>("obstacle_grid", 1);
+   m_pub_height_image = node.advertise<sensor_msgs::Image>("height_and_detections", 1);
+   m_pub_height_image_grid = node.advertise<nav_msgs::OccupancyGrid>("object_grid", 1);
 }
 
 /** @brief Callback for point clouds. */
@@ -43,24 +51,29 @@ void Mapper::callback(const InputPointCloud::ConstPtr &input_cloud)
    momaro_heightmap::HeightImage height_image;
    height_image.setSize(m_height_image_size_x(), m_height_image_size_y());
    height_image.setResolution(m_height_image_resolution(), m_height_image_resolution());
+   height_image.setMinHeight(m_height_image_min_z());
+   height_image.setMaxHeight(m_height_image_max_z());
+   height_image.setMinObjectHeight(m_object_min_height);
+   height_image.setMaxObjectHeight(m_object_max_height);
+   height_image.setMinObjectFootprint(m_object_min_footprint_in_sqm);
+   height_image.setMaxObjectFootprint(m_object_max_footprint_in_sqm);
+   height_image.setMaxObjectAltitude(m_object_max_altitude);
+   height_image.setDetectionThreshold(m_object_detection_threshold());
 
    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
    transform.translate(Eigen::Vector3f(m_height_image_size_x()/2, m_height_image_size_y()/2, 0.f));
-   height_image.processPointcloud(*input_cloud, transform, m_height_image_obstacle_thresh(), m_height_image_obstacle_odds_hit(), m_height_image_obstacle_odds_miss(), m_height_image_obstacle_clamp_thresh_min(), m_height_image_obstacle_clamp_thresh_max());
+   height_image.processPointcloud(*input_cloud, transform, m_object_odds_hit(), m_object_odds_miss(), m_object_clamp_thresh_min(), m_object_clamp_thresh_max());
 
-   // TODO ab hier weiter
-   height_image.detectObstacles(0.2, m_height_image_min_obstacle_points(), m_height_image_obstacle_thresh());
+   height_image.detectObjects(m_min_object_points_per_cell(), m_inflate_objects());
 
    sensor_msgs::ImagePtr img(new sensor_msgs::Image);
-   height_image.fillObstacleColorImage(img.get(), m_height_image_min_z(), m_height_image_max_z(), 0.0, 1.0, 0.2, m_height_image_min_obstacle_points(), m_height_image_obstacle_thresh());
-
+   height_image.fillObjectColorImage(img.get());
    img->header.frame_id = input_cloud->header.frame_id;
    img->header.stamp = pcl_conversions::fromPCL(input_cloud->header.stamp);
    m_pub_height_image.publish(img);
 
    nav_msgs::OccupancyGridPtr grid(new nav_msgs::OccupancyGrid);
-
-   height_image.fillObstacleMap(grid.get(), m_height_image_min_z(), m_height_image_max_z(), 100, 0.2, m_height_image_min_obstacle_points(), m_height_image_obstacle_thresh());
+   height_image.fillObjectMap(grid.get());
    grid->header.frame_id = input_cloud->header.frame_id;
    grid->header.stamp = pcl_conversions::fromPCL(input_cloud->header.stamp);
    m_pub_height_image_grid.publish(grid);

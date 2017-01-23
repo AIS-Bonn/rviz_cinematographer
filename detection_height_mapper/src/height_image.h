@@ -39,50 +39,68 @@ public:
 	HeightImage();
 	~HeightImage();
 
-	void setResolution(double res_x, double res_y);
-   void setSize(double size_x, double size_y);
+	void setResolution(float res_x, float res_y);
+   void setSize(float size_x, float size_y);
    void setMinHeight(float min_height);
    void setMaxHeight(float max_height);
+   void setMinObjectHeight(float min_height);
+   void setMaxObjectHeight(float max_height);
+   void setMinObjectFootprint(float min_footprint_size);
+   void setMaxObjectFootprint(float max_footprint_size);
+   void setMaxObjectAltitude(float max_altitude);
+   void setDetectionThreshold(float detection_threshold);
 
 	void processPointcloud(const InputPointCloud& cloud,
                           const Eigen::Affine3f& transform,
-                          float obstacle_thresh,
                           float odds_hit,
                           float odds_miss,
                           float clamp_thresh_min,
                           float clamp_thresh_max);
 
-	void fillObstacleColorImage(sensor_msgs::Image* img, double min_height, double max_height, double min_diff, double max_diff, double height_diff_thresh, int num_min_count, float obstacle_thresh);
-	void fillObstacleMap(nav_msgs::OccupancyGrid* map, double min_value, double max_value, uint8_t max_map_value, double height_diff_thresh, int num_min_count, float obstacle_thresh);
-	void detectObstacles(double height_diff_thresh, int num_min_count, float obstacle_thresh);
-	void filterObstaclesBySize(const cv::Mat& prob_mat, int min_size_of_valid_obstacle, int max_size_of_valid_obstacle);
+   void detectObjects(int num_min_count,
+                      bool inflate_objects);
+
+	void fillObjectColorImage(sensor_msgs::Image* img);
+
+	void fillObjectMap(nav_msgs::OccupancyGrid* map);
 
 private:
 	void resizeStorage();
 
-	double m_res_x;
-	double m_res_y;
-	double m_length_x;
-	double m_length_y;
+   void filterObjectsBySize(const cv::Mat& prob_mat,
+                            int min_size_of_valid_object,
+                            int max_size_of_valid_object);
+
+   float m_res_x;
+   float m_res_y;
+   float m_length_x;
+   float m_length_y;
 	int m_buckets_x;
 	int m_buckets_y;
    float m_min_height_threshold;
    float m_max_height_threshold;
+   float m_min_object_height_threshold;
+   float m_max_object_height_threshold;
+   float m_min_footprint_size;
+   float m_max_footprint_size;
+   float m_max_object_altitude_threshold;
+   float m_object_detection_threshold;
+
 	cv::Mat_<float> m_median_height;
 	cv::Mat_<float> m_min_height;
 	cv::Mat_<float> m_max_height;
-	cv::Mat_<float> m_obstacle_min_height;
-	cv::Mat_<float> m_obstacle_max_height;
-	cv::Mat_<float> m_obstacle_detection;
-	cv::Mat_<float> m_obstacles_inflated;
-	cv::Mat_<int> m_obstacle_count;
-	cv::Mat_<int> m_obstacle_last_scan_id;
-	cv::Mat_<int> m_obstacle_scans_count;
+	cv::Mat_<float> m_object_min_height;
+	cv::Mat_<float> m_object_max_height;
+	cv::Mat_<float> m_object_detection;
+	cv::Mat_<float> m_objects_inflated;
+	cv::Mat_<int> m_object_count;
+	cv::Mat_<int> m_object_last_scan_id;
+	cv::Mat_<int> m_object_scans_count;
 	cv::Mat_<float> m_relative;
 	cv::Mat_<float> m_mask;
 	cv::Mat_<unsigned char> m_source;
-	cv::Mat_<int> m_small_obstacles;
-	double m_robotRadius;
+	cv::Mat_<int> m_small_objects;
+   float m_robotRadius;
 };
 
 }
