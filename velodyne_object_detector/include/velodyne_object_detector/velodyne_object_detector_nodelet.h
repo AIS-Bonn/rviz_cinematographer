@@ -8,7 +8,11 @@
 #include <ros/ros.h>
 #include <nodelet/nodelet.h>
 
+#include <tf/transform_listener.h>
+#include <tf_conversions/tf_eigen.h>
+
 #include <pcl_ros/point_cloud.h>
+#include <pcl_ros/transforms.h>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -79,6 +83,8 @@ private:
    ros::Publisher m_pub_obstacle_cloud;
    ros::Publisher m_pub_debug_obstacle_cloud;
    ros::Publisher m_pub_filtered_cloud;
+
+   tf::TransformListener m_tf_listener;
 
    float m_max_prob_by_distance;
    float m_max_intensity_range;

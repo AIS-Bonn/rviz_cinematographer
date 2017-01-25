@@ -352,6 +352,7 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
 
    InputPointCloud::Ptr filtered_cloud (new InputPointCloud);
    filtered_cloud->header = cloud->header;
+   filtered_cloud->header.frame_id = "/velodyne";
 
    for(unsigned int ring_index = 0; ring_index < clouds_per_ring->size(); ring_index++)
    {
@@ -407,25 +408,45 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
 
       if(m_publish_filtered_cloud)
       {
-         // move the cloud points to the place they would have been if the median filter would have been applied to them
-         int last_index = (int)(*clouds_per_ring)[ring_index].size() - m_median_big_kernel_size/2;
-         for(int ring_point_index = 0; ring_point_index < last_index; ring_point_index++)
+         tf::StampedTransform velodyne_link_transform;
+         bool transform_found = true;
+         try
          {
-            int current_cloud_point_index = (*clouds_per_ring)[ring_index][ring_point_index];
-            float factor = (*distances_ring_filtered_big_kernel)[ring_point_index] /
-                           cloud->points[current_cloud_point_index].distance;
-
-            InputPoint inputPoint;
-            inputPoint.x = cloud->points[current_cloud_point_index].x * factor;
-            inputPoint.y = cloud->points[current_cloud_point_index].y * factor;
-            inputPoint.z = cloud->points[current_cloud_point_index].z * factor;
-            inputPoint.intensity = cloud->points[current_cloud_point_index].intensity;
-            inputPoint.ring = cloud->points[current_cloud_point_index].ring;
-            inputPoint.distance = cloud->points[current_cloud_point_index].distance;
-
-            filtered_cloud->push_back(inputPoint);
+            m_tf_listener.lookupTransform("/velodyne", cloud->header.frame_id, pcl_conversions::fromPCL(cloud->header.stamp), velodyne_link_transform);
          }
-         m_pub_filtered_cloud.publish(filtered_cloud);
+         catch(tf::TransformException& ex)
+         {
+            NODELET_ERROR("Transform unavailable %s", ex.what());
+            transform_found = false;
+         }
+
+         if(transform_found)
+         {
+            Eigen::Affine3d velodyne_link_transform_eigen;
+            tf::transformTFToEigen(velodyne_link_transform, velodyne_link_transform_eigen);
+
+            InputPointCloud::Ptr cloud_transformed(new InputPointCloud);
+            pcl::transformPointCloud(*cloud, *cloud_transformed, velodyne_link_transform_eigen);
+
+            // move the cloud points to the place they would have been if the median filter would have been applied to them
+            int last_index = (int) (*clouds_per_ring)[ring_index].size() - m_median_big_kernel_size / 2;
+            for(int ring_point_index = 0; ring_point_index < last_index; ring_point_index++)
+            {
+               int current_cloud_point_index = (*clouds_per_ring)[ring_index][ring_point_index];
+               float factor = (*distances_ring_filtered_big_kernel)[ring_point_index] /
+                              cloud->points[current_cloud_point_index].distance;
+
+               InputPoint inputPoint;
+               inputPoint.x = cloud_transformed->points[current_cloud_point_index].x * factor;
+               inputPoint.y = cloud_transformed->points[current_cloud_point_index].y * factor;
+               inputPoint.z = cloud_transformed->points[current_cloud_point_index].z * factor;
+               inputPoint.intensity = cloud_transformed->points[current_cloud_point_index].intensity;
+               inputPoint.ring = cloud_transformed->points[current_cloud_point_index].ring;
+               inputPoint.distance = cloud_transformed->points[current_cloud_point_index].distance;
+
+               filtered_cloud->push_back(inputPoint);
+            }
+         }
       }
 
       int last_index = (int)(*clouds_per_ring)[ring_index].size() - m_median_big_kernel_size/2 - m_distance_to_comparison_points();
@@ -564,6 +585,9 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
 
    if(m_publish_debug_cloud)
       m_pub_debug_obstacle_cloud.publish(debug_obstacle_cloud);
+
+   if(m_publish_filtered_cloud)
+      m_pub_filtered_cloud.publish(filtered_cloud);
 
    m_pub_obstacle_cloud.publish(obstacle_cloud);
 }

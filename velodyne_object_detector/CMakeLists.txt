@@ -15,6 +15,9 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   config_server
   nodelet
+  tf
+  eigen_conversions
+  tf_conversions
 )
 
 ## System dependencies are found with CMake's conventions

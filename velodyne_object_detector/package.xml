@@ -13,6 +13,9 @@
   <depend>config_server</depend>
   <depend>nodelet</depend>
   <depend>ais_laser_filters</depend>
+  <depend>tf</depend>
+  <depend>eigen_conversions</depend>
+  <depend>tf_conversions</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

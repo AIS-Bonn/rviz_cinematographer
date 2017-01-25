@@ -77,13 +77,13 @@
   <!-- ============= Object Detection =============  -->
   <include file="$(find velodyne_object_detector)/launch/object_detector_nodelet.launch">
     <arg name="manager" value="velodyne_nodelet_manager" />
-    <arg name="points_topic" value="/velodyne_points" />
+    <arg name="points_topic" value="/velodyne_points_filtered" />
     <arg name="certainty_threshold" value="0.0" />
     <arg name="median_small_kernel_size" value="9" />
     <arg name="median_big_kernel_size" value="41" />
     <arg name="distance_to_comparison_points" value="3" />
     <arg name="publish_filtered_cloud" value="true" />
-    <arg name="publish_debug_cloud" value="true" />
+    <arg name="publish_debug_cloud" value="false" />
   </include>
   
 
