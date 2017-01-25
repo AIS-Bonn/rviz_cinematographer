@@ -129,8 +129,11 @@ private:
    std::vector<std::shared_ptr<std::vector<float> > > m_old_intensities_all_rings_filtered_big_kernel;
 
    InputPointCloud::ConstPtr m_old_cloud;
+   InputPointCloud::ConstPtr m_parameter_tuning_cloud;
 
    std::vector<int> m_ring_counter;
+
+   bool m_parameter_tuning_mode;
 };
 
 }

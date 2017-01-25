@@ -19,22 +19,23 @@ VelodyneObjectDetectorNodelet::VelodyneObjectDetectorNodelet()
  , m_median_small_kernel_size_launch(9)
  , m_median_big_kernel_size_launch(41)
  , m_distance_to_comparison_points_launch(10)
- , m_certainty_threshold("certainty_threshold", 0.0, 0.01, 1.0, m_certainty_threshold_launch)
- , m_dist_coeff("dist_coeff", 0.0, 0.1, 10.0, 1.0)
- , m_intensity_coeff("intensity_coeff", 0.0, 0.0001, 0.01, (1.f - m_max_prob_by_distance)/m_max_intensity_range)
- , m_weight_for_small_intensities("weight_for_small_intensities", 1.f, 1.f, 30.f, 11.f)
- , m_median_small_kernel_size("median_small_kernel_size", 1, 2, m_median_small_kernel_size_launch*2, m_median_small_kernel_size_launch)
- , m_median_big_kernel_size_parameter("median_big_kernel_size", 1, 2, m_median_big_kernel_size_launch*2, m_median_big_kernel_size_launch)
+ , m_certainty_threshold("velodyne_object_detector/certainty_threshold", 0.0, 0.01, 1.0, m_certainty_threshold_launch)
+ , m_dist_coeff("velodyne_object_detector/dist_coeff", 0.0, 0.1, 10.0, 1.0)
+ , m_intensity_coeff("velodyne_object_detector/intensity_coeff", 0.0, 0.0001, 0.01, (1.f - m_max_prob_by_distance)/m_max_intensity_range)
+ , m_weight_for_small_intensities("velodyne_object_detector/weight_for_small_intensities", 1.f, 1.f, 30.f, 11.f)
+ , m_median_small_kernel_size("velodyne_object_detector/median_small_kernel_size", 1, 2, m_median_small_kernel_size_launch*2, m_median_small_kernel_size_launch)
+ , m_median_big_kernel_size_parameter("velodyne_object_detector/median_big_kernel_size", 1, 2, m_median_big_kernel_size_launch*2, m_median_big_kernel_size_launch)
  , m_median_big_kernel_size(m_median_big_kernel_size_parameter())
- , m_distance_to_comparison_points("distance_to_comparison_points", 1, 1, m_distance_to_comparison_points_launch*2, m_distance_to_comparison_points_launch)
- , m_median_min_dist("median_min_dist", 0.0, 0.01, .2, 0.1)
- , m_median_thresh1_dist("median_thresh1_dist", 0.0, 0.05, 0.5, 0.25)
- , m_median_thresh2_dist("median_thresh2_dist", 0.0, 0.1, 2.0, 1.7)
- , m_median_max_dist("median_max_dist", 0.0, 0.5, 3.0, 3.0)
- , m_max_dist_for_median_computation("max_dist_for_median_computation", 0.0, 0.25, 10.0, 6.0)
+ , m_distance_to_comparison_points("velodyne_object_detector/distance_to_comparison_points", 1, 1, m_distance_to_comparison_points_launch*2, m_distance_to_comparison_points_launch)
+ , m_median_min_dist("velodyne_object_detector/median_min_dist", 0.0, 0.01, .2, 0.1)
+ , m_median_thresh1_dist("velodyne_object_detector/median_thresh1_dist", 0.0, 0.05, 0.5, 0.25)
+ , m_median_thresh2_dist("velodyne_object_detector/median_thresh2_dist", 0.0, 0.1, 2.0, 1.7)
+ , m_median_max_dist("velodyne_object_detector/median_max_dist", 0.0, 0.5, 3.0, 3.0)
+ , m_max_dist_for_median_computation("velodyne_object_detector/max_dist_for_median_computation", 0.0, 0.25, 10.0, 6.0)
  , m_points_topic("/velodyne_points")
  , m_publish_filtered_cloud(false)
  , m_publish_debug_cloud(false)
+ , m_parameter_tuning_mode(false)
 {
    ROS_INFO("Initializing velodyne object detector nodelet.. ");
 }
@@ -50,6 +51,7 @@ void VelodyneObjectDetectorNodelet::onInit()
 
    ph.getParam("publish_filtered_cloud", m_publish_filtered_cloud);
    ph.getParam("publish_debug_cloud", m_publish_debug_cloud);
+//   ph.getParam("parameter_tuning_mode", m_parameter_tuning_mode);
 
    if(m_publish_debug_cloud)
       m_pub_debug_obstacle_cloud = ph.advertise<DebugOutputPointCloud >("debug_obstacles", 1);
@@ -117,6 +119,17 @@ void VelodyneObjectDetectorNodelet::changeParameterSavely()
 {
    boost::mutex::scoped_lock lock(m_parameter_change_lock);
    NODELET_DEBUG("New parameter");
+
+//   if(m_parameter_tuning_mode)
+//   {
+//      for(int ring_index = 0; ring_index < PUCK_NUM_RINGS; ring_index++)
+//      {
+//         m_ring_counter[ring_index] = 0;
+//         m_distance_median_circ_buffer_vector[ring_index].clear();
+//         m_intensity_median_circ_buffer_vector[ring_index].clear();
+//      }
+//      velodyneCallback(m_parameter_tuning_cloud);
+//   }
 }
 
 void VelodyneObjectDetectorNodelet::resizeBuffers()
@@ -146,12 +159,18 @@ void VelodyneObjectDetectorNodelet::resizeBuffers()
          m_ring_counter[i] = 0;
       }
    }
+
+//   if(m_parameter_tuning_mode)
+//      velodyneCallback(m_parameter_tuning_cloud);
 }
 
 void VelodyneObjectDetectorNodelet::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 {
    pcl::StopWatch timer;
    double start = timer.getTime();
+
+//   if(m_parameter_tuning_mode)
+//      m_parameter_tuning_cloud = input_cloud;
 
    // save indices of points in one ring in one vector
    // and each vector representing a ring in another vector containing all indices of the cloud
