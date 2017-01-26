@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(pointcloud_to_pcd_kinetic)
 
-find_package(Eigen3 REQUIRED)
 find_package(PCL 1.7 REQUIRED)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -10,8 +9,10 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   roscpp
   sensor_msgs
-  tf2_eigen
+  tf2
   tf2_ros
+  tf2_sensor_msgs
+  tf2_geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -119,7 +120,6 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
-  ${Eigen3_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
 )
 
@@ -143,7 +143,6 @@ add_dependencies(pointcloud_to_pcd_kinetic ${${PROJECT_NAME}_EXPORTED_TARGETS} $
 ## Specify libraries to link a library or executable target against
 target_link_libraries(pointcloud_to_pcd_kinetic
   ${catkin_LIBRARIES}
-  ${Eigen3_LIBRARIES} 
   ${PCL_LIBRARIES}
 )
 
