@@ -2,15 +2,25 @@
 <launch>
 
   <!-- ========= Bagplayer ========== -->
+  <arg name="use_bag" default="false"/>
   <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/new_objects_proto/velodyne_2017-01-17-15-46-21.bag"/>
   <arg name="rate" default="0.1"/>
   <arg name="start" default="52"/>
 
-  <node pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
+  <node if="$(arg use_bag)" pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
     <remap from="/velodyne_points" to="/velodyne_points_frombag" />
   </node>
 
-  <param name="/use_sim_time" value="true" />
+  <param if="$(arg use_bag)" name="/use_sim_time" value="true" />
+
+
+  <node unless="$(arg use_bag)" name="pcd_publisher" pkg="pcd_publisher" type="pcd_publisher" output="screen">
+    <param name="path_to_file" value="/tmp/1484664439.472151000.pcd"/>
+    <param name="output_topic" value="/velodyne_points_filtered"/>
+    <param name="output_frame_id" value="/velodyne"/>
+    <param name="publishing_rate" value="10"/>
+
+  </node>
 
 
   <!-- ============= Rviz / rqt =============  -->
