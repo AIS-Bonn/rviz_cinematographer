@@ -35,7 +35,6 @@ VelodyneObjectDetectorNodelet::VelodyneObjectDetectorNodelet()
  , m_points_topic("/velodyne_points")
  , m_publish_filtered_cloud(false)
  , m_publish_debug_cloud(false)
- , m_parameter_tuning_mode(false)
 {
    ROS_INFO("Initializing velodyne object detector nodelet.. ");
 }
@@ -51,10 +50,17 @@ void VelodyneObjectDetectorNodelet::onInit()
 
    ph.getParam("publish_filtered_cloud", m_publish_filtered_cloud);
    ph.getParam("publish_debug_cloud", m_publish_debug_cloud);
-//   ph.getParam("parameter_tuning_mode", m_parameter_tuning_mode);
 
    if(m_publish_debug_cloud)
+   {
+      m_plotter = new pcl::visualization::PCLPlotter ("Detection Plotter");
+      m_plotter->setShowLegend (true);
+      m_plotter->setXTitle("distance difference in meters");
+      m_plotter->setYTitle("object certainty");
+      plot();
+
       m_pub_debug_obstacle_cloud = ph.advertise<DebugOutputPointCloud >("debug_obstacles", 1);
+   }
 
    if(m_publish_filtered_cloud)
       m_pub_filtered_cloud = ph.advertise<InputPointCloud >("filtered", 1);
@@ -119,17 +125,8 @@ void VelodyneObjectDetectorNodelet::changeParameterSavely()
 {
    boost::mutex::scoped_lock lock(m_parameter_change_lock);
    NODELET_DEBUG("New parameter");
-
-//   if(m_parameter_tuning_mode)
-//   {
-//      for(int ring_index = 0; ring_index < PUCK_NUM_RINGS; ring_index++)
-//      {
-//         m_ring_counter[ring_index] = 0;
-//         m_distance_median_circ_buffer_vector[ring_index].clear();
-//         m_intensity_median_circ_buffer_vector[ring_index].clear();
-//      }
-//      velodyneCallback(m_parameter_tuning_cloud);
-//   }
+   if(m_publish_debug_cloud)
+      plot();
 }
 
 void VelodyneObjectDetectorNodelet::resizeBuffers()
@@ -159,18 +156,12 @@ void VelodyneObjectDetectorNodelet::resizeBuffers()
          m_ring_counter[i] = 0;
       }
    }
-
-//   if(m_parameter_tuning_mode)
-//      velodyneCallback(m_parameter_tuning_cloud);
 }
 
 void VelodyneObjectDetectorNodelet::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 {
    pcl::StopWatch timer;
    double start = timer.getTime();
-
-//   if(m_parameter_tuning_mode)
-//      m_parameter_tuning_cloud = input_cloud;
 
    // save indices of points in one ring in one vector
    // and each vector representing a ring in another vector containing all indices of the cloud
@@ -384,35 +375,8 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
       }
 
       // initial filling for circular buffer of distances for this scan ring
-      if(!m_distance_median_circ_buffer_vector[ring_index].full())
+      if(!fillCircularBuffer(cloud, (*clouds_per_ring)[ring_index], ring_index))
       {
-         // for first filling take zeros where there are no values ( + 1 because this one is going to be replaced later )
-         if(m_distance_median_circ_buffer_vector[ring_index].empty())
-         {
-            for(int i = 0; i < (int)m_distance_median_circ_buffer_vector[ring_index].capacity()/2 + 1; i++)
-            {
-               m_distance_median_circ_buffer_vector[ring_index].push_back(0.f);
-               m_intensity_median_circ_buffer_vector[ring_index].push_back(0.f);
-            }
-         }
-
-         // fill rest
-         for(int ring_point_index = 0; ring_point_index < (int)(*clouds_per_ring)[ring_index].size(); ring_point_index++)
-         {
-            int current_cloud_point_index = (*clouds_per_ring)[ring_index][ring_point_index];
-            m_distance_median_circ_buffer_vector[ring_index].push_back(cloud->points[current_cloud_point_index].distance);
-            m_intensity_median_circ_buffer_vector[ring_index].push_back(cloud->points[current_cloud_point_index].intensity);
-            if(m_distance_median_circ_buffer_vector[ring_index].full())
-               break;
-         }
-      }
-
-      // probably not necessary
-      // if there were not enough points to fill the buffer, skip this ring for now
-      if(!m_distance_median_circ_buffer_vector[ring_index].full())
-      {
-         m_ring_counter[ring_index] = 0;
-         m_distance_median_circ_buffer_vector[ring_index].clear();
          continue;
       }
 
@@ -427,45 +391,7 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
 
       if(m_publish_filtered_cloud)
       {
-         tf::StampedTransform velodyne_link_transform;
-         bool transform_found = true;
-         try
-         {
-            m_tf_listener.lookupTransform("/velodyne", cloud->header.frame_id, pcl_conversions::fromPCL(cloud->header.stamp), velodyne_link_transform);
-         }
-         catch(tf::TransformException& ex)
-         {
-            NODELET_ERROR("Transform unavailable %s", ex.what());
-            transform_found = false;
-         }
-
-         if(transform_found)
-         {
-            Eigen::Affine3d velodyne_link_transform_eigen;
-            tf::transformTFToEigen(velodyne_link_transform, velodyne_link_transform_eigen);
-
-            InputPointCloud::Ptr cloud_transformed(new InputPointCloud);
-            pcl::transformPointCloud(*cloud, *cloud_transformed, velodyne_link_transform_eigen);
-
-            // move the cloud points to the place they would have been if the median filter would have been applied to them
-            int last_index = (int) (*clouds_per_ring)[ring_index].size() - m_median_big_kernel_size / 2;
-            for(int ring_point_index = 0; ring_point_index < last_index; ring_point_index++)
-            {
-               int current_cloud_point_index = (*clouds_per_ring)[ring_index][ring_point_index];
-               float factor = (*distances_ring_filtered_big_kernel)[ring_point_index] /
-                              cloud->points[current_cloud_point_index].distance;
-
-               InputPoint inputPoint;
-               inputPoint.x = cloud_transformed->points[current_cloud_point_index].x * factor;
-               inputPoint.y = cloud_transformed->points[current_cloud_point_index].y * factor;
-               inputPoint.z = cloud_transformed->points[current_cloud_point_index].z * factor;
-               inputPoint.intensity = cloud_transformed->points[current_cloud_point_index].intensity;
-               inputPoint.ring = cloud_transformed->points[current_cloud_point_index].ring;
-               inputPoint.distance = cloud_transformed->points[current_cloud_point_index].distance;
-
-               filtered_cloud->push_back(inputPoint);
-            }
-         }
+         fillFilteredCloud(cloud, filtered_cloud, (*clouds_per_ring)[ring_index], distances_ring_filtered_big_kernel);
       }
 
       int last_index = (int)(*clouds_per_ring)[ring_index].size() - m_median_big_kernel_size/2 - m_distance_to_comparison_points();
@@ -609,6 +535,143 @@ void VelodyneObjectDetectorNodelet::detectObstacles(const InputPointCloud::Const
       m_pub_filtered_cloud.publish(filtered_cloud);
 
    m_pub_obstacle_cloud.publish(obstacle_cloud);
+}
+
+bool VelodyneObjectDetectorNodelet::fillCircularBuffer(const InputPointCloud::ConstPtr &cloud,
+                                                         const std::vector<unsigned int> &indices_of_ring,
+                                                         int ring_index)
+{
+   if(!m_distance_median_circ_buffer_vector[ring_index].full())
+   {
+      // for first filling take zeros where there are no values ( + 1 because this one is going to be replaced later )
+      if(m_distance_median_circ_buffer_vector[ring_index].empty())
+      {
+         for(int i = 0; i < (int)m_distance_median_circ_buffer_vector[ring_index].capacity()/2 + 1; i++)
+         {
+            m_distance_median_circ_buffer_vector[ring_index].push_back(0.f);
+            m_intensity_median_circ_buffer_vector[ring_index].push_back(0.f);
+         }
+      }
+
+      // fill rest
+      for(int ring_point_index = 0; ring_point_index < (int)indices_of_ring.size(); ring_point_index++)
+      {
+         int current_cloud_point_index = indices_of_ring[ring_point_index];
+         m_distance_median_circ_buffer_vector[ring_index].push_back(cloud->points[current_cloud_point_index].distance);
+         m_intensity_median_circ_buffer_vector[ring_index].push_back(cloud->points[current_cloud_point_index].intensity);
+         if(m_distance_median_circ_buffer_vector[ring_index].full())
+            break;
+      }
+   }
+
+   // if there were not enough points to fill the buffer, skip this ring for now
+   if(!m_distance_median_circ_buffer_vector[ring_index].full())
+   {
+      m_ring_counter[ring_index] = 0;
+      m_distance_median_circ_buffer_vector[ring_index].clear();
+      return false;
+   }
+
+   return true;
+}
+
+void VelodyneObjectDetectorNodelet::fillFilteredCloud(const InputPointCloud::ConstPtr &cloud,
+                                                      InputPointCloud::Ptr filtered_cloud,
+                                                      const std::vector<unsigned int> &indices_of_ring,
+                                                      std::shared_ptr<std::vector<float> > distances_ring_filtered_big_kernel)
+{
+   tf::StampedTransform velodyne_link_transform;
+   bool transform_found = true;
+   try
+   {
+      m_tf_listener.lookupTransform("/velodyne", cloud->header.frame_id, pcl_conversions::fromPCL(cloud->header.stamp), velodyne_link_transform);
+   }
+   catch(tf::TransformException& ex)
+   {
+      NODELET_ERROR("Transform unavailable %s", ex.what());
+      transform_found = false;
+   }
+
+   if(transform_found)
+   {
+      Eigen::Affine3d velodyne_link_transform_eigen;
+      tf::transformTFToEigen(velodyne_link_transform, velodyne_link_transform_eigen);
+
+      InputPointCloud::Ptr cloud_transformed(new InputPointCloud);
+      pcl::transformPointCloud(*cloud, *cloud_transformed, velodyne_link_transform_eigen);
+
+      // move the cloud points to the place they would have been if the median filter would have been applied to them
+      int last_index = (int) indices_of_ring.size() - m_median_big_kernel_size / 2;
+      for(int ring_point_index = 0; ring_point_index < last_index; ring_point_index++)
+      {
+         int current_cloud_point_index = indices_of_ring[ring_point_index];
+         float factor = (*distances_ring_filtered_big_kernel)[ring_point_index] /
+                        cloud->points[current_cloud_point_index].distance;
+
+         InputPoint inputPoint;
+         inputPoint.x = cloud_transformed->points[current_cloud_point_index].x * factor;
+         inputPoint.y = cloud_transformed->points[current_cloud_point_index].y * factor;
+         inputPoint.z = cloud_transformed->points[current_cloud_point_index].z * factor;
+         inputPoint.intensity = cloud_transformed->points[current_cloud_point_index].intensity;
+         inputPoint.ring = cloud_transformed->points[current_cloud_point_index].ring;
+         inputPoint.distance = cloud_transformed->points[current_cloud_point_index].distance;
+
+         filtered_cloud->push_back(inputPoint);
+      }
+   }
+}
+
+void VelodyneObjectDetectorNodelet::plot()
+{
+   // set up x-axis
+   double epsilon = 0.00000001;
+   const int range = 8;
+   std::vector<double> xAxis(range, 0.0);
+   xAxis[0] = 0.0;
+   xAxis[1] = m_median_min_dist();
+   xAxis[2] = m_median_min_dist() + epsilon;
+   xAxis[3] = m_median_thresh1_dist();
+   xAxis[4] = m_median_thresh2_dist();
+   xAxis[5] = m_median_max_dist();
+   xAxis[6] = m_median_max_dist() + epsilon;
+   xAxis[7] = m_median_max_dist() + 0.5;
+
+   std::vector<double> constant_one(range, 0.0);
+   for(int i = 0; i < range; i++) constant_one[i] = 1.0 + epsilon;
+
+   std::vector<double> distance_proportion(range, 0.0);
+   distance_proportion[0] = 0.0;
+   distance_proportion[1] = 0.0;
+   distance_proportion[2] = 0.0;
+   distance_proportion[3] = m_max_prob_by_distance * m_dist_coeff();
+   distance_proportion[4] = m_max_prob_by_distance * m_dist_coeff();
+   distance_proportion[5] = 0.0;
+   distance_proportion[6] = 0.0;
+   distance_proportion[7] = 0.0;
+
+   std::vector<double> intensity_proportion(range, 0.0);
+   intensity_proportion[0] = 0.0;
+   intensity_proportion[1] = 0.0;
+   intensity_proportion[2] = m_max_intensity_range * m_intensity_coeff();
+   intensity_proportion[3] = m_max_prob_by_distance * m_dist_coeff() + m_max_intensity_range * m_intensity_coeff();
+   intensity_proportion[4] = m_max_prob_by_distance * m_dist_coeff() + m_max_intensity_range * m_intensity_coeff();
+   intensity_proportion[5] = m_max_intensity_range * m_intensity_coeff();
+   intensity_proportion[6] = 0.0;
+   intensity_proportion[7] = 0.0;
+
+   // add histograms to plotter
+   std::vector<char> black{0, 0, 0, (char) 255};
+   std::vector<char> red{(char) 255, 0, 0, (char) 255};
+   std::vector<char> green{0, (char) 255, 0, (char) 255};
+
+   m_plotter->clearPlots();
+
+   m_plotter->setYRange(0.0, std::max(1.1, intensity_proportion[3]));
+   m_plotter->addPlotData(xAxis, distance_proportion, "Distance proportion", vtkChart::LINE, red);
+   m_plotter->addPlotData(xAxis, intensity_proportion, "Intensity proportion", vtkChart::LINE, green);
+   m_plotter->addPlotData(xAxis, constant_one, "One", vtkChart::LINE, black);
+
+   m_plotter->spinOnce(0);
 }
 
 }

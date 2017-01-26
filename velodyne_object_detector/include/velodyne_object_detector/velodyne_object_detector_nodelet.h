@@ -18,6 +18,8 @@
 #include <pcl/point_types.h>
 #include <pcl/common/time.h>
 #include <pcl/conversions.h>
+#include <pcl/visualization/histogram_visualizer.h>
+#include <pcl/visualization/pcl_plotter.h>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/thread/mutex.hpp>
@@ -75,6 +77,16 @@ public:
    void detectObstacles(const InputPointCloud::ConstPtr &cloud,
                         const std::shared_ptr<std::vector<std::vector<unsigned int> > > clouds_per_ring);
 
+   bool fillCircularBuffer(const InputPointCloud::ConstPtr &cloud,
+                          const std::vector<unsigned int> &indices_of_ring,
+                          int ring_index);
+
+   void fillFilteredCloud(const InputPointCloud::ConstPtr &cloud,
+                          InputPointCloud::Ptr filtered_cloud,
+                          const std::vector<unsigned int> &indices_of_ring,
+                          std::shared_ptr<std::vector<float> > distances_ring_filtered_big_kernel);
+
+   void plot();
 
 private:
    const int PUCK_NUM_RINGS;
@@ -85,6 +97,8 @@ private:
    ros::Publisher m_pub_filtered_cloud;
 
    tf::TransformListener m_tf_listener;
+
+   pcl::visualization::PCLPlotter *m_plotter;
 
    float m_max_prob_by_distance;
    float m_max_intensity_range;
@@ -132,8 +146,6 @@ private:
    InputPointCloud::ConstPtr m_parameter_tuning_cloud;
 
    std::vector<int> m_ring_counter;
-
-   bool m_parameter_tuning_mode;
 };
 
 }
