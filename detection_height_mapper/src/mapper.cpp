@@ -21,6 +21,11 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    , m_object_odds_miss("detection_height_mapper/object_odds_miss", 0.0, 0.05, 1.0, 0.35)
    , m_object_clamp_thresh_min("detection_height_mapper/object_clamp_min", -10.0, 0.1, 10.0, -2.8f)
    , m_object_clamp_thresh_max("detection_height_mapper/object_clamp_max", -10.0, 0.1, 10.0, 5.8f)
+   , m_object_min_height_param("detection_height_mapper/object_min_height", 0.0, 0.01, 0.5, 0.1)
+   , m_object_max_height_param("detection_height_mapper/object_max_height", 0.0, 0.01, 1.0, 0.3)
+   , m_object_min_footprint_param("detection_height_mapper/object_min_footprint_in_sqm", 0.0, 0.01, 0.1, 0.05)
+   , m_object_max_footprint_param("detection_height_mapper/object_max_footprint_in_sqm", 0.0, 0.01, 1.0, 0.25)
+   , m_object_max_altitude_param("detection_height_mapper/object_max_altitude", 0.0, 0.1, 1.0, 0.5)
    , m_inflate_objects("detection_height_mapper/inflate_objects", true)
    , m_object_min_height(0.05f)
    , m_object_max_height(0.25f)
@@ -34,6 +39,11 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    private_nh.getParam("object_min_footprint_in_sqm", m_object_min_footprint_in_sqm);
    private_nh.getParam("object_max_footprint_in_sqm", m_object_max_footprint_in_sqm);
    private_nh.getParam("object_max_altitude", m_object_max_altitude);
+   m_object_min_height_param.set(m_object_min_height);
+   m_object_max_height_param.set(m_object_max_height);
+   m_object_min_footprint_param.set(m_object_min_footprint_in_sqm);
+   m_object_max_footprint_param.set(m_object_max_footprint_in_sqm);
+   m_object_max_altitude_param.set(m_object_max_altitude);
 
    m_cloud_sub = node.subscribe(m_input_topic, 10, &Mapper::callback, this,
                   ros::TransportHints().tcpNoDelay(true));
@@ -53,11 +63,11 @@ void Mapper::callback(const InputPointCloud::ConstPtr &input_cloud)
    height_image.setResolution(m_height_image_resolution(), m_height_image_resolution());
    height_image.setMinHeight(m_height_image_min_z());
    height_image.setMaxHeight(m_height_image_max_z());
-   height_image.setMinObjectHeight(m_object_min_height);
-   height_image.setMaxObjectHeight(m_object_max_height);
-   height_image.setMinObjectFootprint(m_object_min_footprint_in_sqm);
-   height_image.setMaxObjectFootprint(m_object_max_footprint_in_sqm);
-   height_image.setMaxObjectAltitude(m_object_max_altitude);
+   height_image.setMinObjectHeight(m_object_min_height_param());
+   height_image.setMaxObjectHeight(m_object_max_height_param());
+   height_image.setMinObjectFootprint(m_object_min_footprint_param());
+   height_image.setMaxObjectFootprint(m_object_max_footprint_param());
+   height_image.setMaxObjectAltitude(m_object_max_altitude_param());
    height_image.setDetectionThreshold(m_object_detection_threshold());
 
    Eigen::Affine3f transform = Eigen::Affine3f::Identity();

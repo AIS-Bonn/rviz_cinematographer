@@ -138,6 +138,9 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
 
    for(const auto& point : cloud.points)
    {
+      if(point.z < m_min_height_threshold || point.z > m_max_height_threshold)
+         continue;
+
       // transform point and compute corresponding bin
       Eigen::Vector3f pos(point.x, point.y, point.z);
       pos = transform * pos;
@@ -154,11 +157,11 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
       // compute min and max height for current bin
       float* binval_min_height = &m_min_height(bin_y, bin_x);
       float* binval_max_height = &m_max_height(bin_y, bin_x);
-      if((std::isnan(*binval_min_height) || point.z < *binval_min_height) && point.z > m_min_height_threshold)
+      if(std::isnan(*binval_min_height) || point.z < *binval_min_height)
       {
          *binval_min_height = point.z;
       }
-      if((std::isnan(*binval_max_height) || point.z > *binval_max_height) && point.z < m_max_height_threshold)
+      if(std::isnan(*binval_max_height) || point.z > *binval_max_height)
       {
          *binval_max_height = point.z;
       }
@@ -195,11 +198,11 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
          *binval_detection += odds_hit;
 
          // update min and max height of object for this bin
-         if(point.z < *binval_object_min_height && point.z > m_min_height_threshold)
+         if(point.z < *binval_object_min_height)
          {
             *binval_object_min_height = point.z;
          }
-         if(point.z > *binval_object_max_height && point.z < m_max_height_threshold)
+         if(point.z > *binval_object_max_height)
          {
             *binval_object_max_height = point.z;
          }
@@ -217,11 +220,11 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
 //             *binval_object_scans_count += 1;
 //         }
       }
-      else
+      else // TODO if resolution is too high and cells are too big objects are not detected due to fixed odds_miss
          *binval_detection -= odds_miss;
 
-      std::min<float>(*binval_detection, clamp_thresh_max);
-      std::max<float>(*binval_detection, clamp_thresh_min);
+      *binval_detection = std::min<float>(*binval_detection, clamp_thresh_max);
+      *binval_detection = std::max<float>(*binval_detection, clamp_thresh_min);
    }
 
    // compute median height for each bin
@@ -274,20 +277,22 @@ void HeightImage::detectObjects(int num_min_count,
 	{
 		for(int x = 0; x < m_buckets_x; ++x)
 		{
-			float detection = m_object_detection(y, x);
+			float *detection = &m_object_detection(y, x);
          // TODO currently not implemented, fix in the ProcessPointCloud function first
 			//int num_detections = m_object_scans_count(y, x);
+         int* binval_object_count = &m_object_count(y, x);
 
          float object_height = m_object_max_height(y, x) - m_object_min_height(y, x);
 			float object_altitude = m_object_min_height(y, x) - m_min_height(y, x);
 			
-			if(std::isfinite(detection))
+			if(std::isfinite(*detection))
 			{
-				if(detection > m_object_detection_threshold
+				if(*detection > m_object_detection_threshold
 			     && object_height < m_max_object_height_threshold
 			     && object_height > m_min_object_height_threshold
-			     && object_altitude < m_max_object_altitude_threshold
-			     /*&& num_detections > num_min_count*/)
+              && object_altitude < m_max_object_altitude_threshold
+              && *binval_object_count > num_min_count
+               /*&& num_detections > num_min_count*/)
 			   {
 					m_objects_inflated(y, x) = 1.f;
 			   }

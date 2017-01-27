@@ -61,6 +61,11 @@ namespace detection_height_mapper
       config_server::Parameter<float> m_object_odds_miss;
       config_server::Parameter<float> m_object_clamp_thresh_min;
       config_server::Parameter<float> m_object_clamp_thresh_max;
+      config_server::Parameter<float> m_object_min_height_param;
+      config_server::Parameter<float> m_object_max_height_param;
+      config_server::Parameter<float> m_object_min_footprint_param;
+      config_server::Parameter<float> m_object_max_footprint_param;
+      config_server::Parameter<float> m_object_max_altitude_param;
       config_server::Parameter<bool> m_inflate_objects;
 
       float m_object_min_height;
