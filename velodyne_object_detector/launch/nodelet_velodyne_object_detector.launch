@@ -15,10 +15,10 @@
 
 
   <node unless="$(arg use_bag)" name="pcd_publisher" pkg="pcd_publisher" type="pcd_publisher" output="screen">
-    <param name="path_to_file" value="/tmp/1484664439.472151000.pcd"/>
-    <param name="output_topic" value="/velodyne_points_filtered"/>
-    <param name="output_frame_id" value="/velodyne"/>
-    <param name="publishing_rate" value="10"/>
+    <param name="path_to_file" value="/tmp/map2.pcd"/>
+    <param name="output_topic" value="/mapping_nodelet/pointcloud"/>
+    <param name="output_frame_id" value="/odom"/>
+    <param name="publishing_rate" value="2"/>
 
   </node>
 
@@ -89,8 +89,8 @@
     <arg name="manager" value="velodyne_nodelet_manager" />
     <arg name="points_topic" value="/velodyne_points_filtered" />
     <arg name="certainty_threshold" value="0.0" />
-    <arg name="median_small_kernel_size" value="9" />
-    <arg name="median_big_kernel_size" value="41" />
+    <arg name="median_small_kernel_size" value="3" />
+    <arg name="median_big_kernel_size" value="21" />
     <arg name="distance_to_comparison_points" value="3" />
     <arg name="publish_filtered_cloud" value="true" />
     <arg name="publish_debug_cloud" value="false" />
