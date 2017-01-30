@@ -66,13 +66,11 @@ namespace detection_height_mapper
       config_server::Parameter<float> m_object_min_footprint_param;
       config_server::Parameter<float> m_object_max_footprint_param;
       config_server::Parameter<float> m_object_max_altitude_param;
+      config_server::Parameter<float> m_object_max_neighborhood_height_param;
+      config_server::Parameter<float> m_object_hard_inflation_radius_param;
+      config_server::Parameter<float> m_object_soft_inflation_radius_param;
+      config_server::Parameter<float> m_object_robot_radius_param;
       config_server::Parameter<bool> m_inflate_objects;
-
-      float m_object_min_height;
-      float m_object_max_height;
-      float m_object_min_footprint_in_sqm;
-      float m_object_max_footprint_in_sqm;
-      float m_object_max_altitude;
 
       std::string m_input_topic;
    };

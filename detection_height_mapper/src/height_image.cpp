@@ -12,9 +12,18 @@ HeightImage::HeightImage()
  , m_res_y(0.05f)
  , m_length_x(8.0f)
  , m_length_y(8.0f)
- , m_robotRadius(0.42f)
+ , m_robot_radius(0.42f)
  , m_min_height_threshold(std::numeric_limits<float>::lowest())
  , m_max_height_threshold(std::numeric_limits<float>::max())
+ , m_min_object_height_threshold(std::numeric_limits<float>::lowest())
+ , m_max_object_height_threshold(std::numeric_limits<float>::max())
+ , m_min_footprint_size(0.f)
+ , m_max_footprint_size(std::numeric_limits<float>::max())
+ , m_max_object_altitude_threshold(std::numeric_limits<float>::max())
+ , m_object_detection_threshold(0.9f)
+ , m_max_neighborhood_height_threshold(std::numeric_limits<float>::max())
+ , m_hard_inflation_radius(0.25f)
+ , m_soft_inflation_radius(0.1f)
 {
 	resizeStorage();
 }
@@ -38,13 +47,7 @@ void HeightImage::resizeStorage()
 	m_object_last_scan_id.create(m_buckets_y, m_buckets_x);
 	m_object_scans_count.create(m_buckets_y, m_buckets_x);
 	m_objects_inflated.create(m_buckets_y, m_buckets_x);
-	m_relative.create(m_buckets_y, m_buckets_x);
-	m_mask.create(m_buckets_y, m_buckets_x);
-	m_source.create(m_buckets_y, m_buckets_x);
 	m_small_objects.create(m_buckets_y, m_buckets_x);
-
-	// Setup robot mask
-	m_mask.setTo(cv::Scalar(0.0f));
 
 	m_median_height = NAN;
 	m_min_height = NAN;
@@ -71,6 +74,11 @@ void HeightImage::setSize(float size_x, float size_y)
 	m_length_x = size_x;
 	m_length_y = size_y;
 	resizeStorage();
+}
+
+void HeightImage::setRobotRadius(float robot_radius)
+{
+   m_robot_radius = robot_radius;
 }
 
 void HeightImage::setMinHeight(float min_height)
@@ -111,6 +119,21 @@ void HeightImage::setMaxObjectAltitude(float max_altitude)
 void HeightImage::setDetectionThreshold(float detection_threshold)
 {
    m_object_detection_threshold = detection_threshold;
+}
+
+void HeightImage::setMaxNeighborhoodHeight(float max_neighborhood_height)
+{
+   m_max_neighborhood_height_threshold = max_neighborhood_height;
+}
+
+void HeightImage::setHardInflationRadius(float hard_inflation_radius)
+{
+   m_hard_inflation_radius = hard_inflation_radius;
+}
+
+void HeightImage::setSoftInflationRadius(float soft_inflation_radius)
+{
+   m_soft_inflation_radius = soft_inflation_radius;
 }
 
 template<class T>
@@ -229,9 +252,9 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
 
    // compute median height for each bin
    unsigned int idx = 0;
-   for(unsigned int bin_y = 0; bin_y < m_buckets_y; ++bin_y)
+   for(int bin_y = 0; bin_y < m_buckets_y; ++bin_y)
    {
-      for(unsigned int bin_x = 0; bin_x < m_buckets_x; ++bin_x, ++idx)
+      for(int bin_x = 0; bin_x < m_buckets_x; ++bin_x, ++idx)
       {
          std::vector<float>& points = storage[idx];
 
@@ -304,104 +327,8 @@ void HeightImage::detectObjects(int num_min_count,
    // TODO: test effects of inflation
    if(inflate_objects)
    {
-      cv::Mat_<float> uninflated;
-      uninflated.create(cv::Size(m_relative.cols, m_relative.rows));
-
-      float hardRadius = 0.25f;
-      float softRadius = 0.1f;
-
-      // radius in number of bins
-      hardRadius /= m_res_x;
-      softRadius /= m_res_x;
-      const int INFLATION_RADIUS = ceil(hardRadius);
-      const int INFLATION_RADIUS_SOFT = ceil(softRadius);
-
-      // TODO: make more efficient
-      // if at least one neighbor of current bin is set to 1, set current bin to 1
-      // 1st pass: inflate lethal objects
-      for(int y = 0; y < m_objects_inflated.rows; ++y){
-         for(int x = 0; x < m_objects_inflated.cols; ++x){
-            bool cellFree = true;
-
-            for(int dy = -INFLATION_RADIUS; dy <= INFLATION_RADIUS; ++dy){
-               int _y = y + dy;
-
-               if(_y < 0 || _y >= m_objects_inflated.rows)
-                  continue;
-
-               for(int dx = -INFLATION_RADIUS; dx <= INFLATION_RADIUS; ++dx){
-                  int _x = x + dx;
-
-                  if(_x < 0 || _x >= m_objects_inflated.cols)
-                     continue;
-
-                  if(dx * dx + dy * dy > hardRadius * hardRadius)
-                     continue;
-
-                  if(m_objects_inflated(_y, _x) > 0.999f){
-                     cellFree = false;
-                     break;
-                  }
-               }
-            }
-
-            // TODO: test effects of setting uninflated to zero instead of nan
-            if(cellFree)
-               uninflated(y, x) = m_objects_inflated(y, x);
-            else
-               uninflated(y, x) = 1.0f;
-         }
-      }
-
-      // 2nd pass: inflate
-
-      for(int y = 0; y < m_objects_inflated.rows; ++y){
-         for(int x = 0; x < m_objects_inflated.cols; ++x){
-            if(uninflated(y, x) >= 1.0){
-               m_objects_inflated(y, x) = 1.0;
-               continue; // Do not "eat" into absolute objects
-            }
-
-            float costSum = 0;
-            float weightSum = 0;
-
-//			float max = 0.0;
-
-            for(int dy = -INFLATION_RADIUS_SOFT; dy <= INFLATION_RADIUS_SOFT; ++dy){
-               int _y = y + dy;
-
-               if(_y < 0 || _y >= m_objects_inflated.rows)
-                  continue;
-
-               for(int dx = -INFLATION_RADIUS_SOFT; dx <= INFLATION_RADIUS_SOFT; ++dx){
-                  int _x = x + dx;
-
-                  if(_x < 0 || _x >= m_objects_inflated.cols)
-                     continue;
-
-                  if(dx * dx + dy * dy > softRadius * softRadius)
-                     continue;
-
-                  float dist = hypotf(dx, dy);
-                  // the bigger the distance, the smaller the response
-                  // the fraction can be between 0 and 1
-                  // TODO: uninflated is probably not necessary because its either 1 or nan
-                  float response = (-(dist / softRadius) + 1.0) * uninflated(_y, _x);
-//					if(response > max)
-//					{
-//						max = response;
-//					}
-
-                  float weight = 1.0;
-                  // TODO: probably uninflated has to be switched with response
-                  costSum += weight * uninflated(_y, _x);
-                  weightSum += weight;
-               }
-            }
-
-            m_objects_inflated(y, x) = costSum / weightSum;
-         }
-      }
+      // TODO refactoring
+      inflateObjects(m_objects_inflated, m_hard_inflation_radius, m_soft_inflation_radius);
    }
 	
 	// filter objects which have a size between min and max size and
@@ -409,64 +336,13 @@ void HeightImage::detectObjects(int num_min_count,
    float area_of_one_cell = m_res_x * m_res_y;
    int min_number_of_cells = (int)std::ceil(m_min_footprint_size/area_of_one_cell);
    int max_number_of_cells = (int)std::ceil(m_max_footprint_size/area_of_one_cell);
-	filterObjectsBySize(m_objects_inflated, min_number_of_cells, max_number_of_cells);
+	filterObjectsBySize(m_objects_inflated, m_small_objects, min_number_of_cells, max_number_of_cells);
 
 	// set bins to zero if height difference in neighborhood exceeds a threshold
 	// should prevent false positives that are too near to a wall or big object
-	float robot_radius = 2.5f;
-	robot_radius /= m_res_x;
-	const int ROBOT_RADIUS_INT = ceil(robot_radius);
+   filterObjectsByNeighborHeight(m_small_objects, m_robot_radius, m_max_neighborhood_height_threshold);
 
-	for(int y = 0; y < m_small_objects.rows; ++y)
-	{
-		for(int x = 0; x < m_small_objects.cols; ++x)
-		{
-			if(m_small_objects(y, x) == 0)
-				continue;
-
-			bool cell_canceled = false;
-			float local_min_height = std::numeric_limits<float>::max();
-         float local_max_height = std::numeric_limits<float>::lowest();
-
-			// compute local min and max height
-			for(int dy = -ROBOT_RADIUS_INT; dy <= ROBOT_RADIUS_INT; ++dy)
-			{
-				int _y = y+dy;
-
-				if(_y < 0 || _y >= m_small_objects.rows)
-					continue;
-
-				for(int dx = -ROBOT_RADIUS_INT; dx <= ROBOT_RADIUS_INT; ++dx)
-				{
-					int _x = x+dx;
-
-					if(_x < 0 || _x >= m_small_objects.cols)
-						continue;
-
-					if(dx*dx+dy*dy > robot_radius*robot_radius)
-						continue;
-
-					if(m_min_height(_y, _x) < local_min_height)
-					{
-						local_min_height = m_min_height(_y, _x);
-					}
-					if(m_max_height(_y, _x) > local_max_height)
-					{
-						local_max_height = m_max_height(_y, _x);
-					}
-				}
-			}
-
-			// filter
-			double object_height  = fabs(local_max_height - local_min_height);
-			if(object_height > 0.4)
-			{
-				m_small_objects(y, x) = 0;
-			}
-		}
-	}
-
-	m_objects_inflated =  m_small_objects.clone();
+   m_objects_inflated = m_small_objects.clone();
 }
 
 void HeightImage::fillObjectMap(nav_msgs::OccupancyGrid* map)
@@ -478,8 +354,6 @@ void HeightImage::fillObjectMap(nav_msgs::OccupancyGrid* map)
 	map->info.origin.position.x = -m_res_x * (m_buckets_x/2);
 	map->info.origin.position.y = -m_res_y * (m_buckets_y/2);
 	map->info.origin.position.z = -1.f;
-// 	map->info.origin.position.x = 0;
-// 	map->info.origin.position.y = 0;
 	map->info.origin.orientation.w = 1;
 
 	map->data.resize(m_buckets_x * m_buckets_y);
@@ -489,54 +363,21 @@ void HeightImage::fillObjectMap(nav_msgs::OccupancyGrid* map)
 	{
 		for(unsigned int x = 0; x < map->info.width; ++x)
 		{
-			double v = m_objects_inflated(m_buckets_y - y - 1, x) ;
-
 			double detection = m_objects_inflated(m_buckets_y - y - 1, x);
-			int num_detections = m_object_scans_count(m_buckets_y - y - 1, x);
-			double height = m_median_height(m_buckets_y - y - 1, x);
-			double object_height = fabs(m_object_max_height(m_buckets_y - y - 1, x)-m_object_min_height(m_buckets_y - y - 1, x));
-			double object_altitude = fabs(m_object_max_height(m_buckets_y - y - 1, x)-m_min_height(m_buckets_y - y - 1, x));
-			
-			if(std::isnan(v))
+
+			if(std::isnan(detection))
 				*wptr = (int8_t)0 ;//-1; // Unknown
 			else
-			{ 
-			  
-			  
-// 			  if (isnan(current_wheel_cost))
-//                                 wheel_cost_map_data[i] = (int8_t)(-1);
-//                         else if (current_wheel_cost > 1000.0)
-//                                 wheel_cost_map_data[i] = (int8_t)(-30);
-//                         else
-//                                 wheel_cost_map_data[i] = (int8_t)((current_wheel_cost - min_wheel_cost) / (max_wheel_cost - min_wheel_cost) * 100);
-
-			  
-			  
-			  
-  			   if (v > 0.5f)
+			{
+  			   if (detection >= m_object_detection_threshold)
   			   {
-			     
 			     *wptr = (int8_t)(129);
-// 			     if(v >= 0.9)
-// 					*wptr = (int8_t)(-30);
-// // 					*wptr = (int8_t)(100);
-// 			      else if(v < 0.6)
-// // 					*wptr = (int8_t)(-30);
-// 					*wptr = (int8_t)(0);
-// 			      else
-
-				
   			   }
 //   			   else if (std::isfinite(height))
 // 			     *wptr =  limited(0.0, (height - min_value) / (max_value - min_value), 1.0) * 100;
 			   else
   			      *wptr = (int8_t)(0);
-			     
 			}
-			
-			
-
-
 			wptr++;
 		}
 	}
@@ -596,11 +437,13 @@ void HeightImage::fillObjectColorImage(sensor_msgs::Image* img)
 
 // filter those detections that are too big or small
 void HeightImage::filterObjectsBySize(const cv::Mat& prob_mat,
+                                      cv::Mat& result_mat,
                                       int min_size_of_valid_object,
                                       int max_size_of_valid_object)
 {
-	// binarize prob_mat
-	m_small_objects = 0;
+   result_mat.setTo(cv::Scalar(0));
+
+   // binarize prob_mat
 	cv::Mat_<uint8_t> binarized_object;
 	binarized_object.create(m_buckets_y, m_buckets_x);
 	prob_mat.convertTo(binarized_object, CV_8U, 255);
@@ -627,10 +470,165 @@ void HeightImage::filterObjectsBySize(const cv::Mat& prob_mat,
 			if(cv::contourArea(contours[idx]) < max_size_of_valid_object &&
 				cv::contourArea(contours[idx]) > min_size_of_valid_object)
 			{
-				drawContours(m_small_objects, contours, idx, object_color, CV_FILLED, 8, hierarchy);
+				drawContours(result_mat, contours, idx, object_color, CV_FILLED, 8, hierarchy);
 			}
 		}
 	}
+}
+
+// set bins to zero if height difference in neighborhood exceeds a threshold
+// should prevent false positives that are too near to a wall or big object
+void HeightImage::filterObjectsByNeighborHeight(cv::Mat& prob_mat,
+                                                float robot_radius,
+                                                float height_threshold)
+{
+   float robot_radius_in_bins = robot_radius/m_res_x;
+   int ROBOT_RADIUS_INT = ceil(robot_radius_in_bins);
+
+   for(int row = 0; row < prob_mat.rows; ++row)
+   {
+      for(int col = 0; col < prob_mat.cols; ++col)
+      {
+         if(prob_mat.at<int>(row, col) == 0)
+            continue;
+
+         float local_min_height = std::numeric_limits<float>::max();
+         float local_max_height = std::numeric_limits<float>::lowest();
+         // compute local min and max height
+         for(int local_row = std::max(0, row - ROBOT_RADIUS_INT); local_row < std::min(prob_mat.rows, row + ROBOT_RADIUS_INT); ++local_row)
+         {
+            for(int local_col = std::max(0, col - ROBOT_RADIUS_INT); local_col < std::min(prob_mat.cols, col + ROBOT_RADIUS_INT); ++local_col)
+            {
+               // check if bin is within the robot radius
+               int col_diff = col - local_col;
+               int row_diff = row - local_row;
+               if(col_diff*col_diff + row_diff*row_diff > robot_radius_in_bins*robot_radius_in_bins)
+                  continue;
+
+               if((!std::isnan(m_min_height(local_row, local_col))) && m_min_height(local_row, local_col) < local_min_height)
+               {
+                  local_min_height = m_min_height(local_row, local_col);
+               }
+               if((!std::isnan(m_max_height(local_row, local_col))) && m_max_height(local_row, local_col) > local_max_height)
+               {
+                  local_max_height = m_max_height(local_row, local_col);
+               }
+            }
+         }
+
+         // filter
+         double neighborhood_height = local_max_height - local_min_height;
+         if(neighborhood_height > height_threshold)
+         {
+            prob_mat.at<int>(row, col) = 0;
+         }
+      }
+   }
+}
+
+void HeightImage::inflateObjects(cv::Mat& prob_mat,
+                                 float hard_radius,
+                                 float soft_radius)
+{
+   cv::Mat_<float> uninflated;
+   uninflated.create(cv::Size(m_objects_inflated.cols, m_objects_inflated.rows));
+
+   // radius in number of bins
+   hard_radius /= m_res_x;
+   soft_radius /= m_res_x;
+   const int INFLATION_RADIUS = ceil(hard_radius);
+   const int INFLATION_RADIUS_SOFT = ceil(soft_radius);
+
+   // TODO: make more efficient
+   // if at least one neighbor of current bin is set to 1, set current bin to 1
+   // 1st pass: inflate lethal objects
+   for(int y = 0; y < prob_mat.rows; ++y)
+   {
+      for(int x = 0; x < prob_mat.cols; ++x)
+      {
+         bool cellFree = true;
+
+         for(int dy = -INFLATION_RADIUS; dy <= INFLATION_RADIUS; ++dy)
+         {
+            int _y = y + dy;
+
+            if(_y < 0 || _y >= prob_mat.rows)
+               continue;
+
+            for(int dx = -INFLATION_RADIUS; dx <= INFLATION_RADIUS; ++dx)
+            {
+               int _x = x + dx;
+
+               if(_x < 0 || _x >= prob_mat.cols)
+                  continue;
+
+               if(dx * dx + dy * dy > hard_radius * hard_radius)
+                  continue;
+
+               if(prob_mat.at<float>(_y, _x) > 0.999f){
+                  cellFree = false;
+                  break;
+               }
+            }
+         }
+
+         // TODO: test effects of setting uninflated to zero instead of nan
+         if(cellFree)
+            uninflated(y, x) = prob_mat.at<float>(y, x);
+         else
+            uninflated(y, x) = 1.0f;
+      }
+   }
+
+   // 2nd pass: inflate
+
+   for(int y = 0; y < prob_mat.rows; ++y){
+      for(int x = 0; x < prob_mat.cols; ++x){
+         if(uninflated(y, x) >= 1.0){
+            prob_mat.at<float>(y, x) = 1.0;
+            continue; // Do not "eat" into absolute objects
+         }
+
+         float costSum = 0;
+         float weightSum = 0;
+
+//			float max = 0.0;
+
+         for(int dy = -INFLATION_RADIUS_SOFT; dy <= INFLATION_RADIUS_SOFT; ++dy){
+            int _y = y + dy;
+
+            if(_y < 0 || _y >= prob_mat.rows)
+               continue;
+
+            for(int dx = -INFLATION_RADIUS_SOFT; dx <= INFLATION_RADIUS_SOFT; ++dx){
+               int _x = x + dx;
+
+               if(_x < 0 || _x >= prob_mat.cols)
+                  continue;
+
+               if(dx * dx + dy * dy > soft_radius * soft_radius)
+                  continue;
+
+               float dist = hypotf(dx, dy);
+               // the bigger the distance, the smaller the response
+               // the fraction can be between 0 and 1
+               // TODO: uninflated is probably not necessary because its either 1 or nan
+               float response = (-(dist / soft_radius) + 1.0) * uninflated(_y, _x);
+//					if(response > max)
+//					{
+//						max = response;
+//					}
+
+               float weight = 1.0;
+               // TODO: probably uninflated has to be switched with response
+               costSum += weight * uninflated(_y, _x);
+               weightSum += weight;
+            }
+         }
+
+         prob_mat.at<float>(y, x) = costSum / weightSum;
+      }
+   }
 }
 
 }

@@ -41,6 +41,7 @@ public:
 
 	void setResolution(float res_x, float res_y);
    void setSize(float size_x, float size_y);
+   void setRobotRadius(float robot_radius);
    void setMinHeight(float min_height);
    void setMaxHeight(float max_height);
    void setMinObjectHeight(float min_height);
@@ -49,6 +50,9 @@ public:
    void setMaxObjectFootprint(float max_footprint_size);
    void setMaxObjectAltitude(float max_altitude);
    void setDetectionThreshold(float detection_threshold);
+   void setMaxNeighborhoodHeight(float max_neighborhood_height);
+   void setHardInflationRadius(float hard_inflation_radius);
+   void setSoftInflationRadius(float soft_inflation_radius);
 
 	void processPointcloud(const InputPointCloud& cloud,
                           const Eigen::Affine3f& transform,
@@ -68,14 +72,24 @@ private:
 	void resizeStorage();
 
    void filterObjectsBySize(const cv::Mat& prob_mat,
+                            cv::Mat& result_mat,
                             int min_size_of_valid_object,
                             int max_size_of_valid_object);
+
+   void filterObjectsByNeighborHeight(cv::Mat& prob_mat,
+                                      float robot_radius,
+                                      float height_threshold);
+
+   void inflateObjects(cv::Mat& prob_mat,
+                       float hard_radius,
+                       float soft_radius);
 
    float m_res_x;
    float m_res_y;
    float m_length_x;
    float m_length_y;
-	int m_buckets_x;
+   float m_robot_radius;
+   int m_buckets_x;
 	int m_buckets_y;
    float m_min_height_threshold;
    float m_max_height_threshold;
@@ -85,6 +99,9 @@ private:
    float m_max_footprint_size;
    float m_max_object_altitude_threshold;
    float m_object_detection_threshold;
+   float m_max_neighborhood_height_threshold;
+   float m_hard_inflation_radius;
+   float m_soft_inflation_radius;
 
 	cv::Mat_<float> m_median_height;
 	cv::Mat_<float> m_min_height;
@@ -96,11 +113,7 @@ private:
 	cv::Mat_<int> m_object_count;
 	cv::Mat_<int> m_object_last_scan_id;
 	cv::Mat_<int> m_object_scans_count;
-	cv::Mat_<float> m_relative;
-	cv::Mat_<float> m_mask;
-	cv::Mat_<unsigned char> m_source;
 	cv::Mat_<int> m_small_objects;
-   float m_robotRadius;
 };
 
 }

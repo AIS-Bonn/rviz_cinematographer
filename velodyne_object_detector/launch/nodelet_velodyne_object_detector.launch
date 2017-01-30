@@ -15,7 +15,7 @@
 
 
   <node unless="$(arg use_bag)" name="pcd_publisher" pkg="pcd_publisher" type="pcd_publisher" output="screen">
-    <param name="path_to_file" value="/tmp/map2.pcd"/>
+    <param name="path_to_file" value="/home/razlaw/clouds/map2.pcd"/>
     <param name="output_topic" value="/mapping_nodelet/pointcloud"/>
     <param name="output_frame_id" value="/odom"/>
     <param name="publishing_rate" value="2"/>
