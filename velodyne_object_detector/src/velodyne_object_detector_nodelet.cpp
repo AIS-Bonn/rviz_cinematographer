@@ -74,7 +74,10 @@ void VelodyneObjectDetectorNodelet::onInit()
       m_median_small_kernel_size.set(m_median_small_kernel_size_launch);
 
    if(ph.getParam("median_big_kernel_size_launch", m_median_big_kernel_size_launch))
+   {
       m_median_big_kernel_size_parameter.set(m_median_big_kernel_size_launch);
+      m_median_big_kernel_size = m_median_big_kernel_size_launch;
+   }
 
    if(ph.getParam("distance_to_comparison_points_launch", m_distance_to_comparison_points_launch))
       m_distance_to_comparison_points.set(m_distance_to_comparison_points_launch);
