@@ -67,8 +67,7 @@ namespace detection_height_mapper
       config_server::Parameter<float> m_object_max_footprint_param;
       config_server::Parameter<float> m_object_max_altitude_param;
       config_server::Parameter<float> m_object_max_neighborhood_height_param;
-      config_server::Parameter<float> m_object_hard_inflation_radius_param;
-      config_server::Parameter<float> m_object_soft_inflation_radius_param;
+      config_server::Parameter<float> m_object_inflation_radius_param;
       config_server::Parameter<float> m_object_robot_radius_param;
       config_server::Parameter<bool> m_inflate_objects;
 

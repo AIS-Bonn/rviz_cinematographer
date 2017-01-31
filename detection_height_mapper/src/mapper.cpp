@@ -27,8 +27,7 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    , m_object_max_footprint_param("detection_height_mapper/object_max_footprint_in_sqm", 0.0, 0.01, 1.0, 0.25)
    , m_object_max_altitude_param("detection_height_mapper/object_max_altitude", 0.0, 0.1, 1.0, 0.5)
    , m_object_max_neighborhood_height_param("detection_height_mapper/object_max_neighborhood_height", 0.0, 0.1, 10.0, 0.4)
-   , m_object_hard_inflation_radius_param("detection_height_mapper/object_hard_inflation_radius", 0.0, 0.05, 2.0, 0.25)
-   , m_object_soft_inflation_radius_param("detection_height_mapper/object_soft_inflation_radius", 0.0, 0.05, 2.0, 0.1)
+   , m_object_inflation_radius_param("detection_height_mapper/object_inflation_radius", 0.0, 0.05, 2.0, 0.25)
    , m_object_robot_radius_param("detection_height_mapper/object_robot_radius", 0.0, 0.1, 10.0, 2.5)
    , m_inflate_objects("detection_height_mapper/inflate_objects", true)
    , m_input_topic("/mrs_laser_mapping/pointcloud")
@@ -60,13 +59,9 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    if(private_nh.getParam("object_max_neighborhood_height", object_max_neighborhood_height))
       m_object_max_neighborhood_height_param.set(object_max_neighborhood_height);
 
-   float object_hard_inflation_radius;
-   if(private_nh.getParam("object_hard_inflation_radius", object_hard_inflation_radius))
-      m_object_hard_inflation_radius_param.set(object_hard_inflation_radius);
-
-   float object_soft_inflation_radius;
-   if(private_nh.getParam("object_soft_inflation_radius", object_soft_inflation_radius))
-      m_object_soft_inflation_radius_param.set(object_soft_inflation_radius);
+   float object_inflation_radius;
+   if(private_nh.getParam("object_inflation_radius", object_inflation_radius))
+      m_object_inflation_radius_param.set(object_inflation_radius);
 
    float object_robot_radius;
    if(private_nh.getParam("object_robot_radius", object_robot_radius))
@@ -99,8 +94,7 @@ void Mapper::callback(const InputPointCloud::ConstPtr &input_cloud)
    height_image.setMaxObjectAltitude(m_object_max_altitude_param());
    height_image.setDetectionThreshold(m_object_detection_threshold());
    height_image.setMaxNeighborhoodHeight(m_object_max_neighborhood_height_param());
-   height_image.setHardInflationRadius(m_object_hard_inflation_radius_param());
-   height_image.setSoftInflationRadius(m_object_soft_inflation_radius_param());
+   height_image.setInflationRadius(m_object_inflation_radius_param());
    height_image.setRobotRadius(m_object_robot_radius_param());
 
    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
