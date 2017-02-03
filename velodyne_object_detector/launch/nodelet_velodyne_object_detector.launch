@@ -2,7 +2,7 @@
 <launch>
 
   <!-- ========= Bagplayer ========== -->
-  <arg name="use_bag" default="false"/>
+  <arg name="use_bag" default="true"/>
   <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/new_objects_proto/velodyne_2017-01-17-15-46-21.bag"/>
   <arg name="rate" default="0.1"/>
   <arg name="start" default="52"/>
@@ -101,7 +101,7 @@
   <include file="$(find mrs_laser_mapping)/launch/velodyne_mapping.launch">
     <arg name="build_alloc_map" value="false"/>
     <arg name="scan_assembler_frame_id" value="odom"/> 
-    <arg name="input_topic" value="/velodyne_object_detector_nodelet/obstacles"/>
+    <arg name="input_topic" value="/velodyne_detector_objects"/>
     <arg name="sensor_frame_id" value="velodyne"/>
 <!--    <arg name="map_size" value="128" /> 
     <arg name="map_resolution" value="20.0" /> 
