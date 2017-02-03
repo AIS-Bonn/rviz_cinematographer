@@ -39,46 +39,45 @@ public:
    typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
    typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudRGB;
    typedef pcl::PointCloud<pcl::PointXYZI> PointCloudIntensity;
-   
-   typedef velodyne_pointcloud::PointXYZIRDetection PointVelodyne;
-   typedef pcl::PointCloud<PointVelodyne> PointCloudVelodyne;
+
+   typedef velodyne_pointcloud::PointXYZIDR           PointVelodyneWithDist;
+   typedef velodyne_pointcloud::PointXYZIRDetection   PointVelodyneWithDetection;
+   typedef velodyne_pointcloud::PointXYZDetection     PointWithDetection;
+
+
+   typedef PointVelodyneWithDist                      InputPoint;
+   typedef PointVelodyneWithDetection                 DebugOutputPoint;
+   typedef PointWithDetection                         OutputPoint;
+
+   typedef pcl::PointCloud<InputPoint>                InputPointCloud;
+   typedef pcl::PointCloud<DebugOutputPoint>          DebugOutputPointCloud;
+   typedef pcl::PointCloud<OutputPoint>               OutputPointCloud;
    
    VelodyneObjectDetector();
    virtual ~VelodyneObjectDetector(){};
 
    void nop(){ROS_INFO_STREAM("new threshold");};
 
-   void splitCloudByRing(PointCloudVelodyne &cloud, std::vector<std::vector<unsigned int> > &clouds_per_ring);
-
-//    void detectSegments(PointCloudVelodyne &cloud,
-//                        std::vector<std::vector<unsigned int> > &clouds_per_ring,
-//                        std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud);
+   void splitCloudByRing(InputPointCloud &cloud, std::vector<std::vector<unsigned int> > &clouds_per_ring);
 
    void medianFilter(std::vector<float> &input,
+                     std::vector<float> &input_intensities,
                      std::vector<float> &filtered_output,
-                     int kernel_size,
+                     std::vector<float> &filtered_output_intensities,
+                     float object_width,
                      float max_distance_difference = 0.f);
 
-   void detectSegmentsMedian(PointCloudVelodyne &cloud,
-                       std::vector<std::vector<unsigned int> > &clouds_per_ring,
-                       std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud);
+   void detectSegmentsMedian(InputPointCloud &cloud,
+                       std::vector<std::vector<unsigned int> > &clouds_per_ring);
 
-//   void filterSegmentsBySize(PointCloudVelodyne &cloud,
-//                             std::vector<std::vector<unsigned int> > &clouds_per_ring,
-//                             std::vector<std::vector<std::pair<unsigned int, unsigned int> > > &segment_indices_cloud,
-//                             float size_filter);
+   void velodyneCallback(const InputPointCloud& input_cloud);
 
-   void velodyneCallback(const PointCloudVelodyne& input_cloud);
-
-//    void detectObstacles(pcl::PointCloud<velodyne_pointcloud::PointXYZIR> &cloud,
-//                         std::vector<velodyne_pointcloud::PointXYZIR> &currentObstaclesList,
-//                         pcl::PointCloud<velodyne_pointcloud::PointXYZIR> &modifiedCloud,
-//                         std::map<uint16_t, std::vector<double> > &distanceByPrevious);
 private:
    ros::NodeHandle m_nh;
    //tf::TransformListener m_tf;
 
    const int PUCK_NUM_RINGS;
+   const float ANGLE_BETWEEN_SCANPOINTS;
 
    ros::Subscriber m_velodyne_sub;
    ros::Publisher m_pub;
@@ -101,6 +100,9 @@ private:
    config_server::Parameter<float> m_median_max_dist;
 
    config_server::Parameter<float> m_max_dist_for_median_computation;
+
+   config_server::Parameter<float> m_object_width;
+   config_server::Parameter<int> m_distance_to_comparison_points;
 
    std::string m_points_topic;
 };
