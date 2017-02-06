@@ -370,7 +370,9 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint
 
       if(certainty_value >= m_certainty_threshold())
       {
-         auto current_point_it = buffer->begin() + (median_it - buffer_median_filtered->begin()) ;
+	BufferMedians::difference_type offset = std::min<BufferMedians::difference_type>(buffer->size()-1, median_it-buffer_median_filtered->begin());
+	
+         auto current_point_it = buffer->begin() + offset ;
 
          OutputPoint output_point;
          output_point.x = (*current_point_it).x;
