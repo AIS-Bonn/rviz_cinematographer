@@ -358,7 +358,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint
       return;
    }
 
-   for(auto median_it = buffer_median_filtered->begin() + dist_to_comparsion_point; median_it <  buffer_median_filtered->end()-1 - dist_to_comparsion_point; ++median_it )
+   for(auto median_it = buffer_median_filtered->begin() + dist_to_comparsion_point; median_it <  buffer_median_filtered->end() - dist_to_comparsion_point; ++median_it )
    {
       // compute index of neighbors to compare to, take into account that it's a scan ring
       // TODO: convert to a distance in meters
