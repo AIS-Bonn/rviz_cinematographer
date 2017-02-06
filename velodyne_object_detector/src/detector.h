@@ -63,13 +63,14 @@ public:
    typedef pcl::PointCloud<OutputPoint>               OutputPointCloud;
 
    typedef typename boost::circular_buffer<InputPoint>::iterator buffer_iterator;
+   typedef typename boost::circular_buffer<InputPoint>::const_iterator buffer_const_iterator;
 
    typedef boost::circular_buffer< InputPoint > BufferInputPoints;
    typedef std::shared_ptr<BufferInputPoints> BufferInputPointsPtr;
 
    typedef boost::circular_buffer< MedianFiltered > BufferMedians;
    typedef std::shared_ptr<BufferMedians> BufferMediansPtr;
-
+   
 
    Detector(ros::NodeHandle node, ros::NodeHandle private_nh);
    ~Detector(){};
@@ -106,10 +107,9 @@ public:
    void plot();
 
    void calcMedianFromBuffer(const int kernel_size,
-                             const int kernel_size_half,
                              const int big_kernel_size,
-                             const int big_kernel_size_half,
-                             boost::cb_details::iterator<boost::circular_buffer<Detector::InputPoint, std::allocator<Detector::InputPoint>>, boost::cb_details::nonconst_traits<std::allocator<Detector::InputPoint>>> &it,
+			     const BufferInputPointsPtr& buffer,
+                             const buffer_const_iterator& current_element,
                              std::function<float(Detector::InputPoint)> f,
                              float max_dist_for_median_computation,
                              float& small_kernel_val, float& big_kernel_val) const;
