@@ -13,17 +13,16 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
 : PUCK_NUM_RINGS(16)
  , m_max_prob_by_distance(0.75f)
  , m_max_intensity_range(100.f)
- , m_certainty_threshold_launch(0.5)
- , m_median_small_kernel_size_launch(3)
- , m_median_big_kernel_size_launch(21)
+ , m_certainty_threshold_launch(0.5f)
+ , m_object_size_launch(1.2f)
+ , m_circular_buffer_capacity_launch(1500)
  , m_distance_to_comparison_points_launch(10)
  , m_certainty_threshold("velodyne_object_detector/certainty_threshold", 0.0, 0.01, 1.0, m_certainty_threshold_launch)
  , m_dist_coeff("velodyne_object_detector/dist_coeff", 0.0, 0.1, 10.0, 0.7)//1.0)
  , m_intensity_coeff("velodyne_object_detector/intensity_coeff", 0.0, 0.0001, 0.01, 0.0039)//(1.f - m_max_prob_by_distance)/m_max_intensity_range)
  , m_weight_for_small_intensities("velodyne_object_detector/weight_for_small_intensities", 1.f, 1.f, 30.f, 11.f)
- , m_median_small_kernel_size("velodyne_object_detector/median_small_kernel_size", 1, 2, m_median_small_kernel_size_launch*2, m_median_small_kernel_size_launch)
- , m_median_big_kernel_size_parameter("velodyne_object_detector/median_big_kernel_size", 1, 2, m_median_big_kernel_size_launch*2, m_median_big_kernel_size_launch)
- , m_median_big_kernel_size(m_median_big_kernel_size_parameter())
+ , m_object_size("velodyne_object_detector/object_size_in_m", 0.005, 0.005, m_object_size_launch*2, m_object_size_launch)
+ , m_circular_buffer_capacity("velodyne_object_detector/circular_buffer_capacity", 1, 100, m_circular_buffer_capacity_launch*2, m_circular_buffer_capacity_launch)
  , m_distance_to_comparison_points("velodyne_object_detector/distance_to_comparison_points", 1, 1, m_distance_to_comparison_points_launch*2, m_distance_to_comparison_points_launch)
  , m_median_min_dist("velodyne_object_detector/median_min_dist", 0.0, 0.01, .2, 0.1)
  , m_median_thresh1_dist("velodyne_object_detector/median_thresh1_dist", 0.0, 0.05, 2.5, 0.35)
@@ -58,44 +57,30 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
 
    m_pub_obstacle_cloud = node.advertise<OutputPointCloud >("/velodyne_detector_objects", 1);
 
-   if(private_nh.getParam("certainty_threshold_launch", m_certainty_threshold_launch))
+   if(private_nh.getParam("certainty_threshold", m_certainty_threshold_launch))
       m_certainty_threshold.set(m_certainty_threshold_launch);
 
-   if(private_nh.getParam("median_small_kernel_size_launch", m_median_small_kernel_size_launch))
-      m_median_small_kernel_size.set(m_median_small_kernel_size_launch);
+   if(private_nh.getParam("object_size_in_m", m_object_size_launch))
+      m_object_size.set(m_object_size_launch);
 
-   if(private_nh.getParam("median_big_kernel_size_launch", m_median_big_kernel_size_launch))
+   if(private_nh.getParam("circular_buffer_capacity", m_circular_buffer_capacity_launch))
    {
-      m_median_big_kernel_size_parameter.set(m_median_big_kernel_size_launch);
-      m_median_big_kernel_size = m_median_big_kernel_size_launch;
+      m_circular_buffer_capacity.set(m_circular_buffer_capacity_launch);
    }
 
-   if(private_nh.getParam("distance_to_comparison_points_launch", m_distance_to_comparison_points_launch))
+   if(private_nh.getParam("distance_to_comparison_points", m_distance_to_comparison_points_launch))
       m_distance_to_comparison_points.set(m_distance_to_comparison_points_launch);
 
    for(int i = 0; i < PUCK_NUM_RINGS; i++)
    {
-      boost::circular_buffer<float> distances_circ_buffer(m_median_big_kernel_size_parameter());
-      m_distance_median_circ_buffer_vector.push_back(distances_circ_buffer);
-      boost::circular_buffer<float> intensities_circ_buffer(m_median_big_kernel_size_parameter());
-      m_intensity_median_circ_buffer_vector.push_back(intensities_circ_buffer);
+      boost::circular_buffer<InputPoint> points_circ_buffer(m_circular_buffer_capacity());
+      m_points_circ_buffer_vector.push_back(points_circ_buffer);
 
-      std::shared_ptr<std::vector<float> > tmp_pointer(new std::vector<float>());
-      m_old_distances_all_rings_filtered_small_kernel.push_back(tmp_pointer);
-      m_old_distances_all_rings_filtered_big_kernel.push_back(tmp_pointer);
-      m_old_intensities_all_rings_filtered_small_kernel.push_back(tmp_pointer);
-      m_old_intensities_all_rings_filtered_big_kernel.push_back(tmp_pointer);
+      boost::circular_buffer<MedianFiltered> median_filtered_circ_buffer(m_circular_buffer_capacity());
+      m_median_filtered_circ_buffer_vector.push_back(median_filtered_circ_buffer);
    }
 
-   // TODO: probably not necessary
-   for(int i = 0; i < PUCK_NUM_RINGS; i++)
-   {
-      m_distance_median_circ_buffer_vector[i].set_capacity(m_median_big_kernel_size_parameter());
-      m_intensity_median_circ_buffer_vector[i].set_capacity(m_median_big_kernel_size_parameter());
-      m_distance_median_circ_buffer_vector[i].clear();
-      m_intensity_median_circ_buffer_vector[i].clear();
-   }
-
+   // TODO: anpassen
    m_ring_counter = std::vector<int>(PUCK_NUM_RINGS, 0);
 
    m_certainty_threshold.setCallback(boost::bind(&Detector::changeParameterSavely, this));
@@ -103,8 +88,8 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
    m_intensity_coeff.setCallback(boost::bind(&Detector::changeParameterSavely, this));
    m_weight_for_small_intensities.setCallback(boost::bind(&Detector::changeParameterSavely, this));
 
-   m_median_small_kernel_size.setCallback(boost::bind(&Detector::changeParameterSavely, this));
-   m_median_big_kernel_size_parameter.setCallback(boost::bind(&Detector::resizeBuffers, this));
+   m_object_size.setCallback(boost::bind(&Detector::changeParameterSavely, this));
+   m_circular_buffer_capacity.setCallback(boost::bind(&Detector::resizeBuffers, this));
    m_distance_to_comparison_points.setCallback(boost::bind(&Detector::changeParameterSavely, this));
 
    m_median_min_dist.setCallback(boost::bind(&Detector::changeParameterSavely, this));
@@ -123,50 +108,55 @@ void Detector::changeParameterSavely()
       plot();
 }
 
-void Detector::resizeBuffers()
-{
-   boost::mutex::scoped_lock lock(m_parameter_change_lock);
-
-   if(m_median_big_kernel_size_parameter() != (int)m_distance_median_circ_buffer_vector[0].capacity())
-   {
-      m_median_big_kernel_size = m_median_big_kernel_size_parameter();
-      if(m_median_big_kernel_size_parameter() < m_median_small_kernel_size())
-      {
-         ROS_ERROR("Resizing buffers. Big kernel size has to be equal or greater than small kernel size! Resetting big kernel size to small kernel size.");
-         m_median_big_kernel_size = m_median_small_kernel_size();
-      }
-      else if(m_median_big_kernel_size % 2 == 0)
-      {
-         m_median_big_kernel_size++;
-         ROS_ERROR("Resizing buffers. Kernel size has to be odd. Setting kernel size increased by 1 now!");
-      }
-
-      for(int i = 0; i < PUCK_NUM_RINGS; i++)
-      {
-         m_distance_median_circ_buffer_vector[i].set_capacity(m_median_big_kernel_size);
-         m_intensity_median_circ_buffer_vector[i].set_capacity(m_median_big_kernel_size);
-         m_distance_median_circ_buffer_vector[i].clear();
-         m_intensity_median_circ_buffer_vector[i].clear();
-         m_ring_counter[i] = 0;
-      }
-   }
-}
+//void Detector::resizeBuffers()
+//{
+//   boost::mutex::scoped_lock lock(m_parameter_change_lock);
+//
+//   if(m_median_big_kernel_size_parameter() != (int)m_distance_median_circ_buffer_vector[0].capacity())
+//   {
+//      m_median_big_kernel_size = m_median_big_kernel_size_parameter();
+//      if(m_median_big_kernel_size_parameter() < m_median_small_kernel_size())
+//      {
+//         ROS_ERROR("Resizing buffers. Big kernel size has to be equal or greater than small kernel size! Resetting big kernel size to small kernel size.");
+//         m_median_big_kernel_size = m_median_small_kernel_size();
+//      }
+//      else if(m_median_big_kernel_size % 2 == 0)
+//      {
+//         m_median_big_kernel_size++;
+//         ROS_ERROR("Resizing buffers. Kernel size has to be odd. Setting kernel size increased by 1 now!");
+//      }
+//
+//      for(int i = 0; i < PUCK_NUM_RINGS; i++)
+//      {
+//         m_distance_median_circ_buffer_vector[i].set_capacity(m_median_big_kernel_size);
+//         m_intensity_median_circ_buffer_vector[i].set_capacity(m_median_big_kernel_size);
+//         m_distance_median_circ_buffer_vector[i].clear();
+//         m_intensity_median_circ_buffer_vector[i].clear();
+//         m_ring_counter[i] = 0;
+//      }
+//   }
+//}
 
 void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 {
-   pcl::StopWatch timer;
-   double start = timer.getTime();
+//   pcl::StopWatch timer;
+//   double start = timer.getTime();
 
-   // save indices of points in one ring in one vector
-   // and each vector representing a ring in another vector containing all indices of the cloud
-   m_clouds_per_ring = std::shared_ptr<std::vector<std::vector<unsigned int> > >(new std::vector<std::vector<unsigned int> >(PUCK_NUM_RINGS, std::vector<unsigned int>(0)));
-   splitCloudByRing(input_cloud, m_clouds_per_ring);
+   for(const auto& point : input_cloud->points)
+   {
+      m_points_circ_buffer_vector[point.ring].push_back(point);
+   }
 
-   detectObstacles(input_cloud, m_clouds_per_ring);
-   ROS_DEBUG_STREAM("Computation time for obstacle detection in ms " << (timer.getTime()- start) << "   \n");
-
-   m_old_cloud = input_cloud;
-   m_old_clouds_per_ring = m_clouds_per_ring;
+//   // save indices of points in one ring in one vector
+//   // and each vector representing a ring in another vector containing all indices of the cloud
+//   m_clouds_per_ring = std::shared_ptr<std::vector<std::vector<unsigned int> > >(new std::vector<std::vector<unsigned int> >(PUCK_NUM_RINGS, std::vector<unsigned int>(0)));
+//   splitCloudByRing(input_cloud, m_clouds_per_ring);
+//
+//   detectObstacles(input_cloud, m_clouds_per_ring);
+//   ROS_DEBUG_STREAM("Computation time for obstacle detection in ms " << (timer.getTime()- start) << "   \n");
+//
+//   m_old_cloud = input_cloud;
+//   m_old_clouds_per_ring = m_clouds_per_ring;
 }
 
 // sort points by ring number and save indices in vector
@@ -179,13 +169,8 @@ void Detector::splitCloudByRing(const InputPointCloud::ConstPtr &cloud,
    }
 }
 
-void Detector::filterRing(const InputPointCloud::ConstPtr &cloud,
-                                               const std::vector<unsigned int> &indices_of_ring,
-                                               int ring_index,
-                                               std::shared_ptr<std::vector<float> > distances_ring_filtered_small_kernel,
-                                               std::shared_ptr<std::vector<float> > distances_ring_filtered_big_kernel,
-                                               std::shared_ptr<std::vector<float> > intensities_ring_filtered_small_kernel,
-                                               std::shared_ptr<std::vector<float> > intensities_ring_filtered_big_kernel)
+void Detector::filterRing(std::shared_ptr<boost::circular_buffer<InputPoint> > buffer,
+                          std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered)
 {
    int kernel_size = m_median_big_kernel_size;
    // make sure kernel size is not even
@@ -196,118 +181,125 @@ void Detector::filterRing(const InputPointCloud::ConstPtr &cloud,
 
    int last_index = (int)indices_of_ring.size() - kernel_size/2;
    int first_index = (-kernel_size/2);
-   if(m_ring_counter[ring_index] == 0)
-      first_index = 0;
 
-   for(int ring_point_index = first_index; ring_point_index < last_index; ring_point_index++)
+   typedef typename boost::circular_buffer<InputPoint>::iterator buffer_iterator;
+   buffer_iterator it = buffer->begin();
+   while (!buffer->empty())
    {
-      // prepare circular buffers for next iteration
-      int point_to_push_back_index = indices_of_ring[ring_point_index + kernel_size/2];
-      m_distance_median_circ_buffer_vector[ring_index].push_back(cloud->points[point_to_push_back_index].distance);
-      m_intensity_median_circ_buffer_vector[ring_index].push_back(cloud->points[point_to_push_back_index].intensity);
+      float alpha = static_cast<float>(std::atan((m_object_size()/2.f)/(*it)) * 180.f / M_PI);
+      const int kernel_size = (int)std::ceil(alpha / ANGLE_BETWEEN_SCANPOINTS) + 1;
 
-      // get distances of neighbors
-      std::vector<float> neighborhood_distances;
-      neighborhood_distances.reserve(kernel_size);
-      std::vector<float> neighborhood_distances_small_dist_kernel;
-      neighborhood_distances_small_dist_kernel.reserve(m_median_small_kernel_size());
+      const int kernel_size_half = kernel_size/2;
+      const int big_kernel_size = kernel_size*4;
+      const int big_kernel_size_half = kernel_size*2;
 
-      // filter if difference of distances of neighbor and the current point exceeds a threshold
-      if(m_max_dist_for_median_computation() == 0.f)
-      {
-         neighborhood_distances = std::vector<float>(m_distance_median_circ_buffer_vector[ring_index].array_one().first,
-                                                     m_distance_median_circ_buffer_vector[ring_index].array_one().first
-                                                     + m_distance_median_circ_buffer_vector[ring_index].array_one().second);
 
-         neighborhood_distances.insert(neighborhood_distances.end(),
-                                       &m_distance_median_circ_buffer_vector[ring_index].array_two().first[0],
-                                       &m_distance_median_circ_buffer_vector[ring_index].array_two().first[m_distance_median_circ_buffer_vector[ring_index].array_two().second]);
-      }
-      else
-      {
-         // save distance of midpoint in the buffer aka the current point we are looking at 
-         float distance_of_current_point = m_distance_median_circ_buffer_vector[ring_index][m_distance_median_circ_buffer_vector[ring_index].size()/2];
-         // check for each point in the buffer if it exceeds the distance threshold to the current point 
-         int small_kernel_min_index = m_distance_median_circ_buffer_vector[ring_index].size()/2 - m_median_small_kernel_size()/2;
-         int small_kernel_max_index = m_distance_median_circ_buffer_vector[ring_index].size()/2 + m_median_small_kernel_size()/2;
-         for(int circ_buffer_index = 0; circ_buffer_index < (int)m_distance_median_circ_buffer_vector[ring_index].size(); circ_buffer_index++)
-         {
-            float abs_distance_difference_to_current_point = fabs(distance_of_current_point - m_distance_median_circ_buffer_vector[ring_index][circ_buffer_index]);
-            if(abs_distance_difference_to_current_point < m_max_dist_for_median_computation())
-            {
-               neighborhood_distances.push_back(m_distance_median_circ_buffer_vector[ring_index][circ_buffer_index]);
-               if(circ_buffer_index >= small_kernel_min_index && circ_buffer_index <= small_kernel_max_index)
-                  neighborhood_distances_small_dist_kernel.push_back(m_distance_median_circ_buffer_vector[ring_index][circ_buffer_index]);
+      // TODO check if kernel_size is valid
+
+      if ( (buffer->end() - big_kernel_size_half) > it && (buffer->begin() + big_kernel_size_half) <= it ){
+
+
+
+
+         // get distances of neighbors
+         std::vector<float> neighborhood_distances;
+         neighborhood_distances.reserve(big_kernel_size);
+         std::vector<float> neighborhood_distances_small_dist_kernel;
+         neighborhood_distances_small_dist_kernel.reserve(kernel_size);
+
+         // filter if difference of distances of neighbor and the current point exceeds a threshold
+         if(m_max_dist_for_median_computation() == 0.f){
+            neighborhood_distances = std::vector<float>( it - big_kernel_size_half, it + big_kernel_size_half);
+         }
+         else{
+            // save distance of midpoint in the buffer aka the current point we are looking at
+            float distance_of_current_point = (*it).distance ;
+
+            buffer_iterator small_kernel_start = it - kernel_size_half;
+            buffer_iterator small_kernel_end = it + kernel_size_half;
+            buffer_iterator big_kernel_start = it - big_kernel_size_half;
+            buffer_iterator big_kernel_end = it + big_kernel_size_half;
+
+            // check for each point in the buffer if it exceeds the distance threshold to the current point
+            while ( big_kernel_end != big_kernel_start++ ){
+               float abs_distance_difference_to_current_point = fabs(
+                       distance_of_current_point - big_kernel_start->distance );
+               if(abs_distance_difference_to_current_point < m_max_dist_for_median_computation()){
+                  neighborhood_distances.push_back(big_kernel_start->distance);
+                  if(big_kernel_start >= small_kernel_start && big_kernel_start <= small_kernel_end)
+                     neighborhood_distances_small_dist_kernel.push_back(
+                            big_kernel_start->distance);
+               }
             }
          }
-      }
 
-      // get median of neighborhood distances with smaller kernel
-      size_t middle = neighborhood_distances.size() / 2;
-      size_t middle_small_kernel = neighborhood_distances_small_dist_kernel.size() / 2;
-      std::nth_element(neighborhood_distances_small_dist_kernel.begin(), neighborhood_distances_small_dist_kernel.begin() + middle_small_kernel, neighborhood_distances_small_dist_kernel.end());
-      // if values for the previous/old cloud should be computed
-      if(ring_point_index < 0)
-      {
-         int index_of_old = (int)(*m_old_distances_all_rings_filtered_small_kernel[ring_index]).size() + ring_point_index;
-         (*m_old_distances_all_rings_filtered_small_kernel[ring_index])[index_of_old] = neighborhood_distances_small_dist_kernel[middle_small_kernel];
+         // get median of neighborhood distances with smaller kernel
+         size_t middle = neighborhood_distances.size() / 2;
+         size_t middle_small_kernel = neighborhood_distances_small_dist_kernel.size() / 2;
+         std::nth_element(neighborhood_distances_small_dist_kernel.begin(),
+                          neighborhood_distances_small_dist_kernel.begin() + middle_small_kernel,
+                          neighborhood_distances_small_dist_kernel.end());
+
+         MedianFiltered mfs;
+         mfs.dist_small_kernel = neighborhood_distances_small_dist_kernel.at(middle_small_kernel);
+
+         // TODO zuerst small dann big
+
+         // get median of neighborhood distances with bigger kernel
+         std::nth_element(neighborhood_distances.begin(), neighborhood_distances.begin() + middle,
+                          neighborhood_distances.end());
+
+         mfs.dist_big_kernel = neighborhood_distances.at(middle);
+
+
+
+         // do the same for intensities
+
+         // get intensities of neighbors
+         std::vector<float> neighborhood_intensities(
+                 m_intensity_median_circ_buffer_vector[ring_index].array_one().first,
+                 m_intensity_median_circ_buffer_vector[ring_index].array_one().first
+                 + m_intensity_median_circ_buffer_vector[ring_index].array_one().second);
+
+         neighborhood_intensities.insert(neighborhood_intensities.end(),
+                                         &m_intensity_median_circ_buffer_vector[ring_index].array_two().first[0],
+                                         &m_intensity_median_circ_buffer_vector[ring_index].array_two().first[m_intensity_median_circ_buffer_vector[ring_index].array_two().second]);
+
+         // get median of neighborhood intensities with smaller kernel
+         int offset_to_endings = (kernel_size - m_median_small_kernel_size()) / 2;
+         std::nth_element(neighborhood_intensities.begin() + offset_to_endings,
+                          neighborhood_intensities.begin() + middle,
+                          neighborhood_intensities.end() - offset_to_endings);
+         // if values for the previous/old cloud should be computed
+         if(ring_point_index < 0){
+            int index_of_old =
+                    (int) (*m_old_intensities_all_rings_filtered_small_kernel[ring_index]).size() + ring_point_index;
+            (*m_old_intensities_all_rings_filtered_small_kernel[ring_index])[index_of_old] = neighborhood_intensities[middle];
+         }
+         else{
+            (*intensities_ring_filtered_small_kernel)[ring_point_index] = neighborhood_intensities[middle];
+         }
+
+         // get median of neighborhood distances with bigger kernel
+         std::nth_element(neighborhood_intensities.begin(), neighborhood_intensities.begin() + middle,
+                          neighborhood_intensities.end());
+         // if values for the previous/old cloud should be computed
+         if(ring_point_index < 0){
+            int index_of_old =
+                    (int) (*m_old_intensities_all_rings_filtered_big_kernel[ring_index]).size() + ring_point_index;
+            (*m_old_intensities_all_rings_filtered_big_kernel[ring_index])[index_of_old] = neighborhood_intensities[middle];
+         }
+         else{
+            (*intensities_ring_filtered_big_kernel)[ring_point_index] = neighborhood_intensities[middle];
+         }
       }
       else
       {
-         (*distances_ring_filtered_small_kernel)[ring_point_index] = neighborhood_distances_small_dist_kernel[middle_small_kernel];
+         break;
       }
 
-      // get median of neighborhood distances with bigger kernel
-      std::nth_element(neighborhood_distances.begin(), neighborhood_distances.begin() + middle, neighborhood_distances.end());
-      // if values for the previous/old cloud should be computed
-      if(ring_point_index < 0)
-      {
-         int index_of_old = (int)(*m_old_distances_all_rings_filtered_big_kernel[ring_index]).size() + ring_point_index;
-         (*m_old_distances_all_rings_filtered_big_kernel[ring_index])[index_of_old] = neighborhood_distances[middle];
-      }
-      else
-      {
-         (*distances_ring_filtered_big_kernel)[ring_point_index] = neighborhood_distances[middle];
-      }
-
-      // do the same for intensities
-
-      // get intensities of neighbors
-      std::vector<float> neighborhood_intensities(m_intensity_median_circ_buffer_vector[ring_index].array_one().first,
-                                                  m_intensity_median_circ_buffer_vector[ring_index].array_one().first
-                                                  + m_intensity_median_circ_buffer_vector[ring_index].array_one().second);
-
-      neighborhood_intensities.insert(neighborhood_intensities.end(),
-                                      &m_intensity_median_circ_buffer_vector[ring_index].array_two().first[0],
-                                      &m_intensity_median_circ_buffer_vector[ring_index].array_two().first[m_intensity_median_circ_buffer_vector[ring_index].array_two().second]);
-
-      // get median of neighborhood intensities with smaller kernel
-      int offset_to_endings = (kernel_size - m_median_small_kernel_size()) / 2;
-      std::nth_element(neighborhood_intensities.begin() + offset_to_endings, neighborhood_intensities.begin() + middle, neighborhood_intensities.end() - offset_to_endings);
-      // if values for the previous/old cloud should be computed
-      if(ring_point_index < 0)
-      {
-         int index_of_old = (int)(*m_old_intensities_all_rings_filtered_small_kernel[ring_index]).size() + ring_point_index;
-         (*m_old_intensities_all_rings_filtered_small_kernel[ring_index])[index_of_old] = neighborhood_intensities[middle];
-      }
-      else
-      {
-         (*intensities_ring_filtered_small_kernel)[ring_point_index] = neighborhood_intensities[middle];
-      }
-
-      // get median of neighborhood distances with bigger kernel
-      std::nth_element(neighborhood_intensities.begin(), neighborhood_intensities.begin() + middle, neighborhood_intensities.end());
-      // if values for the previous/old cloud should be computed
-      if(ring_point_index < 0)
-      {
-         int index_of_old = (int)(*m_old_intensities_all_rings_filtered_big_kernel[ring_index]).size() + ring_point_index;
-         (*m_old_intensities_all_rings_filtered_big_kernel[ring_index])[index_of_old] = neighborhood_intensities[middle];
-      }
-      else
-      {
-         (*intensities_ring_filtered_big_kernel)[ring_point_index] = neighborhood_intensities[middle];
-      }
    }
+
 }
 
 float Detector::computeCertainty(float difference_distances, float difference_intensities)

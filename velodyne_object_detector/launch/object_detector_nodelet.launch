@@ -5,8 +5,8 @@
     <arg name="manager" default="velodyne_nodelet_manager" />
     <arg name="points_topic" default="/velodyne_points" />
     <arg name="certainty_threshold" default="0.0" />
-    <arg name="median_small_kernel_size" default="9" />
-    <arg name="median_big_kernel_size" default="41" />
+    <arg name="object_size_in_m" default="1.2" />
+    <arg name="circular_buffer_capacity" default="1500" />
     <arg name="distance_to_comparison_points" default="3" />
     <arg name="publish_filtered_cloud" default="false" />
     <arg name="publish_debug_cloud" default="false" />
@@ -14,10 +14,10 @@
     <node pkg="nodelet" type="nodelet" name="velodyne_object_detector_nodelet"
           args="load velodyne_object_detector/velodyne_object_detector_nodelet $(arg manager)" output="screen" >
         <param name="points_topic" value="$(arg points_topic)"/>
-        <param name="certainty_threshold_launch" value="$(arg certainty_threshold)"/>
-        <param name="median_small_kernel_size_launch" value="$(arg median_small_kernel_size)"/>
-        <param name="median_big_kernel_size_launch" value="$(arg median_big_kernel_size)"/>
-        <param name="distance_to_comparison_points_launch" value="$(arg distance_to_comparison_points)"/>
+        <param name="certainty_threshold" value="$(arg certainty_threshold)"/>
+        <param name="object_size_in_m" value="$(arg object_size_in_m)"/>
+        <param name="circular_buffer_capacity" value="$(arg circular_buffer_capacity)"/>
+        <param name="distance_to_comparison_points" value="$(arg distance_to_comparison_points)"/>
 
         <param name="publish_filtered_cloud" value="$(arg publish_filtered_cloud)"/>
         <param name="publish_debug_cloud" value="$(arg publish_debug_cloud)"/>

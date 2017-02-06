@@ -91,6 +91,13 @@ public:
    void plot();
 
 private:
+   struct MedianFiltered {
+      float dist_small_kernel;
+      float dist_big_kernel;
+      float intens_small_kernel;
+      float intens_big_kernel;
+   };
+
    const int PUCK_NUM_RINGS;
 
    ros::Subscriber m_velodyne_sub;
@@ -106,8 +113,8 @@ private:
    float m_max_intensity_range;
 
    float m_certainty_threshold_launch;
-   int m_median_small_kernel_size_launch;
-   int m_median_big_kernel_size_launch;
+   float m_object_size_launch;
+   int m_circular_buffer_capacity_launch;
    int m_distance_to_comparison_points_launch;
 
    config_server::Parameter<float> m_certainty_threshold;
@@ -115,9 +122,8 @@ private:
    config_server::Parameter<float> m_intensity_coeff;
    config_server::Parameter<float> m_weight_for_small_intensities;
 
-   config_server::Parameter<int> m_median_small_kernel_size;
-   config_server::Parameter<int> m_median_big_kernel_size_parameter;
-   int m_median_big_kernel_size;
+   config_server::Parameter<int> m_object_size;
+   config_server::Parameter<int> m_circular_buffer_capacity;
    config_server::Parameter<int> m_distance_to_comparison_points;
 
    config_server::Parameter<float> m_median_min_dist;
@@ -133,8 +139,8 @@ private:
    bool m_publish_debug_cloud;
 
    boost::mutex m_parameter_change_lock;
-   std::vector<boost::circular_buffer<float> > m_distance_median_circ_buffer_vector;
-   std::vector<boost::circular_buffer<float> > m_intensity_median_circ_buffer_vector;
+   std::vector<boost::circular_buffer<InputPoint> > m_points_circ_buffer_vector;
+   std::vector<boost::circular_buffer<MedianFiltered> > m_median_filtered_circ_buffer_vector;
 
    std::shared_ptr<std::vector<std::vector<unsigned int> > > m_clouds_per_ring;
    std::shared_ptr<std::vector<std::vector<unsigned int> > > m_old_clouds_per_ring;
@@ -145,7 +151,6 @@ private:
    std::vector<std::shared_ptr<std::vector<float> > > m_old_intensities_all_rings_filtered_big_kernel;
 
    InputPointCloud::ConstPtr m_old_cloud;
-   InputPointCloud::ConstPtr m_parameter_tuning_cloud;
 
    std::vector<int> m_ring_counter;
 };
