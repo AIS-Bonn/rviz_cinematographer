@@ -291,7 +291,7 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<InputPoint> > b
       else
          buffer_median_filtered->push_back(MedianFiltered());
 
-      if ((buffer->end() - big_kernel_size_half) <= it)
+      if ((buffer->end()-1 - big_kernel_size_half) <= it)
       {
 
          break;
@@ -343,19 +343,20 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint
    boost::mutex::scoped_lock lock(m_parameter_change_lock);
 
 
+   int dist_to_comparsion_point = m_distance_to_comparison_points();
 
-   if (buffer_median_filtered->size() <= 2*m_distance_to_comparison_points()+1)
+   if (buffer_median_filtered->size() <= 2*dist_to_comparsion_point+1)
    {
       ROS_WARN("not enough medians in buffer");
       return;
    }
 
-   for(auto median_it = buffer_median_filtered->begin() + m_distance_to_comparison_points(); median_it < buffer_median_filtered->end() - m_distance_to_comparison_points(); ++median_it )
+   for(auto median_it = buffer_median_filtered->begin() + dist_to_comparsion_point; median_it <  buffer_median_filtered->end()-1 - dist_to_comparsion_point; ++median_it )
    {
       // compute index of neighbors to compare to, take into account that it's a scan ring
       // TODO: convert to a distance in meters
-      auto window_start = median_it -m_distance_to_comparison_points();
-      auto window_end = median_it + m_distance_to_comparison_points();
+      auto window_start = median_it -dist_to_comparsion_point;
+      auto window_end = median_it + dist_to_comparsion_point;
 
       // compute differences and resulting certainty value
       float difference_distances = -((*median_it).dist_small_kernel * 2.f
@@ -372,31 +373,31 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint
       {
 	BufferMedians::difference_type offset = std::min<BufferMedians::difference_type>(buffer->size()-1, median_it-buffer_median_filtered->begin());
 	
-         auto current_point_it = buffer->begin() + offset ;
+	auto current_point_it = buffer->begin() + offset ;
 
-         OutputPoint output_point;
-         output_point.x = (*current_point_it).x;
-         output_point.y = (*current_point_it).y;
-         output_point.z = (*current_point_it).z;
-         output_point.detection = certainty_value;
-         obstacle_cloud->push_back(output_point);
+	OutputPoint output_point;
+	output_point.x = (*current_point_it).x;
+	output_point.y = (*current_point_it).y;
+	output_point.z = (*current_point_it).z;
+	output_point.detection = certainty_value;
+	obstacle_cloud->push_back(output_point);
 
-         if(m_publish_debug_cloud)
-         {
-            DebugOutputPoint debug_output_point;
+	if(m_publish_debug_cloud)
+	{
+	  DebugOutputPoint debug_output_point;
 
-            debug_output_point.x = (*current_point_it).x;
-            debug_output_point.y = (*current_point_it).y;
-            debug_output_point.z = (*current_point_it).z;
-            debug_output_point.intensity = (*current_point_it).intensity;
-            debug_output_point.ring = (*current_point_it).ring;
+	  debug_output_point.x = (*current_point_it).x;
+	  debug_output_point.y = (*current_point_it).y;
+	  debug_output_point.z = (*current_point_it).z;
+	  debug_output_point.intensity = (*current_point_it).intensity;
+	  debug_output_point.ring = (*current_point_it).ring;
 
-            debug_output_point.detection_distance = difference_distances;
-            debug_output_point.detection_intensity = difference_intensities;
-            debug_output_point.detection = certainty_value;
+	  debug_output_point.detection_distance = difference_distances;
+	  debug_output_point.detection_intensity = difference_intensities;
+	  debug_output_point.detection = certainty_value;
 
-            debug_obstacle_cloud->push_back(debug_output_point);
-         }
+	  debug_obstacle_cloud->push_back(debug_output_point);
+	}
       }
    }
 
