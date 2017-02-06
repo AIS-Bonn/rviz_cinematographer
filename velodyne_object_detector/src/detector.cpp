@@ -298,7 +298,7 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<InputPoint> > b
       }
       buffer_median_filtered->push_back(median_filtered_value);
       
-      if ( std::distance(it, buffer->end()) > big_kernel_size_half )
+      if ( std::distance(it, buffer->end()) < big_kernel_size_half )
       {
 
          break;
