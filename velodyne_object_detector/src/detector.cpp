@@ -271,27 +271,27 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<InputPoint> > b
 
       // TODO check if kernel_size is valid
 
-      if ( (it - buffer->begin())  > big_kernel_size_half )
+      if ( std::distance(buffer->begin(), it)  > big_kernel_size_half  && std::distance(it, buffer->end()) > big_kernel_size_half )
       {
 
          MedianFiltered median_filtered_value;
 
-//         calcMedianFromBuffer(kernel_size, kernel_size_half, big_kernel_size, big_kernel_size_half, it,
-//                              [&](const InputPoint &fn) -> float { return fn.distance; },
-//                              m_max_dist_for_median_computation(),
-//                              median_filtered_value.dist_small_kernel, median_filtered_value.dist_big_kernel);
-//
-//
-//         calcMedianFromBuffer(kernel_size, kernel_size_half, big_kernel_size, big_kernel_size_half, it,
-//                              [&](const InputPoint &fn) -> float { return fn.intensity; },
-//                              0.f, median_filtered_value.intens_small_kernel, median_filtered_value.intens_big_kernel);
+        calcMedianFromBuffer(kernel_size, kernel_size_half, big_kernel_size, big_kernel_size_half, it,
+                             [&](const InputPoint &fn) -> float { return fn.distance; },
+                             m_max_dist_for_median_computation(),
+                             median_filtered_value.dist_small_kernel, median_filtered_value.dist_big_kernel);
+
+
+        calcMedianFromBuffer(kernel_size, kernel_size_half, big_kernel_size, big_kernel_size_half, it,
+                             [&](const InputPoint &fn) -> float { return fn.intensity; },
+                             0.f, median_filtered_value.intens_small_kernel, median_filtered_value.intens_big_kernel);
 
          buffer_median_filtered->push_back(median_filtered_value);
       }
       else
          buffer_median_filtered->push_back(MedianFiltered());
 
-      if ((buffer->end()-1 - big_kernel_size_half) <= it)
+      if ( std::distance(it, buffer->end()) > big_kernel_size_half )
       {
 
          break;
