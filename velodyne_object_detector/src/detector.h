@@ -8,6 +8,8 @@
 #ifndef _DETECTOR_H_
 #define _DETECTOR_H_ 1
 
+#include <functional>
+
 #include <ros/ros.h>
 #include <nodelet/nodelet.h>
 
@@ -34,7 +36,12 @@
 
 namespace velodyne_object_detector
 {
-
+struct MedianFiltered {
+   float dist_small_kernel;
+   float dist_big_kernel;
+   float intens_small_kernel;
+   float intens_big_kernel;
+};
 class Detector
 {
 public:
@@ -55,8 +62,20 @@ public:
    typedef pcl::PointCloud<DebugOutputPoint>          DebugOutputPointCloud;
    typedef pcl::PointCloud<OutputPoint>               OutputPointCloud;
 
+   typedef typename boost::circular_buffer<InputPoint>::iterator buffer_iterator;
+
+   typedef boost::circular_buffer< InputPoint > BufferInputPoints;
+   typedef std::shared_ptr<BufferInputPoints> BufferInputPointsPtr;
+
+   typedef boost::circular_buffer< MedianFiltered > BufferMedians;
+   typedef std::shared_ptr<BufferMedians> BufferMediansPtr;
+
+
    Detector(ros::NodeHandle node, ros::NodeHandle private_nh);
    ~Detector(){};
+
+
+
 
    void changeParameterSavely();
    void resizeBuffers();
@@ -66,18 +85,14 @@ public:
    void splitCloudByRing(const InputPointCloud::ConstPtr &cloud,
                          std::shared_ptr<std::vector<std::vector<unsigned int> > > clouds_per_ring);
 
-   void filterRing(const InputPointCloud::ConstPtr &cloud,
-                   const std::vector<unsigned int> &indices_of_ring,
-                   int ring_index,
-                   std::shared_ptr<std::vector<float> > distances_ring_filtered_small_kernel,
-                   std::shared_ptr<std::vector<float> > distances_ring_filtered_big_kernel,
-                   std::shared_ptr<std::vector<float> > intensities_ring_filtered_small_kernel,
-                   std::shared_ptr<std::vector<float> > intensities_ring_filtered_big_kernel);
+   void filterRing(std::shared_ptr<boost::circular_buffer<InputPoint> > buffer,
+                   std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered);
 
    float computeCertainty(float difference_distances, float difference_intensities);
 
-   void detectObstacles(const InputPointCloud::ConstPtr &cloud,
-                        const std::shared_ptr<std::vector<std::vector<unsigned int> > > clouds_per_ring);
+   void detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint> > buffer,
+                        std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
+                        OutputPointCloud::Ptr obstacle_cloud, DebugOutputPointCloud::Ptr debug_obstacle_cloud);
 
    bool fillCircularBuffer(const InputPointCloud::ConstPtr &cloud,
                            const std::vector<unsigned int> &indices_of_ring,
@@ -90,14 +105,15 @@ public:
 
    void plot();
 
+   void calcMedianFromBuffer(const int kernel_size,
+                             const int kernel_size_half,
+                             const int big_kernel_size,
+                             const int big_kernel_size_half,
+                             boost::cb_details::iterator<boost::circular_buffer<Detector::InputPoint, std::allocator<Detector::InputPoint>>, boost::cb_details::nonconst_traits<std::allocator<Detector::InputPoint>>> &it,
+                             std::function<float(Detector::InputPoint)> f,
+                             float max_dist_for_median_computation,
+                             float& small_kernel_val, float& big_kernel_val) const;
 private:
-   struct MedianFiltered {
-      float dist_small_kernel;
-      float dist_big_kernel;
-      float intens_small_kernel;
-      float intens_big_kernel;
-   };
-
    const int PUCK_NUM_RINGS;
 
    ros::Subscriber m_velodyne_sub;
@@ -139,8 +155,8 @@ private:
    bool m_publish_debug_cloud;
 
    boost::mutex m_parameter_change_lock;
-   std::vector<boost::circular_buffer<InputPoint> > m_points_circ_buffer_vector;
-   std::vector<boost::circular_buffer<MedianFiltered> > m_median_filtered_circ_buffer_vector;
+   std::vector<BufferInputPointsPtr> m_points_circ_buffer_vector;
+   std::vector<BufferMediansPtr> m_median_filtered_circ_buffer_vector;
 
    std::shared_ptr<std::vector<std::vector<unsigned int> > > m_clouds_per_ring;
    std::shared_ptr<std::vector<std::vector<unsigned int> > > m_old_clouds_per_ring;
