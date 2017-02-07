@@ -350,7 +350,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint
    boost::mutex::scoped_lock lock(m_parameter_change_lock);
 
 
-   int dist_to_comparsion_point = m_distance_to_comparison_points();
+   median_iterator::difference_type dist_to_comparsion_point = std::max<int>(m_distance_to_comparison_points(),0);
 
    if (buffer_median_filtered->size() <= 2*dist_to_comparsion_point+1)
    {
@@ -358,7 +358,10 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint
       return;
    }
 
-   for(auto median_it = buffer_median_filtered->begin() + dist_to_comparsion_point; median_it <  buffer_median_filtered->end() - dist_to_comparsion_point; ++median_it )
+   // make sure to have dist_to_comparsion_point elements before the iterator
+   auto median_it = buffer_median_filtered->begin() + dist_to_comparsion_point;
+   
+   for(; median_it !=  buffer_median_filtered->end()-dist_to_comparsion_point; ++median_it )
    {
       // compute index of neighbors to compare to, take into account that it's a scan ring
       // TODO: convert to a distance in meters
@@ -378,6 +381,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint
 
       if(certainty_value >= m_certainty_threshold())
       {
+	// the offset between buffer_median_filtered->begin() and median_it capped to buffer->size()-1
 	BufferMedians::difference_type offset = std::min<BufferMedians::difference_type>(buffer->size()-1, median_it-buffer_median_filtered->begin());
 	
 	auto current_point_it = buffer->begin() + offset ;
