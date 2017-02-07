@@ -96,7 +96,7 @@ public:
 
    void detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint> > buffer,
                         std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
-			median_iterator& current_element,
+			               median_iterator& current_element,
                         OutputPointCloud::Ptr obstacle_cloud, DebugOutputPointCloud::Ptr debug_obstacle_cloud);
 
    bool fillCircularBuffer(const InputPointCloud::ConstPtr &cloud,
@@ -112,7 +112,7 @@ public:
 
    void calcMedianFromBuffer(const int kernel_size,
                              const int big_kernel_size,
-			     const BufferInputPointsPtr& buffer,
+			                     const BufferInputPointsPtr& buffer,
                              const buffer_const_iterator& current_element,
                              std::function<float(Detector::InputPoint)> f,
                              float max_dist_for_median_computation,
@@ -142,7 +142,7 @@ private:
    config_server::Parameter<float> m_intensity_coeff;
    config_server::Parameter<float> m_weight_for_small_intensities;
 
-   config_server::Parameter<int> m_object_size;
+   config_server::Parameter<float> m_object_size;
    config_server::Parameter<int> m_circular_buffer_capacity;
    config_server::Parameter<int> m_distance_to_comparison_points;
 
