@@ -166,8 +166,8 @@ void Detector::calcMedianFromBuffer(const int kernel_size,
   // filter if difference of distances of neighbor and the current point exceeds a threshold
   if(m_max_dist_for_median_computation() == 0.f)
   {
-    buffer_iterator it_tmp = buffer->begin(); 
-    std::advance(it_tmp, std::distance<buffer_const_iterator> ( it_tmp, big_kernel_start));
+    buffer_const_iterator it_tmp = big_kernel_start; 
+    // use advance to cast const 
     while (it_tmp != big_kernel_end)
       neighborhood_values.push_back(f(*it_tmp++));
   }
@@ -177,9 +177,8 @@ void Detector::calcMedianFromBuffer(const int kernel_size,
     const float distance_of_current_point = f(*current_element);
 
     // check for each point in the buffer if it exceeds the distance threshold to the current point
-    buffer_iterator it_tmp = buffer->begin(); 
-    std::advance(it_tmp, std::distance<buffer_const_iterator> ( it_tmp, big_kernel_start));
-    while ( it_tmp != big_kernel_start )
+    buffer_const_iterator it_tmp = big_kernel_start; 
+    while ( it_tmp != big_kernel_end )
     {
       const float val_tmp = f(*it_tmp);
       const float abs_distance_difference_to_current_point = fabsf(distance_of_current_point - val_tmp);
@@ -187,7 +186,7 @@ void Detector::calcMedianFromBuffer(const int kernel_size,
       if(abs_distance_difference_to_current_point < max_dist_for_median_computation)
       {
 	neighborhood_values.push_back(val_tmp);
-	if(it_tmp >= small_kernel_start && it_tmp != small_kernel_end)
+	if(it_tmp >= small_kernel_start && it_tmp <= small_kernel_end)
 	{
 	  neighborhood_values_small_dist_kernel.push_back( val_tmp );
 	}
