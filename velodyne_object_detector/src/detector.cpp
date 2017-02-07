@@ -82,6 +82,7 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
    
    m_buffer_iters_by_ring.resize(PUCK_NUM_RINGS);
    m_median_iters_by_ring.resize(PUCK_NUM_RINGS);
+   m_detection_iters_by_ring.resize(PUCK_NUM_RINGS);
 
    
    // TODO: anpassen
@@ -143,8 +144,8 @@ void Detector::changeParameterSavely()
 
 void Detector::calcMedianFromBuffer(const int kernel_size,
                              const int big_kernel_size,
-			     const BufferInputPointsPtr& buffer,
-                             const buffer_const_iterator& current_element,
+			     const BufferMediansPtr& buffer,
+                             const median_const_iterator& current_element,
                              std::function<float(Detector::InputPoint)> f,
                              float max_dist_for_median_computation,
                              float& small_kernel_val, float& big_kernel_val) const
@@ -154,10 +155,10 @@ void Detector::calcMedianFromBuffer(const int kernel_size,
   const int kernel_size_half = kernel_size / 2;
   const int big_kernel_size_half = big_kernel_size / 2;
   
-  buffer_const_iterator small_kernel_start = current_element - kernel_size_half;
-  buffer_const_iterator small_kernel_end = current_element + kernel_size_half;
-  buffer_const_iterator big_kernel_start = current_element - big_kernel_size_half;
-  buffer_const_iterator big_kernel_end = current_element + big_kernel_size_half;
+  median_const_iterator small_kernel_start = current_element - kernel_size_half;
+  median_const_iterator small_kernel_end = current_element + kernel_size_half;
+  median_const_iterator big_kernel_start = current_element - big_kernel_size_half;
+  median_const_iterator big_kernel_end = current_element + big_kernel_size_half;
    long int small_kernel_start_offset = -1;
    long int small_kernel_end_offset = -1;
 
@@ -171,24 +172,24 @@ void Detector::calcMedianFromBuffer(const int kernel_size,
   // filter if difference of distances of neighbor and the current point exceeds a threshold
   if(m_max_dist_for_median_computation() == 0.f)
   {
-    buffer_const_iterator it_tmp = big_kernel_start;
+    median_const_iterator it_tmp = big_kernel_start;
      small_kernel_start_offset = std::distance(big_kernel_start, small_kernel_start);
      small_kernel_end_offset = std::distance(big_kernel_start, small_kernel_end);
     // use advance to cast const
     while (it_tmp <= big_kernel_end)
-      neighborhood_values.push_back(f(*it_tmp++));
+      neighborhood_values.push_back(f((*it_tmp++).point));
   }
   else
   {
       // save distance of midpoint in the buffer aka the current point we are looking at
-      const float distance_of_current_point = f(*current_element);
+      const float distance_of_current_point = f((*current_element).point);
 
       // check for each point in the buffer if it exceeds the distance threshold to the current point
-      buffer_const_iterator it_tmp = big_kernel_start;
+      median_const_iterator it_tmp = big_kernel_start;
      int counter = 0;
       while ( it_tmp <= big_kernel_end )
       {
-         const float val_tmp = f(*it_tmp);
+         const float val_tmp = f((*it_tmp).point);
          const float abs_distance_difference_to_current_point = fabsf(distance_of_current_point - val_tmp);
 
          if(abs_distance_difference_to_current_point < max_dist_for_median_computation)
@@ -223,7 +224,7 @@ void Detector::calcMedianFromBuffer(const int kernel_size,
 
 void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 {
-//   pcl::StopWatch timer;
+  pcl::StopWatch timer;
 //   double start = timer.getTime();
 
    DebugOutputPointCloud::Ptr debug_obstacle_cloud (new DebugOutputPointCloud);
@@ -238,36 +239,40 @@ void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 
    for(const auto& point : input_cloud->points)
    {
-      m_points_circ_buffer_vector[point.ring]->push_back(point);
+      m_median_filtered_circ_buffer_vector[point.ring]->push_back(point);
    }
    
 
    for (auto ring = 0; ring < PUCK_NUM_RINGS; ++ring)
    {
      // initialize member iterators (
-     if (!m_points_circ_buffer_vector.at(ring)->empty() && !m_buffer_iters_by_ring[ring])
-     {
-       m_buffer_iters_by_ring[ring] = m_points_circ_buffer_vector.at(ring)->begin();
-     }
-      
-     filterRing(m_points_circ_buffer_vector.at(ring), m_median_filtered_circ_buffer_vector.at(ring), *m_buffer_iters_by_ring.at(ring));
-
-      
      if (!m_median_filtered_circ_buffer_vector.at(ring)->empty() && !m_median_iters_by_ring[ring])
      {
        m_median_iters_by_ring[ring] = m_median_filtered_circ_buffer_vector.at(ring)->begin();
      }
-      
-      
+     
+     
+     if (!m_median_filtered_circ_buffer_vector.at(ring)->empty() && !m_detection_iters_by_ring[ring])
+     {
+       m_detection_iters_by_ring[ring] = m_median_filtered_circ_buffer_vector.at(ring)->begin();
+     }
+     
+     
      if (m_median_iters_by_ring[ring])
      {
-	      detectObstacles(m_points_circ_buffer_vector.at(ring), m_median_filtered_circ_buffer_vector.at(ring), *m_median_iters_by_ring.at(ring),
+      filterRing(m_median_filtered_circ_buffer_vector.at(ring), *m_median_iters_by_ring.at(ring));
+     }
+      
+      
+     if (m_detection_iters_by_ring[ring])
+     {
+	      detectObstacles(m_median_filtered_circ_buffer_vector.at(ring), *m_detection_iters_by_ring.at(ring),
                           obstacle_cloud, debug_obstacle_cloud);
      }
-//      ROS_INFO_STREAM("ring : " << ring << " " << m_points_circ_buffer_vector.at(ring)->size() << " " << m_median_filtered_circ_buffer_vector.at(ring)->size() << " points: " << obstacle_cloud->points.size());
+     ROS_INFO_STREAM("ring : " << ring << " " << m_points_circ_buffer_vector.at(ring)->size() << " " << m_median_filtered_circ_buffer_vector.at(ring)->size() << " points: " << obstacle_cloud->points.size());
    }
 
-//   ROS_INFO_STREAM("time for one cloud in ms : " << timer.getTime() - start);
+  ROS_INFO_STREAM("time for one cloud in ms : " << timer.getTime() );
 
    if(m_publish_debug_cloud)
       m_pub_debug_obstacle_cloud.publish(debug_obstacle_cloud);
@@ -289,9 +294,8 @@ void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 //   }
 //}
 
-void Detector::filterRing(std::shared_ptr<boost::circular_buffer<InputPoint> > buffer,
-                          std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
-			  buffer_iterator& iter
+void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
+			  median_iterator& iter
  			)
 {
 
@@ -301,11 +305,11 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<InputPoint> > b
 //      ROS_INFO_STREAM("it: : " << (*it_test).distance);
     
 //    buffer_iterator& it = iter;
-   while (!buffer->empty() && iter != buffer->end())
+   while (!buffer_median_filtered->empty() && iter != buffer_median_filtered->end())
    {
       const float ANGLE_BETWEEN_SCANPOINTS = 0.2f;
 
-      float alpha = static_cast<float>(std::atan((m_object_size()/2.f)/(*iter).distance) * 180.f / M_PI);
+      float alpha = static_cast<float>(std::atan((m_object_size()/2.f)/(*iter).point.distance) * 180.f / M_PI);
       const int kernel_size = (int)std::ceil(alpha / ANGLE_BETWEEN_SCANPOINTS) + 1;
 
 //      const int kernel_size_half = kernel_size/2;
@@ -315,24 +319,24 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<InputPoint> > b
 
       // TODO check if kernel_size is valid
 
-      MedianFiltered median_filtered_value;
+//       MedianFiltered median_filtered_value;
       
-      if(std::distance(buffer->begin(), iter) >= big_kernel_size_half && std::distance(iter, buffer->end()) > big_kernel_size_half)
+      if(std::distance(buffer_median_filtered->begin(), iter) >= big_kernel_size_half && std::distance(iter, buffer_median_filtered->end()) > big_kernel_size_half)
       {
-        calcMedianFromBuffer(kernel_size, big_kernel_size, buffer, buffer_const_iterator(iter),
+        calcMedianFromBuffer(kernel_size, big_kernel_size, buffer_median_filtered, median_const_iterator(iter),
                              [&](const InputPoint &fn) -> float { return fn.distance; },
                              m_max_dist_for_median_computation(),
-                             median_filtered_value.dist_small_kernel, median_filtered_value.dist_big_kernel);
+                             (*iter).dist_small_kernel, (*iter).dist_big_kernel);
 
-        calcMedianFromBuffer(kernel_size, big_kernel_size, buffer, buffer_const_iterator(iter),
+        calcMedianFromBuffer(kernel_size, big_kernel_size, buffer_median_filtered, median_const_iterator(iter),
                              [&](const InputPoint &fn) -> float { return fn.intensity; },
                              0.f, 
-			     median_filtered_value.intens_small_kernel, median_filtered_value.intens_big_kernel);
+			     (*iter).intens_small_kernel, (*iter).intens_big_kernel);
 // 	ROS_INFO_STREAM_THROTTLE(0.1, "distances: " << median_filtered_value.dist_small_kernel << " " << median_filtered_value.dist_big_kernel);
       }
-      buffer_median_filtered->push_back(median_filtered_value);
+//       buffer_median_filtered->push_back(median_filtered_value);
       
-      if(std::distance(iter, buffer->end()) <= big_kernel_size_half)
+      if(std::distance(iter, buffer_median_filtered->end()) <= big_kernel_size_half)
       {
          break;
       }
@@ -375,8 +379,7 @@ float Detector::computeCertainty(float difference_distances, float difference_in
    return certainty_value;
 }
 
-void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint> > buffer,
-                               std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,	median_iterator& median_it,
+void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,	median_iterator& median_it,
                                OutputPointCloud::Ptr obstacle_cloud, DebugOutputPointCloud::Ptr debug_obstacle_cloud)
 
 {
@@ -384,7 +387,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint
 
    median_iterator::difference_type dist_to_comparsion_point = std::max<int>(m_distance_to_comparison_points(),0);
 
-   if (/*std::distance(buffer_median_filtered->begin(), median_it) <= dist_to_comparsion_point ||*/ std::distance( median_it, buffer_median_filtered->end())  <= dist_to_comparsion_point)
+   if (buffer_median_filtered->size() <= 2*dist_to_comparsion_point+1 || std::distance( median_it, buffer_median_filtered->end())  <= dist_to_comparsion_point)
    {
       ROS_WARN("not enough medians in buffer");
       return;
@@ -419,15 +422,12 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint
 
       if(certainty_value >= m_certainty_threshold())
       {
-         // the offset between buffer_median_filtered->begin() and median_it capped to buffer->size()-1
-         BufferMedians::difference_type offset = std::min<BufferMedians::difference_type>(buffer->size()-1, median_it-buffer_median_filtered->begin());
-
-         auto current_point_it = buffer->begin() + offset ;
+         const auto& current_point = (*median_it).point;
 
          OutputPoint output_point;
-         output_point.x = (*current_point_it).x;
-         output_point.y = (*current_point_it).y;
-         output_point.z = (*current_point_it).z;
+         output_point.x = current_point.x;
+         output_point.y = current_point.y;
+         output_point.z = current_point.z;
          output_point.detection = certainty_value;
          obstacle_cloud->push_back(output_point);
 
@@ -435,11 +435,11 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint
          {
            DebugOutputPoint debug_output_point;
 
-           debug_output_point.x = (*current_point_it).x;
-           debug_output_point.y = (*current_point_it).y;
-           debug_output_point.z = (*current_point_it).z;
-           debug_output_point.intensity = (*current_point_it).intensity;
-           debug_output_point.ring = (*current_point_it).ring;
+           debug_output_point.x = current_point.x;
+           debug_output_point.y = current_point.y;
+           debug_output_point.z = current_point.z;
+           debug_output_point.intensity = current_point.intensity;
+           debug_output_point.ring = current_point.ring;
 
            debug_output_point.detection_distance = difference_distances;
            debug_output_point.detection_intensity = difference_intensities;

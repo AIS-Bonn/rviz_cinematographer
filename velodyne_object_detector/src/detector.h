@@ -36,15 +36,10 @@
 
 namespace velodyne_object_detector
 {
-struct MedianFiltered {
-   float dist_small_kernel;
-   float dist_big_kernel;
-   float intens_small_kernel;
-   float intens_big_kernel;
-};
 class Detector
 {
 public:
+  
    typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
    typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudRGB;
    typedef pcl::PointCloud<pcl::PointXYZI> PointCloudIntensity;
@@ -68,10 +63,22 @@ public:
    typedef boost::circular_buffer< InputPoint > BufferInputPoints;
    typedef std::shared_ptr<BufferInputPoints> BufferInputPointsPtr;
 
+    struct MedianFiltered {
+      MedianFiltered(InputPoint p):point(p){};
+      MedianFiltered(){};
+      InputPoint point;
+      float dist_small_kernel;
+      float dist_big_kernel;
+      float intens_small_kernel;
+      float intens_big_kernel;
+    };	EIGEN_ALIGN16; 
+    
    typedef boost::circular_buffer< MedianFiltered > BufferMedians;
    typedef std::shared_ptr<BufferMedians> BufferMediansPtr;
    typedef typename BufferMedians::iterator median_iterator;
-   
+   typedef typename BufferMedians::const_iterator median_const_iterator;
+ 
+   	
 
    Detector(ros::NodeHandle node, ros::NodeHandle private_nh);
    ~Detector(){};
@@ -87,15 +94,13 @@ public:
    void splitCloudByRing(const InputPointCloud::ConstPtr &cloud,
                          std::shared_ptr<std::vector<std::vector<unsigned int> > > clouds_per_ring);
 
-   void filterRing(std::shared_ptr<boost::circular_buffer<InputPoint> > buffer,
-                          std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
-			  buffer_iterator& iter
+   void filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
+			  median_iterator& iter
  			);
 
    float computeCertainty(float difference_distances, float difference_intensities);
 
-   void detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint> > buffer,
-                        std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
+   void detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
 			               median_iterator& current_element,
                         OutputPointCloud::Ptr obstacle_cloud, DebugOutputPointCloud::Ptr debug_obstacle_cloud);
 
@@ -112,8 +117,8 @@ public:
 
    void calcMedianFromBuffer(const int kernel_size,
                              const int big_kernel_size,
-			                     const BufferInputPointsPtr& buffer,
-                             const buffer_const_iterator& current_element,
+			                     const BufferMediansPtr& buffer,
+                             const median_const_iterator& current_element,
                              std::function<float(Detector::InputPoint)> f,
                              float max_dist_for_median_computation,
                              float& small_kernel_val, float& big_kernel_val) const;
@@ -159,7 +164,6 @@ private:
    bool m_publish_debug_cloud;
 
    boost::mutex m_parameter_change_lock;
-   std::vector<BufferInputPointsPtr> m_points_circ_buffer_vector;
    std::vector<BufferMediansPtr> m_median_filtered_circ_buffer_vector;
 
    std::shared_ptr<std::vector<std::vector<unsigned int> > > m_clouds_per_ring;
@@ -174,8 +178,8 @@ private:
 
    std::vector<int> m_ring_counter;
    
-   std::vector<boost::optional<buffer_iterator>> m_buffer_iters_by_ring;
    std::vector<boost::optional<median_iterator>> m_median_iters_by_ring;
+   std::vector<boost::optional<median_iterator>> m_detection_iters_by_ring;
 };
 
 } // namespace velodyne_object_detector
