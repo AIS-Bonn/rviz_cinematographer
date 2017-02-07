@@ -70,6 +70,7 @@ public:
 
    typedef boost::circular_buffer< MedianFiltered > BufferMedians;
    typedef std::shared_ptr<BufferMedians> BufferMediansPtr;
+   typedef typename BufferMedians::iterator median_iterator;
    
 
    Detector(ros::NodeHandle node, ros::NodeHandle private_nh);
