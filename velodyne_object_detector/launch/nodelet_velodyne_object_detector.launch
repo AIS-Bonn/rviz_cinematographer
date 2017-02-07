@@ -90,7 +90,7 @@
     <arg name="points_topic" value="/velodyne_points_filtered" />
     <arg name="certainty_threshold" value="0.0" />
     <arg name="object_size_in_m" value="1.2" />
-    <arg name="circular_buffer_capacity" value="1500" />
+    <arg name="circular_buffer_capacity" value="3000" />
     <arg name="distance_to_comparison_points" value="3" />
     <arg name="publish_filtered_cloud" value="true" />
     <arg name="publish_debug_cloud" value="false" />

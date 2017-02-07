@@ -11,7 +11,7 @@
     <arg name="publish_filtered_cloud" default="false" />
     <arg name="publish_debug_cloud" default="false" />
 
-    <node launch-prefix="xterm -e gdb --args" pkg="velodyne_object_detector" type="velodyne_object_detector_node" name="velodyne_object_detector"
+    <node launch-prefix="" pkg="velodyne_object_detector" type="velodyne_object_detector_node" name="velodyne_object_detector"
           output="screen" >
         <param name="points_topic" value="$(arg points_topic)"/>
         <param name="certainty_threshold" value="$(arg certainty_threshold)"/>

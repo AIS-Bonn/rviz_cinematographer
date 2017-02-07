@@ -88,12 +88,15 @@ public:
                          std::shared_ptr<std::vector<std::vector<unsigned int> > > clouds_per_ring);
 
    void filterRing(std::shared_ptr<boost::circular_buffer<InputPoint> > buffer,
-                   std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered);
+                          std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
+			  buffer_iterator& iter
+ 			);
 
    float computeCertainty(float difference_distances, float difference_intensities);
 
    void detectObstacles(std::shared_ptr<boost::circular_buffer<InputPoint> > buffer,
                         std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
+			median_iterator& current_element,
                         OutputPointCloud::Ptr obstacle_cloud, DebugOutputPointCloud::Ptr debug_obstacle_cloud);
 
    bool fillCircularBuffer(const InputPointCloud::ConstPtr &cloud,
@@ -170,6 +173,9 @@ private:
    InputPointCloud::ConstPtr m_old_cloud;
 
    std::vector<int> m_ring_counter;
+   
+   std::vector<boost::optional<buffer_iterator>> m_buffer_iters_by_ring;
+   std::vector<boost::optional<median_iterator>> m_median_iters_by_ring;
 };
 
 } // namespace velodyne_object_detector
