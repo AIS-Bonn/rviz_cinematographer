@@ -2,6 +2,8 @@
 <!-- run detection_height_mapper/DetectionHeightMapperNodelet in a nodelet manager -->
 
 <launch>
+    <arg name="start_as_nodelet" default="true" />
+
     <arg name="manager" default="velodyne_nodelet_manager" />
     <arg name="input_topic" default="/mapping_nodelet/pointcloud" />
     <arg name="object_min_height" default="0.1" />
@@ -10,11 +12,23 @@
     <arg name="object_max_footprint_in_sqm" default="0.4" />
     <arg name="object_max_altitude" default="0.5" />
     <arg name="object_max_neighborhood_height" default="0.4" />
-    <arg name="object_hard_inflation_radius" default="0.25" />
-    <arg name="object_soft_inflation_radius" default="0.1" />
+    <arg name="object_inflation_radius" default="0.25" />
     <arg name="object_robot_radius" default="2.5" />
 
-    <node pkg="nodelet" type="nodelet" name="detection_height_mapper_nodelet"
+    <node unless="$(arg start_as_nodelet)" launch-prefix="" pkg="detection_height_mapper"
+          type="detection_height_mapper_node" name="detection_height_mapper" output="screen">
+        <param name="input_topic" value="$(arg input_topic)"/>
+        <param name="object_min_height" value="$(arg object_min_height)"/>
+        <param name="object_max_height" value="$(arg object_max_height)"/>
+        <param name="object_min_footprint_in_sqm" value="$(arg object_min_footprint_in_sqm)"/>
+        <param name="object_max_footprint_in_sqm" value="$(arg object_max_footprint_in_sqm)"/>
+        <param name="object_max_altitude" value="$(arg object_max_altitude)"/>
+        <param name="object_max_neighborhood_height" value="$(arg object_max_neighborhood_height)"/>
+        <param name="object_inflation_radius" value="$(arg object_inflation_radius)"/>
+        <param name="object_robot_radius" value="$(arg object_robot_radius)"/>
+    </node>
+
+    <node if="$(arg start_as_nodelet)" pkg="nodelet" type="nodelet" name="detection_height_mapper_nodelet"
           args="load detection_height_mapper/detection_height_mapper_nodelet $(arg manager)" output="screen" >
         <param name="input_topic" value="$(arg input_topic)"/>
         <param name="object_min_height" value="$(arg object_min_height)"/>
@@ -23,8 +37,8 @@
         <param name="object_max_footprint_in_sqm" value="$(arg object_max_footprint_in_sqm)"/>
         <param name="object_max_altitude" value="$(arg object_max_altitude)"/>
         <param name="object_max_neighborhood_height" value="$(arg object_max_neighborhood_height)"/>
-        <param name="object_hard_inflation_radius" value="$(arg object_hard_inflation_radius)"/>
-        <param name="object_soft_inflation_radius" value="$(arg object_soft_inflation_radius)"/>
+        <param name="object_inflation_radius" value="$(arg object_inflation_radius)"/>
         <param name="object_robot_radius" value="$(arg object_robot_radius)"/>
     </node>
+
 </launch>

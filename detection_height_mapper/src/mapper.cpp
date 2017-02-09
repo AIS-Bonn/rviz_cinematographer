@@ -13,8 +13,8 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    : m_height_image_size_x("detection_height_mapper/image_size_x", 0, 16, 256, 32)
    , m_height_image_size_y("detection_height_mapper/image_size_y", 0, 16, 256, 32)
    , m_height_image_resolution("detection_height_mapper/image_resolution", 0.01, 0.01, 0.5, 0.05)
-   , m_height_image_min_z("detection_height_mapper/image_min_z", -5.f, 0.1f, 5.f, -1.0)
-   , m_height_image_max_z("detection_height_mapper/image_max_z", -5.f, 0.1f, 5.f, 2.0)
+   , m_height_image_min_z("detection_height_mapper/image_min_z", -20.f, 0.1f, 20.f, -20.0)
+   , m_height_image_max_z("detection_height_mapper/image_max_z", -20.f, 0.1f, 20.f, 20.0)
    , m_min_object_points_per_cell("detection_height_mapper/object_min_points", 0, 1, 100, 10)
    , m_object_detection_threshold("detection_height_mapper/object_thresh", 0.0, 0.05, 1.0, 0.9)
    , m_object_odds_hit("detection_height_mapper/object_odds_hit", 0.0, 0.05, 1.0, 0.7)
@@ -117,7 +117,7 @@ void Mapper::callback(const InputPointCloud::ConstPtr &input_cloud)
 
    ros::Duration exec_time = ros::Time::now() - start;
    // TODO change to DEBUG
-   ROS_INFO_STREAM("Handling one pointcloud took " << exec_time.toSec() << " seconds.");
+   ROS_DEBUG_STREAM("Detection Height Image: Handling one pointcloud took " << exec_time.toSec() << " seconds.");
 }
 
 } // namespace detection_height_mapper
