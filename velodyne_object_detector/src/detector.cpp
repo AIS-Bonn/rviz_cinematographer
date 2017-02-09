@@ -72,15 +72,11 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
       m_distance_to_comparison_points.set(m_distance_to_comparison_points_launch);
 
    for(int i = 0; i < PUCK_NUM_RINGS; i++)
-   {
-      BufferInputPointsPtr points_circ_buffer(new BufferInputPoints(m_circular_buffer_capacity()));
-      m_points_circ_buffer_vector.push_back(points_circ_buffer);
-      
+   {    
       BufferMediansPtr median_filtered_circ_buffer(new BufferMedians(m_circular_buffer_capacity()));
       m_median_filtered_circ_buffer_vector.push_back(median_filtered_circ_buffer);
    }
    
-   m_buffer_iters_by_ring.resize(PUCK_NUM_RINGS);
    m_median_iters_by_ring.resize(PUCK_NUM_RINGS);
    m_detection_iters_by_ring.resize(PUCK_NUM_RINGS);
 
@@ -269,10 +265,10 @@ void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 	      detectObstacles(m_median_filtered_circ_buffer_vector.at(ring), *m_detection_iters_by_ring.at(ring),
                           obstacle_cloud, debug_obstacle_cloud);
      }
-     ROS_INFO_STREAM("ring : " << ring << " " << m_points_circ_buffer_vector.at(ring)->size() << " " << m_median_filtered_circ_buffer_vector.at(ring)->size() << " points: " << obstacle_cloud->points.size());
+//      ROS_INFO_STREAM("ring : " << ring << " " << m_points_circ_buffer_vector.at(ring)->size() << " " << m_median_filtered_circ_buffer_vector.at(ring)->size() << " points: " << obstacle_cloud->points.size());
    }
 
-  ROS_INFO_STREAM("time for one cloud in ms : " << timer.getTime() );
+//   ROS_INFO_STREAM("time for one cloud in ms : " << timer.getTime() );
 
    if(m_publish_debug_cloud)
       m_pub_debug_obstacle_cloud.publish(debug_obstacle_cloud);
