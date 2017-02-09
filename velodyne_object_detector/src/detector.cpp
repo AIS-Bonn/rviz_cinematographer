@@ -13,17 +13,19 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
 : PUCK_NUM_RINGS(16)
  , m_max_prob_by_distance(0.75f)
  , m_max_intensity_range(100.f)
- , m_certainty_threshold_launch(0.5f)
  , m_object_size_launch(1.2f)
- , m_circular_buffer_capacity_launch(1500)
+ , m_circular_buffer_capacity_launch(3000)
  , m_distance_to_comparison_points_launch(10)
- , m_certainty_threshold("velodyne_object_detector/certainty_threshold", 0.0, 0.01, 1.0, m_certainty_threshold_launch)
- , m_dist_coeff("velodyne_object_detector/dist_coeff", 0.0, 0.1, 10.0, 0.7)//1.0)
- , m_intensity_coeff("velodyne_object_detector/intensity_coeff", 0.0, 0.0001, 0.01, 0.0039)//(1.f - m_max_prob_by_distance)/m_max_intensity_range)
+ , m_kernel_size_diff_factor_launch(6)
+ , m_max_kernel_size(100)
+ , m_certainty_threshold("velodyne_object_detector/certainty_threshold", 0.0, 0.01, 1.0, 0.5)
+ , m_dist_coeff("velodyne_object_detector/dist_coeff", 0.0, 0.1, 10.0, 1.0)
+ , m_intensity_coeff("velodyne_object_detector/intensity_coeff", 0.0, 0.0001, 0.01, (1.f - m_max_prob_by_distance)/m_max_intensity_range)
  , m_weight_for_small_intensities("velodyne_object_detector/weight_for_small_intensities", 1.f, 1.f, 30.f, 11.f)
  , m_object_size("velodyne_object_detector/object_size_in_m", 0.005, 0.005, m_object_size_launch*2, m_object_size_launch)
  , m_circular_buffer_capacity("velodyne_object_detector/circular_buffer_capacity", 1, 100, m_circular_buffer_capacity_launch*2, m_circular_buffer_capacity_launch)
  , m_distance_to_comparison_points("velodyne_object_detector/distance_to_comparison_points", 1, 1, m_distance_to_comparison_points_launch*2, m_distance_to_comparison_points_launch)
+ , m_kernel_size_diff_factor("velodyne_object_detector/kernel_size_diff_factor", 1, 1, 20, 6)
  , m_median_min_dist("velodyne_object_detector/median_min_dist", 0.0, 0.01, .2, 0.1)
  , m_median_thresh1_dist("velodyne_object_detector/median_thresh1_dist", 0.0, 0.05, 2.5, 0.35)
  , m_median_thresh2_dist("velodyne_object_detector/median_thresh2_dist", 0.0, 0.1, 6.0, 3.7)
@@ -47,7 +49,7 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
       m_plotter->setShowLegend (true);
       m_plotter->setXTitle("distance difference in meters");
       m_plotter->setYTitle("object certainty");
-//      plot();
+      plot();
 
       m_pub_debug_obstacle_cloud = node.advertise<DebugOutputPointCloud >("/velodyne_detector_debug_objects", 1);
    }
@@ -64,14 +66,17 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
       m_object_size.set(m_object_size_launch);
 
    if(private_nh.getParam("circular_buffer_capacity", m_circular_buffer_capacity_launch))
-   {
       m_circular_buffer_capacity.set(m_circular_buffer_capacity_launch);
-   }
 
    if(private_nh.getParam("distance_to_comparison_points", m_distance_to_comparison_points_launch))
       m_distance_to_comparison_points.set(m_distance_to_comparison_points_launch);
 
-   for(int i = 0; i < PUCK_NUM_RINGS; i++)
+   if(private_nh.getParam("kernel_size_diff_factor", m_kernel_size_diff_factor_launch))
+      m_kernel_size_diff_factor.set(m_kernel_size_diff_factor_launch);
+
+   private_nh.getParam("max_kernel_size", m_max_kernel_size);
+
+      for(int i = 0; i < PUCK_NUM_RINGS; i++)
    {    
       BufferMediansPtr median_filtered_circ_buffer(new BufferMedians(m_circular_buffer_capacity()));
       m_median_filtered_circ_buffer_vector.push_back(median_filtered_circ_buffer);
@@ -82,8 +87,6 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
 
    
    // TODO: anpassen
-   m_ring_counter = std::vector<int>(PUCK_NUM_RINGS, 0);
-
 //   m_certainty_threshold.setCallback(boost::bind(&Detector::changeParameterSavely, this));
 //   m_dist_coeff.setCallback(boost::bind(&Detector::changeParameterSavely, this));
 //   m_intensity_coeff.setCallback(boost::bind(&Detector::changeParameterSavely, this));
@@ -105,8 +108,8 @@ void Detector::changeParameterSavely()
 {
    boost::mutex::scoped_lock lock(m_parameter_change_lock);
    ROS_DEBUG("New parameter");
-//   if(m_publish_debug_cloud)
-//      plot();
+   if(m_publish_debug_cloud)
+      plot();
 }
 
 //void Detector::resizeBuffers()
@@ -221,7 +224,6 @@ void Detector::calcMedianFromBuffer(const int kernel_size,
 void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 {
   pcl::StopWatch timer;
-//   double start = timer.getTime();
 
    DebugOutputPointCloud::Ptr debug_obstacle_cloud (new DebugOutputPointCloud);
    debug_obstacle_cloud->header = input_cloud->header;
@@ -237,38 +239,34 @@ void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
    {
       m_median_filtered_circ_buffer_vector[point.ring]->push_back(point);
    }
-   
 
    for (auto ring = 0; ring < PUCK_NUM_RINGS; ++ring)
    {
-     // initialize member iterators (
+     // initialize member iterators
      if (!m_median_filtered_circ_buffer_vector.at(ring)->empty() && !m_median_iters_by_ring[ring])
      {
        m_median_iters_by_ring[ring] = m_median_filtered_circ_buffer_vector.at(ring)->begin();
      }
-     
-     
+
      if (!m_median_filtered_circ_buffer_vector.at(ring)->empty() && !m_detection_iters_by_ring[ring])
      {
        m_detection_iters_by_ring[ring] = m_median_filtered_circ_buffer_vector.at(ring)->begin();
      }
      
-     
      if (m_median_iters_by_ring[ring])
      {
       filterRing(m_median_filtered_circ_buffer_vector.at(ring), *m_median_iters_by_ring.at(ring));
      }
-      
-      
+
      if (m_detection_iters_by_ring[ring])
      {
 	      detectObstacles(m_median_filtered_circ_buffer_vector.at(ring), *m_detection_iters_by_ring.at(ring),
                           obstacle_cloud, debug_obstacle_cloud);
      }
-//      ROS_INFO_STREAM("ring : " << ring << " " << m_points_circ_buffer_vector.at(ring)->size() << " " << m_median_filtered_circ_buffer_vector.at(ring)->size() << " points: " << obstacle_cloud->points.size());
+//      ROS_INFO_STREAM("ring : " << ring << " " << m_median_filtered_circ_buffer_vector.at(ring)->size() << " points: " << obstacle_cloud->points.size());
    }
 
-//   ROS_INFO_STREAM("time for one cloud in ms : " << timer.getTime() );
+   ROS_INFO_STREAM("time for one cloud in ms : " << timer.getTime() );
 
    if(m_publish_debug_cloud)
       m_pub_debug_obstacle_cloud.publish(debug_obstacle_cloud);
@@ -280,37 +278,23 @@ void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 
 }
 
-//// sort points by ring number and save indices in vector
-//void Detector::splitCloudByRing(const InputPointCloud::ConstPtr &cloud,
-//                                                     std::shared_ptr<std::vector<std::vector<unsigned int> > > clouds_per_ring)
-//{
-//   for(unsigned int point_index = 0; point_index < cloud->size(); point_index++)
-//   {
-//      (*clouds_per_ring)[cloud->points[point_index].ring].push_back(point_index);
-//   }
-//}
-
 void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
-			  median_iterator& iter
- 			)
+                          median_iterator& iter)
 {
-
-//     ROS_INFO_STREAM("buffer: " << buffer->size());
-//    buffer_iterator it_test = buffer->begin();
-//    if (it_test != buffer->end())
-//      ROS_INFO_STREAM("it: : " << (*it_test).distance);
-    
-//    buffer_iterator& it = iter;
    while (!buffer_median_filtered->empty() && iter != buffer_median_filtered->end())
    {
       const float ANGLE_BETWEEN_SCANPOINTS = 0.2f;
 
       float alpha = static_cast<float>(std::atan((m_object_size()/2.f)/(*iter).point.distance) * 180.f / M_PI);
-      const int kernel_size = (int)std::ceil(alpha / ANGLE_BETWEEN_SCANPOINTS) + 1;
+      int kernel_size = (int)std::ceil(alpha / ANGLE_BETWEEN_SCANPOINTS) + 1;
 
-//      const int kernel_size_half = kernel_size/2;
-      const int big_kernel_size = kernel_size*4;
-      const int big_kernel_size_half = kernel_size*2;
+      kernel_size = std::max(kernel_size, 1);
+      kernel_size = std::min(kernel_size, m_max_kernel_size);
+
+      int big_kernel_size = kernel_size * m_kernel_size_diff_factor();
+      big_kernel_size = std::max(big_kernel_size, 9);
+
+      const int big_kernel_size_half = big_kernel_size / 2;
 
 
       // TODO check if kernel_size is valid
@@ -447,45 +431,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
    }
 
 }
-//
-//bool Detector::fillCircularBuffer(const InputPointCloud::ConstPtr &cloud,
-//                                                       const std::vector<unsigned int> &indices_of_ring,
-//                                                       int ring_index)
-//{
-//   if(!m_distance_median_circ_buffer_vector[ring_index].full())
-//   {
-//      // for first filling take zeros where there are no values ( + 1 because this one is going to be replaced later )
-//      if(m_distance_median_circ_buffer_vector[ring_index].empty())
-//      {
-//         for(int i = 0; i < (int)m_distance_median_circ_buffer_vector[ring_index].capacity()/2 + 1; i++)
-//         {
-//            m_distance_median_circ_buffer_vector[ring_index].push_back(0.f);
-//            m_intensity_median_circ_buffer_vector[ring_index].push_back(0.f);
-//         }
-//      }
-//
-//      // fill rest
-//      for(int ring_point_index = 0; ring_point_index < (int)indices_of_ring.size(); ring_point_index++)
-//      {
-//         int current_cloud_point_index = indices_of_ring[ring_point_index];
-//         m_distance_median_circ_buffer_vector[ring_index].push_back(cloud->points[current_cloud_point_index].distance);
-//         m_intensity_median_circ_buffer_vector[ring_index].push_back(cloud->points[current_cloud_point_index].intensity);
-//         if(m_distance_median_circ_buffer_vector[ring_index].full())
-//            break;
-//      }
-//   }
-//
-//   // if there were not enough points to fill the buffer, skip this ring for now
-//   if(!m_distance_median_circ_buffer_vector[ring_index].full())
-//   {
-//      m_ring_counter[ring_index] = 0;
-//      m_distance_median_circ_buffer_vector[ring_index].clear();
-//      return false;
-//   }
-//
-//   return true;
-//}
-//
+
 //void Detector::fillFilteredCloud(const InputPointCloud::ConstPtr &cloud,
 //                                                      InputPointCloud::Ptr filtered_cloud,
 //                                                      const std::vector<unsigned int> &indices_of_ring,
@@ -531,58 +477,58 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
 //      }
 //   }
 //}
-//
-//void Detector::plot()
-//{
-//   // set up x-axis
-//   double epsilon = 0.00000001;
-//   const int range = 8;
-//   std::vector<double> xAxis(range, 0.0);
-//   xAxis[0] = 0.0;
-//   xAxis[1] = m_median_min_dist();
-//   xAxis[2] = m_median_min_dist() + epsilon;
-//   xAxis[3] = m_median_thresh1_dist();
-//   xAxis[4] = m_median_thresh2_dist();
-//   xAxis[5] = m_median_max_dist();
-//   xAxis[6] = m_median_max_dist() + epsilon;
-//   xAxis[7] = m_median_max_dist() + 0.5;
-//
-//   std::vector<double> constant_one(range, 0.0);
-//   for(int i = 0; i < range; i++) constant_one[i] = 1.0 + epsilon;
-//
-//   std::vector<double> distance_proportion(range, 0.0);
-//   distance_proportion[0] = 0.0;
-//   distance_proportion[1] = 0.0;
-//   distance_proportion[2] = 0.0;
-//   distance_proportion[3] = m_max_prob_by_distance * m_dist_coeff();
-//   distance_proportion[4] = m_max_prob_by_distance * m_dist_coeff();
-//   distance_proportion[5] = 0.0;
-//   distance_proportion[6] = 0.0;
-//   distance_proportion[7] = 0.0;
-//
-//   std::vector<double> intensity_proportion(range, 0.0);
-//   intensity_proportion[0] = 0.0;
-//   intensity_proportion[1] = 0.0;
-//   intensity_proportion[2] = m_max_intensity_range * m_intensity_coeff();
-//   intensity_proportion[3] = m_max_prob_by_distance * m_dist_coeff() + m_max_intensity_range * m_intensity_coeff();
-//   intensity_proportion[4] = m_max_prob_by_distance * m_dist_coeff() + m_max_intensity_range * m_intensity_coeff();
-//   intensity_proportion[5] = m_max_intensity_range * m_intensity_coeff();
-//   intensity_proportion[6] = 0.0;
-//   intensity_proportion[7] = 0.0;
-//
-//   // add histograms to plotter
-//   std::vector<char> black{0, 0, 0, (char) 255};
-//   std::vector<char> red{(char) 255, 0, 0, (char) 255};
-//   std::vector<char> green{0, (char) 255, 0, (char) 255};
-//
-//   m_plotter->clearPlots();
-//
-//   m_plotter->setYRange(0.0, std::max(1.1, intensity_proportion[3]));
-//   m_plotter->addPlotData(xAxis, distance_proportion, "Distance proportion", vtkChart::LINE, red);
-//   m_plotter->addPlotData(xAxis, intensity_proportion, "Intensity proportion", vtkChart::LINE, green);
-//   m_plotter->addPlotData(xAxis, constant_one, "One", vtkChart::LINE, black);
-//
-//   m_plotter->spinOnce(0);
-//}
+
+void Detector::plot()
+{
+   // set up x-axis
+   double epsilon = 0.00000001;
+   const int range = 8;
+   std::vector<double> xAxis(range, 0.0);
+   xAxis[0] = 0.0;
+   xAxis[1] = m_median_min_dist();
+   xAxis[2] = m_median_min_dist() + epsilon;
+   xAxis[3] = m_median_thresh1_dist();
+   xAxis[4] = m_median_thresh2_dist();
+   xAxis[5] = m_median_max_dist();
+   xAxis[6] = m_median_max_dist() + epsilon;
+   xAxis[7] = m_median_max_dist() + 0.5;
+
+   std::vector<double> constant_one(range, 0.0);
+   for(int i = 0; i < range; i++) constant_one[i] = 1.0 + epsilon;
+
+   std::vector<double> distance_proportion(range, 0.0);
+   distance_proportion[0] = 0.0;
+   distance_proportion[1] = 0.0;
+   distance_proportion[2] = 0.0;
+   distance_proportion[3] = m_max_prob_by_distance * m_dist_coeff();
+   distance_proportion[4] = m_max_prob_by_distance * m_dist_coeff();
+   distance_proportion[5] = 0.0;
+   distance_proportion[6] = 0.0;
+   distance_proportion[7] = 0.0;
+
+   std::vector<double> intensity_proportion(range, 0.0);
+   intensity_proportion[0] = 0.0;
+   intensity_proportion[1] = 0.0;
+   intensity_proportion[2] = m_max_intensity_range * m_intensity_coeff();
+   intensity_proportion[3] = m_max_prob_by_distance * m_dist_coeff() + m_max_intensity_range * m_intensity_coeff();
+   intensity_proportion[4] = m_max_prob_by_distance * m_dist_coeff() + m_max_intensity_range * m_intensity_coeff();
+   intensity_proportion[5] = m_max_intensity_range * m_intensity_coeff();
+   intensity_proportion[6] = 0.0;
+   intensity_proportion[7] = 0.0;
+
+   // add histograms to plotter
+   std::vector<char> black{0, 0, 0, (char) 255};
+   std::vector<char> red{(char) 255, 0, 0, (char) 255};
+   std::vector<char> green{0, (char) 255, 0, (char) 255};
+
+   m_plotter->clearPlots();
+
+   m_plotter->setYRange(0.0, std::max(1.1, intensity_proportion[3]));
+   m_plotter->addPlotData(xAxis, distance_proportion, "Distance proportion", vtkChart::LINE, red);
+   m_plotter->addPlotData(xAxis, intensity_proportion, "Intensity proportion", vtkChart::LINE, green);
+   m_plotter->addPlotData(xAxis, constant_one, "One", vtkChart::LINE, black);
+
+   m_plotter->spinOnce(0);
+}
 
 } // namespace velodyne_object_detector

@@ -78,21 +78,14 @@ public:
    typedef typename BufferMedians::iterator median_iterator;
    typedef typename BufferMedians::const_iterator median_const_iterator;
  
-   	
 
    Detector(ros::NodeHandle node, ros::NodeHandle private_nh);
    ~Detector(){};
-
-
-
 
    void changeParameterSavely();
    void resizeBuffers();
 
    void velodyneCallback(const InputPointCloud::ConstPtr &input_cloud);
-
-   void splitCloudByRing(const InputPointCloud::ConstPtr &cloud,
-                         std::shared_ptr<std::vector<std::vector<unsigned int> > > clouds_per_ring);
 
    void filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
 			  median_iterator& iter
@@ -103,10 +96,6 @@ public:
    void detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
 			               median_iterator& current_element,
                         OutputPointCloud::Ptr obstacle_cloud, DebugOutputPointCloud::Ptr debug_obstacle_cloud);
-
-   bool fillCircularBuffer(const InputPointCloud::ConstPtr &cloud,
-                           const std::vector<unsigned int> &indices_of_ring,
-                           int ring_index);
 
    void fillFilteredCloud(const InputPointCloud::ConstPtr &cloud,
                           InputPointCloud::Ptr filtered_cloud,
@@ -141,6 +130,8 @@ private:
    float m_object_size_launch;
    int m_circular_buffer_capacity_launch;
    int m_distance_to_comparison_points_launch;
+   int m_kernel_size_diff_factor_launch;
+   int m_max_kernel_size;
 
    config_server::Parameter<float> m_certainty_threshold;
    config_server::Parameter<float> m_dist_coeff;
@@ -150,6 +141,7 @@ private:
    config_server::Parameter<float> m_object_size;
    config_server::Parameter<int> m_circular_buffer_capacity;
    config_server::Parameter<int> m_distance_to_comparison_points;
+   config_server::Parameter<int> m_kernel_size_diff_factor;
 
    config_server::Parameter<float> m_median_min_dist;
    config_server::Parameter<float> m_median_thresh1_dist;
@@ -166,18 +158,6 @@ private:
    boost::mutex m_parameter_change_lock;
    std::vector<BufferMediansPtr> m_median_filtered_circ_buffer_vector;
 
-   std::shared_ptr<std::vector<std::vector<unsigned int> > > m_clouds_per_ring;
-   std::shared_ptr<std::vector<std::vector<unsigned int> > > m_old_clouds_per_ring;
-
-   std::vector<std::shared_ptr<std::vector<float> > > m_old_distances_all_rings_filtered_small_kernel;
-   std::vector<std::shared_ptr<std::vector<float> > > m_old_distances_all_rings_filtered_big_kernel;
-   std::vector<std::shared_ptr<std::vector<float> > > m_old_intensities_all_rings_filtered_small_kernel;
-   std::vector<std::shared_ptr<std::vector<float> > > m_old_intensities_all_rings_filtered_big_kernel;
-
-   InputPointCloud::ConstPtr m_old_cloud;
-
-   std::vector<int> m_ring_counter;
-   
    std::vector<boost::optional<median_iterator>> m_median_iters_by_ring;
    std::vector<boost::optional<median_iterator>> m_detection_iters_by_ring;
 };

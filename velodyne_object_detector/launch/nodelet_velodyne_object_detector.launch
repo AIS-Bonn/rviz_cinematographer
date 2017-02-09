@@ -4,7 +4,7 @@
   <!-- ========= Bagplayer ========== -->
   <arg name="use_bag" default="true"/>
   <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/new_objects_proto/velodyne_2017-01-17-15-46-21.bag"/>
-  <arg name="rate" default="0.1"/>
+  <arg name="rate" default="0.2"/>
   <arg name="start" default="52"/>
 
   <node if="$(arg use_bag)" pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
@@ -13,13 +13,14 @@
 
   <param if="$(arg use_bag)" name="/use_sim_time" value="true" />
 
-
   <node unless="$(arg use_bag)" name="pcd_publisher" pkg="pcd_publisher" type="pcd_publisher" output="screen">
-    <param name="path_to_file" value="/home/razlaw/clouds/map2.pcd"/>
-    <param name="output_topic" value="/mapping_nodelet/pointcloud"/>
-    <param name="output_frame_id" value="/odom"/>
+    <!--<param name="path_to_file" value="/home/razlaw/clouds/map2.pcd"/>-->
+    <!--<param name="output_topic" value="/mapping_nodelet/pointcloud" />-->
+    <!--<param name="output_frame_id" value="/odom"/>-->
+    <param name="path_to_file" value="/home/razlaw/clouds/this.pcd"/>
+    <param name="output_topic" value="/velodyne_points_filtered" />
+    <param name="output_frame_id" value="/velodyne"/>
     <param name="publishing_rate" value="2"/>
-
   </node>
 
 
@@ -86,17 +87,21 @@
 
   <!-- ============= Object Detection =============  -->
   <include file="$(find velodyne_object_detector)/launch/object_detector_nodelet.launch">
+    <arg name="start_as_nodelet" value="true"/>
+
     <arg name="manager" value="velodyne_nodelet_manager" />
     <arg name="points_topic" value="/velodyne_points_filtered" />
     <arg name="certainty_threshold" value="0.0" />
-    <arg name="object_size_in_m" value="1.2" />
+    <arg name="object_size_in_m" value="0.05" />
     <arg name="circular_buffer_capacity" value="3000" />
-    <arg name="distance_to_comparison_points" value="3" />
-    <arg name="publish_filtered_cloud" value="true" />
+    <arg name="distance_to_comparison_points" value="1" />
+    <arg name="kernel_size_diff_factor" value="9" />
+    <arg name="max_kernel_size" value="100" />
+    <arg name="publish_filtered_cloud" value="false" />
     <arg name="publish_debug_cloud" value="false" />
   </include>
-  
-<group if="false">
+
+
   <!-- ============= Mapping =============  -->
   <include file="$(find mrs_laser_mapping)/launch/velodyne_mapping.launch">
     <arg name="build_alloc_map" value="false"/>
@@ -117,7 +122,8 @@
 
   <!-- ============= Detection Height Image =============  -->
   <include  file="$(find detection_height_mapper)/launch/detection_height_mapper_nodelet.launch">
+    <arg name="start_as_nodelet" value="true"/>
     <arg name="input_topic" value="/mapping_nodelet/pointcloud"/>
   </include>
- </group> 
+
 </launch>
