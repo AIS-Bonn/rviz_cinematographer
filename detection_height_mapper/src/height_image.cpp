@@ -149,6 +149,8 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
                                     float clamp_thresh_min,
                                     float clamp_thresh_max)
 {
+
+
    std::vector<std::vector<float> > storage(m_buckets_x * m_buckets_y);
 
    for(const auto& point : cloud.points)
@@ -316,6 +318,10 @@ void HeightImage::detectObjects(int num_min_count,
 		}
 	}
 
+   // set bins to zero if height difference in neighborhood exceeds a threshold
+   // should prevent false positives that are too near to a wall or big object
+   filterObjectsByNeighborHeight(m_objects_inflated, m_robot_radius, m_max_neighborhood_height_threshold);
+
    if(inflate_objects)
       inflateObjects(m_objects_inflated, m_inflation_radius);
 	
@@ -324,10 +330,6 @@ void HeightImage::detectObjects(int num_min_count,
    int min_number_of_cells = (int)std::round(m_min_footprint_size/area_of_one_cell);
    int max_number_of_cells = (int)std::ceil(m_max_footprint_size/area_of_one_cell);
 	filterObjectsBySize(m_objects_inflated, min_number_of_cells, max_number_of_cells);
-
-	// set bins to zero if height difference in neighborhood exceeds a threshold
-	// should prevent false positives that are too near to a wall or big object
-   filterObjectsByNeighborHeight(m_objects_inflated, m_robot_radius, m_max_neighborhood_height_threshold);
 }
 
 void HeightImage::fillObjectMap(nav_msgs::OccupancyGrid* map)
@@ -369,65 +371,55 @@ void HeightImage::fillObjectMap(nav_msgs::OccupancyGrid* map)
 	}
 }
 
-void HeightImage::fillObjectColorImage(sensor_msgs::Image* img)
+void HeightImage::fillObjectColorImage(sensor_msgs::ImagePtr img)
 {
-	img->width = m_buckets_x;
-	img->height = m_buckets_y;
-	img->encoding = sensor_msgs::image_encodings::RGBA8;
-	img->step = m_buckets_x * 4;
-	img->data.resize(img->step * img->height);
-	int ridx = 0;
-	uint8_t* wptr = img->data.data();
+   cv_bridge::CvImagePtr cv_ptr(new cv_bridge::CvImage());
+   cv_ptr->encoding = sensor_msgs::image_encodings::RGBA8;
+   cv_ptr->image.create(cv::Size(m_buckets_x, m_buckets_y), CV_8UC4);
+   cv_ptr->image.setTo(255);
 
+   // create simple height image
 	for(int y = 0; y < m_buckets_y; ++y)
 	{
 		for(int x = 0; x < m_buckets_x; ++x)
 		{
-         int* detection_binary = &m_objects_inflated(y, x);
-         float* detection = &m_object_detection(y, x);
 			float* height = &m_median_height(y, x);
 
 			// background color if height in bin is not valid
 			if(!std::isfinite(*height))
 			{
-				wptr[0] = wptr[1] = wptr[2] = 255;
-				wptr[3] = 255;
-				wptr += 4;
-				ridx++;
 				continue;
 			}
 
 			// for non object pixels
 			// scale height and cap to zero to one, the higher the mean the brighter
 			float brightness = limited(0.f, (*height - m_min_height_threshold) / (m_max_height_threshold - m_min_height_threshold), 1.f);
-			float redshift = 0.f;
 
-			if (*detection_binary >= m_object_detection_threshold)
-			{
-            if(*detection >= m_object_detection_threshold)
-            {
-               // TODO more sophisticated colorization
-               redshift = 1.f; //limited(0.0, (detection - min_diff) / (max_diff - min_diff), 1.0);
-               brightness = limited(0.f, *detection, 1.f);
-            }
-            else
-            {
-               redshift = 0.62f;
-               brightness = 1.58f;
-            }
-			}
-
-			float r = brightness * redshift;
-         float g = brightness * (1.f - redshift);
-         float b = 0;
-			wptr[0] = limited<uint8_t>(r * 255);  // R
-			wptr[1] = limited<uint8_t>(g * 255);  // G
-			wptr[2] = limited<uint8_t>(b * 255);  // B
-			wptr[3] = 255; // Alpha
-			wptr += 4;
-			ridx++;
-		}
+         cv_ptr->image.at<cv::Vec4b>(y, x) = cv::Scalar(0,limited<uint8_t>(brightness * 255),
+                                                        0, 255);
+      }
 	}
+
+   cv::RNG rng( 0xFFFFFFFF );
+   Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+   transform.translate(Eigen::Vector3f(m_length_x/2, m_length_y/2, 0.f));
+
+   for(const auto& mean_pixel: m_mean_object_pixels)
+   {
+      // colorize objects in height image with different colors
+      cv::circle(cv_ptr->image, mean_pixel, (int)(1.f / m_res_x) , cv::Scalar(rng.uniform(0, 255), 0, rng.uniform(0, 255), 255), -1, 8, 0);
+
+      // retrieve position in pointcloud frame and publish
+      Eigen::Vector3f pos;
+      pos.x() = mean_pixel.x * m_res_x;
+      pos.y() = (m_buckets_y - mean_pixel.y) * m_res_y;
+      pos.z() = m_median_height(mean_pixel.y, mean_pixel.x);
+      pos = transform.inverse() * pos;
+
+      ROS_DEBUG_STREAM("position of point " << pos.x() << " " << pos.y() << " " << pos.z() << " " );
+   }
+
+   cv_ptr->toImageMsg(*img);
 }
 
 // filter those detections that are too big or small
@@ -448,26 +440,41 @@ void HeightImage::filterObjectsBySize(cv::Mat& prob_mat,
 	// find contours of segments
 	std::vector<std::vector<cv::Point> > contours;
 	std::vector<cv::Vec4i> hierarchy;
-	cv::findContours(binarized_object, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+	cv::findContours(binarized_object, contours, hierarchy, cv::RETR_LIST, cv::CHAIN_APPROX_NONE);
 
 	// iterate through all the top-level contours,
-	// fill contours if small enough, discard rest
-	cv::Scalar object_color(1);
+	// fill contours if size fits + save mean positions, discard rest
+   cv::Scalar object_color(1);
+   cv::Scalar scalar_one(1);
 	cv::Scalar no_object_color(0);
 	if(hierarchy.size() > 0)
 	{
-		for(int idx = 0; idx >= 0; idx = hierarchy[idx][0])
-		{
-			if(cv::contourArea(contours[idx]) <= max_size_of_valid_object &&
-				cv::contourArea(contours[idx]) >= min_size_of_valid_object)
-			{
-				drawContours(prob_mat, contours, idx, object_color, CV_FILLED, 8, hierarchy);
-			}
+      for(int i = 0; i < contours.size(); i++)
+      {
+         if(cv::contourArea(contours[i]) <= max_size_of_valid_object &&
+            cv::contourArea(contours[i]) >= min_size_of_valid_object)
+         {
+            drawContours(prob_mat, contours, i, object_color, CV_FILLED, 8, hierarchy);
+
+            cv::Point2i mean_object_pixel(0, 0);
+            for(int point_index = 0; point_index < contours[i].size(); point_index++)
+            {
+               mean_object_pixel.x += contours[i][point_index].x;
+               mean_object_pixel.y += contours[i][point_index].y;
+            }
+            mean_object_pixel.x /= contours[i].size();
+            mean_object_pixel.y /= contours[i].size();
+            m_mean_object_pixels.push_back(mean_object_pixel);
+
+            object_color += scalar_one;
+         }
          else
          {
-            drawContours(prob_mat, contours, idx, no_object_color, CV_FILLED, 8, hierarchy);
+            drawContours(prob_mat, contours, i, no_object_color, CV_FILLED, 8, hierarchy);
          }
-		}
+      }
+
+      ROS_DEBUG_STREAM("number of found objects: " << m_mean_object_pixels.size());
 	}
 }
 

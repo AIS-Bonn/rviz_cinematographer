@@ -63,7 +63,7 @@ public:
    void detectObjects(int num_min_count,
                       bool inflate_objects);
 
-	void fillObjectColorImage(sensor_msgs::Image* img);
+	void fillObjectColorImage(sensor_msgs::ImagePtr img);
 
 	void fillObjectMap(nav_msgs::OccupancyGrid* map);
 
@@ -109,6 +109,8 @@ private:
 	cv::Mat_<int> m_object_count;
 	cv::Mat_<int> m_object_last_scan_id;
 	cv::Mat_<int> m_object_scans_count;
+
+   std::vector<cv::Point2i> m_mean_object_pixels;
 };
 
 }
