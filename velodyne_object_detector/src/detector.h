@@ -123,6 +123,8 @@ private:
 
    pcl::visualization::PCLPlotter *m_plotter;
 
+   float m_angle_between_scanpoints;
+
    float m_max_prob_by_distance;
    float m_max_intensity_range;
 

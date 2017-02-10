@@ -6,6 +6,7 @@
 
     <arg name="manager" default="velodyne_nodelet_manager" />
     <arg name="points_topic" default="/velodyne_points" />
+    <arg name="angle_between_scanpoints" default="0.2" />
     <arg name="certainty_threshold" default="0.0" />
     <arg name="object_size_in_m" default="1.2" />
     <arg name="circular_buffer_capacity" default="1500" />
@@ -18,6 +19,7 @@
     <node unless="$(arg start_as_nodelet)" launch-prefix="" pkg="velodyne_object_detector" type="velodyne_object_detector_node" name="velodyne_object_detector"
           output="screen" >
         <param name="points_topic" value="$(arg points_topic)"/>
+        <param name="angle_between_scanpoints" value="$(arg angle_between_scanpoints)"/>
         <param name="certainty_threshold" value="$(arg certainty_threshold)"/>
         <param name="object_size_in_m" value="$(arg object_size_in_m)"/>
         <param name="circular_buffer_capacity" value="$(arg circular_buffer_capacity)"/>
@@ -32,6 +34,7 @@
     <node if="$(arg start_as_nodelet)" pkg="nodelet" type="nodelet" name="velodyne_object_detector_nodelet"
           args="load velodyne_object_detector/velodyne_object_detector_nodelet $(arg manager)" output="screen" >
         <param name="points_topic" value="$(arg points_topic)"/>
+        <param name="angle_between_scanpoints" value="$(arg angle_between_scanpoints)"/>
         <param name="certainty_threshold" value="$(arg certainty_threshold)"/>
         <param name="object_size_in_m" value="$(arg object_size_in_m)"/>
         <param name="circular_buffer_capacity" value="$(arg circular_buffer_capacity)"/>

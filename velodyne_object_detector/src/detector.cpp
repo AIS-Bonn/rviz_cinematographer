@@ -11,6 +11,7 @@ namespace velodyne_object_detector
 /** @brief Constructor. */
 Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
 : PUCK_NUM_RINGS(16)
+ , m_angle_between_scanpoints(0.2f)
  , m_max_prob_by_distance(0.75f)
  , m_max_intensity_range(100.f)
  , m_object_size_launch(1.2f)
@@ -75,6 +76,7 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
       m_kernel_size_diff_factor.set(m_kernel_size_diff_factor_launch);
 
    private_nh.getParam("max_kernel_size", m_max_kernel_size);
+   private_nh.getParam("angle_between_scanpoints", m_angle_between_scanpoints);
 
       for(int i = 0; i < PUCK_NUM_RINGS; i++)
    {    
@@ -143,7 +145,7 @@ void Detector::changeParameterSavely()
 
 void Detector::calcMedianFromBuffer(const int kernel_size,
                              const int big_kernel_size,
-			     const BufferMediansPtr& buffer,
+			                    const BufferMediansPtr& buffer,
                              const median_const_iterator& current_element,
                              std::function<float(Detector::InputPoint)> f,
                              float max_dist_for_median_computation,
@@ -283,10 +285,8 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered>
 {
    while (!buffer_median_filtered->empty() && iter != buffer_median_filtered->end())
    {
-      const float ANGLE_BETWEEN_SCANPOINTS = 0.2f;
-
       float alpha = static_cast<float>(std::atan((m_object_size()/2.f)/(*iter).point.distance) * 180.f / M_PI);
-      int kernel_size = (int)std::ceil(alpha / ANGLE_BETWEEN_SCANPOINTS) + 1;
+      int kernel_size = (int)std::ceil(alpha / m_angle_between_scanpoints) + 1;
 
       kernel_size = std::max(kernel_size, 1);
       kernel_size = std::min(kernel_size, m_max_kernel_size);
@@ -295,11 +295,6 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered>
       big_kernel_size = std::max(big_kernel_size, 9);
 
       const int big_kernel_size_half = big_kernel_size / 2;
-
-
-      // TODO check if kernel_size is valid
-
-//       MedianFiltered median_filtered_value;
       
       if(std::distance(buffer_median_filtered->begin(), iter) >= big_kernel_size_half && std::distance(iter, buffer_median_filtered->end()) > big_kernel_size_half)
       {
@@ -312,10 +307,8 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered>
                              [&](const InputPoint &fn) -> float { return fn.intensity; },
                              0.f, 
 			     (*iter).intens_small_kernel, (*iter).intens_big_kernel);
-// 	ROS_INFO_STREAM_THROTTLE(0.1, "distances: " << median_filtered_value.dist_small_kernel << " " << median_filtered_value.dist_big_kernel);
       }
-//       buffer_median_filtered->push_back(median_filtered_value);
-      
+
       if(std::distance(iter, buffer_median_filtered->end()) <= big_kernel_size_half)
       {
          break;
@@ -372,10 +365,6 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
       ROS_WARN("not enough medians in buffer");
       return;
    }
-
-   // make sure to have dist_to_comparsion_point elements before the iterator
-//    auto median_it = buffer_median_filtered->begin() + dist_to_comparsion_point;
-//    auto median_it = current_element ;
    
    for(; median_it !=  buffer_median_filtered->end()-dist_to_comparsion_point; ++median_it )
    {

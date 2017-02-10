@@ -3,9 +3,9 @@
 
   <!-- ========= Bagplayer ========== -->
   <arg name="use_bag" default="true"/>
-  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/new_objects_proto/velodyne_2017-01-17-15-46-21.bag"/>
-  <arg name="rate" default="0.2"/>
-  <arg name="start" default="52"/>
+  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/5hz/velodyne_2017-02-10-14-10-29.bag"/>
+  <arg name="rate" default="1"/>
+  <arg name="start" default="0"/>
 
   <node if="$(arg use_bag)" pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
     <remap from="/velodyne_points" to="/velodyne_points_frombag" />
@@ -93,7 +93,7 @@
     <arg name="points_topic" value="/velodyne_points_filtered" />
     <arg name="certainty_threshold" value="0.0" />
     <arg name="object_size_in_m" value="0.05" />
-    <arg name="circular_buffer_capacity" value="3000" />
+    <arg name="circular_buffer_capacity" value="6000" />
     <arg name="distance_to_comparison_points" value="1" />
     <arg name="kernel_size_diff_factor" value="9" />
     <arg name="max_kernel_size" value="100" />
