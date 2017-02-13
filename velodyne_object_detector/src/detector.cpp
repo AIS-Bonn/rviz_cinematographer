@@ -11,7 +11,7 @@ namespace velodyne_object_detector
 /** @brief Constructor. */
 Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
 : PUCK_NUM_RINGS(16)
- , m_angle_between_scanpoints(0.2f)
+ , m_angle_between_scanpoints(0.2f) // 0.1 for 5Hz 0.2 for 10Hz 0.4 for 20Hz
  , m_max_prob_by_distance(0.75f)
  , m_max_intensity_range(100.f)
  , m_object_size_launch(1.2f)
@@ -268,7 +268,7 @@ void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 //      ROS_INFO_STREAM("ring : " << ring << " " << m_median_filtered_circ_buffer_vector.at(ring)->size() << " points: " << obstacle_cloud->points.size());
    }
 
-   ROS_INFO_STREAM("time for one cloud in ms : " << timer.getTime() );
+   ROS_DEBUG_STREAM("time for one cloud in ms : " << timer.getTime() );
 
    if(m_publish_debug_cloud)
       m_pub_debug_obstacle_cloud.publish(debug_obstacle_cloud);
@@ -360,7 +360,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
 
    median_iterator::difference_type dist_to_comparsion_point = std::max<int>(m_distance_to_comparison_points(),0);
 
-   if (buffer_median_filtered->size() <= 2*dist_to_comparsion_point+1 || std::distance( median_it, buffer_median_filtered->end())  <= dist_to_comparsion_point)
+   if ((int)buffer_median_filtered->size() <= 2*dist_to_comparsion_point+1 || std::distance( median_it, buffer_median_filtered->end())  <= dist_to_comparsion_point)
    {
       ROS_WARN("not enough medians in buffer");
       return;

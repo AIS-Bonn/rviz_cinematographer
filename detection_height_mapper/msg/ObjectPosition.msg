@@ -1,4 +1,3 @@
-Header header
-uint8 id
-float64 detection_certainty
-geometry_msgs/Point position
+uint32 id
+float32 detection_certainty
+geometry_msgs/PointStamped position

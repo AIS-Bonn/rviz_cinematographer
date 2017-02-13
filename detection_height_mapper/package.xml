@@ -13,6 +13,9 @@
   <depend>config_server</depend>
   <depend>nodelet</depend>
   <depend>cv_bridge</depend>
+  <depend>tf</depend>
+  <depend>eigen_conversions</depend>
+  <depend>tf_conversions</depend>
   <depend>velodyne_object_detector</depend>
   <depend>message_generation</depend>
   <depend>message_runtime</depend>

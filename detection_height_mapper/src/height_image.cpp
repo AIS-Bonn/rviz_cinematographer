@@ -429,10 +429,10 @@ void HeightImage::getObjectPositions(std::vector<detection_height_mapper::Object
 
       ROS_DEBUG_STREAM("position of point " << pos.x() << " " << pos.y() << " " << pos.z() << " " );
 
-      object_position.position.x = pos.x();
-      object_position.position.y = pos.y();
-      object_position.position.z = pos.z();
-      object_position.id = static_cast<uint8_t>(id);
+      object_position.position.point.x = pos.x();
+      object_position.position.point.y = pos.y();
+      object_position.position.point.z = pos.z();
+      object_position.id = id;
       object_position.detection_certainty = m_object_detection(m_mean_object_pixels[id].y, m_mean_object_pixels[id].x);
 
       object_positions.push_back(object_position);

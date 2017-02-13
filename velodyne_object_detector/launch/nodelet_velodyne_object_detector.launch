@@ -3,9 +3,9 @@
 
   <!-- ========= Bagplayer ========== -->
   <arg name="use_bag" default="true"/>
-  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/5hz/velodyne_2017-02-10-14-10-29.bag"/>
-  <arg name="rate" default="1"/>
-  <arg name="start" default="0"/>
+  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/new_objects_proto/velodyne_2017-01-17-15-46-21.bag"/>
+  <arg name="rate" default="0.5"/>
+  <arg name="start" default="52"/>
 
   <node if="$(arg use_bag)" pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
     <remap from="/velodyne_points" to="/velodyne_points_frombag" />

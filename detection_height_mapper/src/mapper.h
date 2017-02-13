@@ -12,6 +12,8 @@
 
 #include <sensor_msgs/PointCloud2.h>
 
+#include <tf_conversions/tf_eigen.h>
+
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
 
@@ -47,11 +49,20 @@ namespace detection_height_mapper
    private:
       void callback(const InputPointCloud::ConstPtr &input_cloud);
 
+      void filterObjects(detection_height_mapper::ObjectPosition& new_object_position);
+      bool transformObjectPositions(std::vector<detection_height_mapper::ObjectPosition>& object_positions,
+                                    std::string target_frame,
+                                    std::string source_frame,
+                                    ros::Time stamp);
+
       ros::Subscriber m_cloud_sub;
 
       ros::Publisher m_pub_height_image;
       ros::Publisher m_pub_height_image_grid;
       ros::Publisher m_pub_object_positions;
+      ros::Publisher m_pub_object_positions_with_info;
+
+      tf::TransformListener m_tf_listener;
 
       config_server::Parameter<int> m_height_image_size_x;
       config_server::Parameter<int> m_height_image_size_y;
@@ -72,9 +83,13 @@ namespace detection_height_mapper
       config_server::Parameter<float> m_object_max_neighborhood_height_param;
       config_server::Parameter<float> m_object_inflation_radius_param;
       config_server::Parameter<float> m_object_robot_radius_param;
+      config_server::Parameter<float> m_max_position_noise_param;
       config_server::Parameter<bool> m_inflate_objects;
 
+      std::vector<detection_height_mapper::ObjectPosition> m_object_positions_accumulated;
+
       std::string m_input_topic;
+      std::string m_fixed_frame;
    };
 
 } // namespace detection_height_mapper

@@ -16,6 +16,9 @@ find_package(catkin REQUIRED COMPONENTS
   config_server
   nodelet
   cv_bridge
+  tf
+  eigen_conversions
+  tf_conversions
   velodyne_object_detector
   message_generation
 )
@@ -83,7 +86,7 @@ generate_messages(
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
 ################################################
-
+#
 ## To declare and build dynamic reconfigure parameters within this
 ## package, follow these steps:
 ## * In the file package.xml:
