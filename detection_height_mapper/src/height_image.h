@@ -23,6 +23,8 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
+#include <detection_height_mapper/ObjectPosition.h>
+
 #include <velodyne_object_detector/point_type.h>
 
 namespace momaro_heightmap
@@ -66,6 +68,9 @@ public:
 	void fillObjectColorImage(sensor_msgs::ImagePtr img);
 
 	void fillObjectMap(nav_msgs::OccupancyGrid* map);
+
+   void getObjectPositions(std::vector<detection_height_mapper::ObjectPosition>& object_positions,
+                           const Eigen::Affine3f& transform);
 
 private:
 	void resizeStorage();

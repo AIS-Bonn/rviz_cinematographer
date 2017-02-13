@@ -72,6 +72,7 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
 
    m_pub_height_image = node.advertise<sensor_msgs::Image>("height_and_detections", 1);
    m_pub_height_image_grid = node.advertise<nav_msgs::OccupancyGrid>("object_grid", 1);
+   m_pub_object_positions = node.advertise<detection_height_mapper::ObjectPosition>("object_positions", 1);
 }
 
 /** @brief Callback for point clouds. */
@@ -108,6 +109,14 @@ void Mapper::callback(const InputPointCloud::ConstPtr &input_cloud)
    img->header.frame_id = input_cloud->header.frame_id;
    img->header.stamp = pcl_conversions::fromPCL(input_cloud->header.stamp);
    m_pub_height_image.publish(img);
+
+   std::vector<detection_height_mapper::ObjectPosition> object_positions;
+   height_image.getObjectPositions(object_positions, transform.inverse());
+   // TODO identify objects
+   for(const auto& object_position: object_positions)
+   {
+      m_pub_object_positions.publish(object_position);
+   }
 
    nav_msgs::OccupancyGridPtr grid(new nav_msgs::OccupancyGrid);
    height_image.fillObjectMap(grid.get());

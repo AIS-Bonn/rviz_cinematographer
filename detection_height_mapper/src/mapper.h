@@ -27,6 +27,8 @@
 
 #include <velodyne_object_detector/point_type.h>
 
+#include <detection_height_mapper/ObjectPosition.h>
+
 #include "height_image.h"
 
 namespace detection_height_mapper
@@ -49,6 +51,7 @@ namespace detection_height_mapper
 
       ros::Publisher m_pub_height_image;
       ros::Publisher m_pub_height_image_grid;
+      ros::Publisher m_pub_object_positions;
 
       config_server::Parameter<int> m_height_image_size_x;
       config_server::Parameter<int> m_height_image_size_y;

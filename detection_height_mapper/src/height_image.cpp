@@ -401,25 +401,42 @@ void HeightImage::fillObjectColorImage(sensor_msgs::ImagePtr img)
 	}
 
    cv::RNG rng( 0xFFFFFFFF );
-   Eigen::Affine3f transform = Eigen::Affine3f::Identity();
-   transform.translate(Eigen::Vector3f(m_length_x/2, m_length_y/2, 0.f));
-
    for(const auto& mean_pixel: m_mean_object_pixels)
    {
       // colorize objects in height image with different colors
       cv::circle(cv_ptr->image, mean_pixel, (int)(1.f / m_res_x) , cv::Scalar(rng.uniform(0, 255), 0, rng.uniform(0, 255), 255), -1, 8, 0);
-
-      // retrieve position in pointcloud frame and publish
-      Eigen::Vector3f pos;
-      pos.x() = mean_pixel.x * m_res_x;
-      pos.y() = (m_buckets_y - mean_pixel.y) * m_res_y;
-      pos.z() = m_median_height(mean_pixel.y, mean_pixel.x);
-      pos = transform.inverse() * pos;
-
-      ROS_DEBUG_STREAM("position of point " << pos.x() << " " << pos.y() << " " << pos.z() << " " );
    }
 
    cv_ptr->toImageMsg(*img);
+}
+
+void HeightImage::getObjectPositions(std::vector<detection_height_mapper::ObjectPosition>& object_positions,
+                                     const Eigen::Affine3f& transform)
+{
+   object_positions.clear();
+   object_positions.reserve(m_mean_object_pixels.size());
+
+   for(unsigned int id = 0; id < m_mean_object_pixels.size(); id++)
+   {
+      detection_height_mapper::ObjectPosition object_position;
+
+      // retrieve position in point cloud frame and publish
+      Eigen::Vector3f pos;
+      pos.x() = m_mean_object_pixels[id].x * m_res_x;
+      pos.y() = (m_buckets_y - m_mean_object_pixels[id].y) * m_res_y;
+      pos.z() = m_median_height(m_mean_object_pixels[id].y, m_mean_object_pixels[id].x);
+      pos = transform * pos;
+
+      ROS_DEBUG_STREAM("position of point " << pos.x() << " " << pos.y() << " " << pos.z() << " " );
+
+      object_position.position.x = pos.x();
+      object_position.position.y = pos.y();
+      object_position.position.z = pos.z();
+      object_position.id = static_cast<uint8_t>(id);
+      object_position.detection_certainty = m_object_detection(m_mean_object_pixels[id].y, m_mean_object_pixels[id].x);
+
+      object_positions.push_back(object_position);
+   }
 }
 
 // filter those detections that are too big or small
@@ -449,7 +466,7 @@ void HeightImage::filterObjectsBySize(cv::Mat& prob_mat,
 	cv::Scalar no_object_color(0);
 	if(hierarchy.size() > 0)
 	{
-      for(int i = 0; i < contours.size(); i++)
+      for(int i = 0; i < (int)contours.size(); i++)
       {
          if(cv::contourArea(contours[i]) <= max_size_of_valid_object &&
             cv::contourArea(contours[i]) >= min_size_of_valid_object)
@@ -457,7 +474,7 @@ void HeightImage::filterObjectsBySize(cv::Mat& prob_mat,
             drawContours(prob_mat, contours, i, object_color, CV_FILLED, 8, hierarchy);
 
             cv::Point2i mean_object_pixel(0, 0);
-            for(int point_index = 0; point_index < contours[i].size(); point_index++)
+            for(int point_index = 0; point_index < (int)contours[i].size(); point_index++)
             {
                mean_object_pixel.x += contours[i][point_index].x;
                mean_object_pixel.y += contours[i][point_index].y;
