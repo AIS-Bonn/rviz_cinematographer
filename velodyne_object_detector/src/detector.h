@@ -131,7 +131,7 @@ private:
    float m_certainty_threshold_launch;
    float m_object_size_launch;
    int m_circular_buffer_capacity_launch;
-   int m_distance_to_comparison_points_launch;
+   float m_distance_to_comparison_points_launch;
    int m_kernel_size_diff_factor_launch;
    int m_max_kernel_size;
 
@@ -141,8 +141,7 @@ private:
    config_server::Parameter<float> m_weight_for_small_intensities;
 
    config_server::Parameter<float> m_object_size;
-   config_server::Parameter<int> m_circular_buffer_capacity;
-   config_server::Parameter<int> m_distance_to_comparison_points;
+   config_server::Parameter<float> m_distance_to_comparison_points;
    config_server::Parameter<int> m_kernel_size_diff_factor;
 
    config_server::Parameter<float> m_median_min_dist;
