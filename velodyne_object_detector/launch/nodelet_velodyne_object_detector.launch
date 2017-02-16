@@ -3,9 +3,9 @@
 
   <!-- ========= Bagplayer ========== -->
   <arg name="use_bag" default="true"/>
-  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/5hz/velodyne_2017-02-10-13-59-01.bag"/>
-  <arg name="rate" default="0.5"/>
-  <arg name="start" default="0"/>
+  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/5hz/velodyne_2017-02-10-14-10-29.bag"/>
+  <arg name="rate" default="0.25"/>
+  <arg name="start" default="10"/>
 
   <node if="$(arg use_bag)" pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
     <remap from="/velodyne_points" to="/velodyne_points_frombag" />
@@ -14,12 +14,12 @@
   <param if="$(arg use_bag)" name="/use_sim_time" value="true" />
 
   <node unless="$(arg use_bag)" name="pcd_publisher" pkg="pcd_publisher" type="pcd_publisher" output="screen">
-    <!--<param name="path_to_file" value="/home/razlaw/clouds/map2.pcd"/>-->
-    <!--<param name="output_topic" value="/mapping_nodelet/pointcloud" />-->
-    <!--<param name="output_frame_id" value="/odom"/>-->
-    <param name="path_to_file" value="/home/razlaw/clouds/this.pcd"/>
-    <param name="output_topic" value="/velodyne_points_filtered" />
-    <param name="output_frame_id" value="/velodyne"/>
+    <param name="path_to_file" value="/home/razlaw/clouds/5hz/map5.pcd"/>
+    <param name="output_topic" value="/mapping_nodelet/pointcloud" />
+    <param name="output_frame_id" value="/odom"/>
+    <!--<param name="path_to_file" value="/home/razlaw/clouds/5hz/near_and_far_object.pcd"/>-->
+    <!--<param name="output_topic" value="/velodyne_points_filtered" />-->
+    <!--<param name="output_frame_id" value="/velodyne"/>-->
     <param name="publishing_rate" value="2"/>
   </node>
 
@@ -92,10 +92,10 @@
     <arg name="manager" value="velodyne_nodelet_manager" />
     <arg name="points_topic" value="/velodyne_points_filtered" />
     <arg name="circular_buffer_capacity" value="6000" />
-    <arg name="angle_between_scanpoints" default="0.1" />
+    <arg name="angle_between_scanpoints" default="0.2" />
     <arg name="certainty_threshold" value="0.0" />
     <arg name="object_size_in_m" value="0.05" />
-    <arg name="distance_to_comparison_points" value="0.15" />
+    <arg name="distance_to_comparison_points" value="0.38" />
     <arg name="kernel_size_diff_factor" value="5" />
     <arg name="max_kernel_size" value="100" />
     <arg name="publish_filtered_cloud" value="false" />

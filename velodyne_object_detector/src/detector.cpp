@@ -20,14 +20,14 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
  , m_kernel_size_diff_factor_launch(6)
  , m_max_kernel_size(100)
  , m_certainty_threshold("velodyne_object_detector/certainty_threshold", 0.0, 0.01, 1.0, 0.5)
- , m_dist_coeff("velodyne_object_detector/dist_coeff", 0.0, 0.1, 10.0, 1.0)
- , m_intensity_coeff("velodyne_object_detector/intensity_coeff", 0.0, 0.0001, 0.01, (1.f - m_max_prob_by_distance)/m_max_intensity_range)
- , m_weight_for_small_intensities("velodyne_object_detector/weight_for_small_intensities", 1.f, 1.f, 30.f, 11.f)
+ , m_dist_coeff("velodyne_object_detector/dist_coeff", 0.0, 0.1, 10.0, 0.5)
+ , m_intensity_coeff("velodyne_object_detector/intensity_coeff", 0.0, 0.0001, 0.01, 0.0064)//(1.f - m_max_prob_by_distance)/m_max_intensity_range)
+ , m_weight_for_small_intensities("velodyne_object_detector/weight_for_small_intensities", 1.f, 1.f, 30.f, 10.f)
  , m_object_size("velodyne_object_detector/object_size_in_m", 0.005, 0.005, m_object_size_launch*2, m_object_size_launch)
- , m_distance_to_comparison_points("velodyne_object_detector/distance_to_comparison_points", 0.0, 0.01, m_distance_to_comparison_points_launch*2, 0.15f)
+ , m_distance_to_comparison_points("velodyne_object_detector/distance_to_comparison_points", 0.0, 0.01, m_distance_to_comparison_points_launch*2, 0.38f)
  , m_kernel_size_diff_factor("velodyne_object_detector/kernel_size_diff_factor", 1, 1, 20, 6)
- , m_median_min_dist("velodyne_object_detector/median_min_dist", 0.0, 0.01, .2, 0.1)
- , m_median_thresh1_dist("velodyne_object_detector/median_thresh1_dist", 0.0, 0.05, 2.5, 0.15)
+ , m_median_min_dist("velodyne_object_detector/median_min_dist", 0.0, 0.01, .2, 0.15)
+ , m_median_thresh1_dist("velodyne_object_detector/median_thresh1_dist", 0.0, 0.05, 2.5, 0.45)
  , m_median_thresh2_dist("velodyne_object_detector/median_thresh2_dist", 0.0, 0.1, 8.0, 7.0)
  , m_median_max_dist("velodyne_object_detector/median_max_dist", 0.0, 0.5, 20.0, 10.5)
  , m_max_dist_for_median_computation("velodyne_object_detector/max_dist_for_median_computation", 0.0, 0.25, 10.0, 6.0)
@@ -136,7 +136,7 @@ void Detector::calcMedianFromBuffer(const int kernel_size,
 
   
   // filter if difference of distances of neighbor and the current point exceeds a threshold
-  if(m_max_dist_for_median_computation() == 0.f)
+  if(max_dist_for_median_computation == 0.f)
   {
     median_const_iterator it_tmp = big_kernel_start;
      small_kernel_start_offset = std::distance(big_kernel_start, small_kernel_start);
@@ -291,15 +291,19 @@ float Detector::computeCertainty(float difference_distances, float difference_in
    float certainty_value = 0.f;
    // cap absolute difference to 0 - m_max_intensity_range
    // and do some kind of weighting, bigger weight -> bigger weight for smaller intensity differences
-   difference_intensities = static_cast<float>(fabs(difference_intensities));
+   difference_intensities = std::max(0.f, difference_intensities);
    difference_intensities = std::min(difference_intensities, m_max_intensity_range/m_weight_for_small_intensities());
    difference_intensities *= m_weight_for_small_intensities();
 
+//   ROS_INFO_STREAM("difference_intensities inner " << (difference_intensities * m_intensity_coeff()));
+
+
    if(difference_distances < m_median_min_dist() || difference_distances > m_median_max_dist())
    {
-      certainty_value = 0.f;
+      return 0.f;
    }
-   else{
+   else
+   {
       if(difference_distances >= m_median_min_dist() && difference_distances < m_median_thresh1_dist())
       {
          certainty_value = difference_distances * m_dist_coeff() * (m_max_prob_by_distance/m_median_thresh1_dist()) + difference_intensities * m_intensity_coeff();
@@ -375,8 +379,8 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
       float difference_intensities_end = (*median_it).intens_small_kernel - (*window_end).intens_big_kernel;
 
       float difference_intensities_sum = difference_intensities_start + difference_intensities_end;
-      float difference_intensities_max = std::max(difference_intensities_start, difference_intensities_end);
-      float difference_intensities = std::max(difference_intensities_sum, difference_intensities_max);
+      float difference_intensities_min = std::min(difference_intensities_start, difference_intensities_end);
+      float difference_intensities = std::min(difference_intensities_sum, difference_intensities_min);
 
 
       float certainty_value = computeCertainty(-difference_distances, difference_intensities);
@@ -406,7 +410,10 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
            debug_output_point.detection_intensity = difference_intensities;
            debug_output_point.detection = certainty_value;
 
-           debug_obstacle_cloud->push_back(debug_output_point);
+//            ROS_INFO_STREAM("difference_intensities " << difference_intensities << " debug_output_point.detection_intensity " << debug_output_point.detection_intensity);
+
+
+            debug_obstacle_cloud->push_back(debug_output_point);
          }
       }
    }
