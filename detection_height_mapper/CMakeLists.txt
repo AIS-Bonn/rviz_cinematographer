@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   eigen_conversions
   tf_conversions
   velodyne_object_detector
+  mrs_laser_maps
   message_generation
 )
 
@@ -115,7 +116,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES cognitive_robotics
-  CATKIN_DEPENDS velodyne_object_detector message_runtime
+  CATKIN_DEPENDS velodyne_object_detector message_runtime mrs_laser_maps
 #  DEPENDS system_lib
 )
 

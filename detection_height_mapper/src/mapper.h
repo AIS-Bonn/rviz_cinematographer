@@ -29,6 +29,8 @@
 
 #include <velodyne_object_detector/point_type.h>
 
+#include <mrs_laser_maps/map_point_types.h>
+
 #include <detection_height_mapper/ObjectPosition.h>
 
 #include "height_image.h"
@@ -38,16 +40,11 @@ namespace detection_height_mapper
    class Mapper
    {
    public:
-      typedef velodyne_pointcloud::PointXYZDetection  PointWithDetection;
-
-      typedef PointWithDetection                      InputPoint;
-      typedef pcl::PointCloud<InputPoint>             InputPointCloud;
-
       Mapper(ros::NodeHandle node, ros::NodeHandle private_nh);
       ~Mapper() {}
 
    private:
-      void callback(const InputPointCloud::ConstPtr &input_cloud);
+      void callback(const detection_height_image::HeightImage::InputPointCloud::ConstPtr &input_cloud);
 
       void filterObjects(detection_height_mapper::ObjectPosition& new_object_position);
       bool transformObjectPositions(std::vector<detection_height_mapper::ObjectPosition>& object_positions,
@@ -70,6 +67,7 @@ namespace detection_height_mapper
       config_server::Parameter<float> m_height_image_min_z;
       config_server::Parameter<float> m_height_image_max_z;
       config_server::Parameter<int> m_min_object_points_per_cell;
+      config_server::Parameter<int> m_min_object_scans_per_cell;
       config_server::Parameter<float> m_object_detection_threshold;
       config_server::Parameter<float> m_object_odds_hit;
       config_server::Parameter<float> m_object_odds_miss;

@@ -4,7 +4,7 @@
 
 #include "height_image.h"
 
-namespace momaro_heightmap
+namespace detection_height_image
 {
 
 HeightImage::HeightImage()
@@ -36,18 +36,17 @@ void HeightImage::resizeStorage()
 	m_buckets_x = std::ceil(m_length_x / m_res_x);
 	m_buckets_y = std::ceil(m_length_y / m_res_y);
 
-	m_median_height.create(m_buckets_y, m_buckets_x);
+	m_object_median_height.create(m_buckets_y, m_buckets_x);
 	m_min_height.create(m_buckets_y, m_buckets_x);
 	m_max_height.create(m_buckets_y, m_buckets_x);
 	m_object_detection.create(m_buckets_y, m_buckets_x);
 	m_object_min_height.create(m_buckets_y, m_buckets_x);
 	m_object_max_height.create(m_buckets_y, m_buckets_x);
 	m_object_count.create(m_buckets_y, m_buckets_x);
-	m_object_last_scan_id.create(m_buckets_y, m_buckets_x);
 	m_object_scans_count.create(m_buckets_y, m_buckets_x);
 	m_objects_inflated.create(m_buckets_y, m_buckets_x);
 
-	m_median_height = NAN;
+	m_object_median_height = NAN;
 	m_min_height = NAN;
 	m_max_height = NAN;
 	m_object_detection = NAN;
@@ -56,7 +55,6 @@ void HeightImage::resizeStorage()
 	m_objects_inflated = 0;
 	m_object_count = 0;
 	m_object_scans_count = 0;
-	m_object_last_scan_id = 0;
 }
 
 void HeightImage::setResolution(float res_x, float res_y)
@@ -141,7 +139,7 @@ T limited(T min, T val, T max)
 }
 
 // use transformed point cloud to fill m_min_height and -max with min and max height (z-coordinate)
-// of the points in each bin + fill m_median_height with median height for each bin
+// of the points in each bin + fill m_object_median_height with median height for each bin
 void HeightImage::processPointcloud(const InputPointCloud& cloud,
                                     const Eigen::Affine3f& transform,
                                     float odds_hit,
@@ -149,9 +147,8 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
                                     float clamp_thresh_min,
                                     float clamp_thresh_max)
 {
-
-
-   std::vector<std::vector<float> > storage(m_buckets_x * m_buckets_y);
+   std::vector<std::vector<float> > storage_z(m_buckets_x * m_buckets_y);
+   std::vector<std::set<uint16_t> > storage_scan_ids(m_buckets_x * m_buckets_y);
 
    for(const auto& point : cloud.points)
    {
@@ -166,10 +163,8 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
 
       if(bin_x < 0 || bin_x >= m_buckets_x || bin_y < 0 || bin_y >= m_buckets_y)
          continue;
-
+      
       unsigned int idx = bin_y * m_buckets_x + bin_x;
-
-      storage[idx].push_back(point.z);
 
       // compute min and max height for current bin
       float* binval_min_height = &m_min_height(bin_y, bin_x);
@@ -188,10 +183,6 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
       int* binval_object_count = &m_object_count(bin_y, bin_x);
       float* binval_detection = &m_object_detection(bin_y, bin_x);
 
-      // TODO: implement in todo below
-//      int* binval_object_last_scan_id = &m_object_last_scan_id(bin_y, bin_x);
-//      int* binval_object_scans_count = &m_object_scans_count(bin_y, bin_x);
-
       //if first point for bin and probably an object, copy values
       if(std::isnan(*binval_detection) )
       {
@@ -202,9 +193,8 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
             *binval_object_max_height = point.z;
             *binval_object_count = 1;
 
-            // TODO: implement in todo below
-//            *binval_object_last_scan_id = point.scanNr;
-//            *binval_object_scans_count = 1;
+            storage_z[idx].push_back(point.z);
+            storage_scan_ids[idx].insert(point.scan_id);
             continue;
          }
       }
@@ -226,20 +216,12 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
 
          *binval_object_count += 1;
 
-         // TODO access values as above + replace with a more accurate way to check to how many full scans
-         //       this bins corresponds to + evtl if they are all current scans or very old ones
-         //check if this bin was seen in this scan
-//         if(*binval_object_last_scan_id != point.scanNr)
-//         {
-//             // update current scan number
-//             *binval_object_last_scan_id = point.scanNr;
-//             // increment number of scans that this bin was seen in
-//             *binval_object_scans_count += 1;
-//         }
+         storage_scan_ids[idx].insert(point.scan_id);
       }
       else // TODO if resolution is too high and cells are too big objects are not detected due to fixed odds_miss
          *binval_detection -= odds_miss;
 
+      // TODO maybe clamp afterwards to not depend on the order of detections vs non-detections
       *binval_detection = std::min<float>(*binval_detection, clamp_thresh_max);
       *binval_detection = std::max<float>(*binval_detection, clamp_thresh_min);
    }
@@ -250,7 +232,11 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
    {
       for(int bin_x = 0; bin_x < m_buckets_x; ++bin_x, ++idx)
       {
-         std::vector<float>& points = storage[idx];
+         // TODO evtl check if they are all current scans or very old ones
+         // update number of scans this object was seen in 
+         m_object_scans_count(bin_y, bin_x) = storage_scan_ids[idx].size();
+
+         std::vector<float>& points = storage_z[idx];
 
          if(points.empty())
             continue;
@@ -272,17 +258,18 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
             }
 
             // compute the mean of both values and use this as the median
-            m_median_height(bin_y, bin_x) = (points[n]+(*it))/2;
+            m_object_median_height(bin_y, bin_x) = (points[n]+(*it))/2;
          }
          else
          {
-            m_median_height(bin_y, bin_x) = points[n];
+            m_object_median_height(bin_y, bin_x) = points[n];
          }
       }
    }
 }
 
-void HeightImage::detectObjects(int num_min_count,
+void HeightImage::detectObjects(int min_number_of_object_points_per_cell,
+                                int min_number_of_object_scans_per_cell,
                                 bool inflate_objects)
 {
    // if bins meet some criteria, set those bins to 1 in m_objects_inflated
@@ -295,9 +282,8 @@ void HeightImage::detectObjects(int num_min_count,
 		for(int x = 0; x < m_buckets_x; ++x)
 		{
 			float *detection = &m_object_detection(y, x);
-         // TODO currently not implemented, fix in the ProcessPointCloud function first
-			//int num_detections = m_object_scans_count(y, x);
-         int* binval_object_count = &m_object_count(y, x);
+			int* scans_count = &m_object_scans_count(y, x);
+         int* object_count = &m_object_count(y, x);
 
          float object_height = m_object_max_height(y, x) - m_object_min_height(y, x);
 			float object_altitude = m_object_min_height(y, x) - m_min_height(y, x);
@@ -308,8 +294,8 @@ void HeightImage::detectObjects(int num_min_count,
 			     && object_height < m_max_object_height_threshold
 			     && object_height > m_min_object_height_threshold
               && object_altitude < m_max_object_altitude_threshold
-              && *binval_object_count > num_min_count
-               /*&& num_detections > num_min_count*/)
+              && *object_count > min_number_of_object_points_per_cell
+              && *scans_count > min_number_of_object_points_per_cell)
 			   {
 					m_objects_inflated(y, x) = 1;
 			   }
@@ -383,7 +369,7 @@ void HeightImage::fillObjectColorImage(sensor_msgs::ImagePtr img)
 	{
 		for(int x = 0; x < m_buckets_x; ++x)
 		{
-			float* height = &m_median_height(y, x);
+			float* height = &m_max_height(y, x);
 
 			// background color if height in bin is not valid
 			if(!std::isfinite(*height))
@@ -424,7 +410,7 @@ void HeightImage::getObjectPositions(std::vector<detection_height_mapper::Object
       Eigen::Vector3f pos;
       pos.x() = m_mean_object_pixels[id].x * m_res_x;
       pos.y() = (m_buckets_y - m_mean_object_pixels[id].y) * m_res_y;
-      pos.z() = m_median_height(m_mean_object_pixels[id].y, m_mean_object_pixels[id].x);
+      pos.z() = m_max_height(m_mean_object_pixels[id].y, m_mean_object_pixels[id].x);
       pos = transform * pos;
 
       ROS_DEBUG_STREAM("position of point " << pos.x() << " " << pos.y() << " " << pos.z() << " " );
@@ -502,7 +488,7 @@ void HeightImage::filterObjectsByNeighborHeight(cv::Mat& prob_mat,
                                                 float height_threshold)
 {
    float robot_radius_in_bins = robot_radius/m_res_x;
-   int ROBOT_RADIUS_INT = ceil(robot_radius_in_bins);
+   int ROBOT_RADIUS_INT = (int)ceil(robot_radius_in_bins);
 
    for(int row = 0; row < prob_mat.rows; ++row)
    {

@@ -16,6 +16,7 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    , m_height_image_min_z("detection_height_mapper/image_min_z", -20.f, 0.1f, 20.f, -20.0)
    , m_height_image_max_z("detection_height_mapper/image_max_z", -20.f, 0.1f, 20.f, 20.0)
    , m_min_object_points_per_cell("detection_height_mapper/object_min_points", 0, 1, 100, 10)
+   , m_min_object_scans_per_cell("detection_height_mapper/object_min_scans", 0, 1, 100, 3)
    , m_object_detection_threshold("detection_height_mapper/object_thresh", 0.0, 0.05, 1.0, 0.5)
    , m_object_odds_hit("detection_height_mapper/object_odds_hit", 0.0, 0.05, 1.0, 0.7)
    , m_object_odds_miss("detection_height_mapper/object_odds_miss", 0.0, 0.05, 1.0, 0.35)
@@ -80,14 +81,14 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
 }
 
 /** @brief Callback for point clouds. */
-void Mapper::callback(const InputPointCloud::ConstPtr &input_cloud)
+void Mapper::callback(const detection_height_image::HeightImage::InputPointCloud::ConstPtr &input_cloud)
 {
    if(m_pub_height_image.getNumSubscribers() == 0 && m_pub_height_image_grid.getNumSubscribers() == 0)
       return;
 
    ros::Time start = ros::Time::now();
 
-   momaro_heightmap::HeightImage height_image;
+   detection_height_image::HeightImage height_image;
    height_image.setSize(m_height_image_size_x(), m_height_image_size_y());
    height_image.setResolution(m_height_image_resolution(), m_height_image_resolution());
    height_image.setMinHeight(m_height_image_min_z());
@@ -106,7 +107,7 @@ void Mapper::callback(const InputPointCloud::ConstPtr &input_cloud)
    transform.translate(Eigen::Vector3f(m_height_image_size_x()/2, m_height_image_size_y()/2, 0.f));
    height_image.processPointcloud(*input_cloud, transform, m_object_odds_hit(), m_object_odds_miss(), m_object_clamp_thresh_min(), m_object_clamp_thresh_max());
 
-   height_image.detectObjects(m_min_object_points_per_cell(), m_inflate_objects());
+   height_image.detectObjects(m_min_object_points_per_cell(), m_min_object_scans_per_cell(), m_inflate_objects());
 
    sensor_msgs::ImagePtr img(new sensor_msgs::Image);
    height_image.fillObjectColorImage(img);

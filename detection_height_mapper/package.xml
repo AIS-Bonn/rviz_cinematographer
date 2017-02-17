@@ -17,6 +17,7 @@
   <depend>eigen_conversions</depend>
   <depend>tf_conversions</depend>
   <depend>velodyne_object_detector</depend>
+  <depend>mrs_laser_maps</depend>
   <depend>message_generation</depend>
   <depend>message_runtime</depend>
 

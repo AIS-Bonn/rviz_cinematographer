@@ -25,17 +25,15 @@
 
 #include <detection_height_mapper/ObjectPosition.h>
 
-#include <velodyne_object_detector/point_type.h>
+#include <mrs_laser_maps/map_point_types.h>
 
-namespace momaro_heightmap
+namespace detection_height_image
 {
 
 class HeightImage
 {
 public:
-	typedef velodyne_pointcloud::PointXYZDetection  PointWithDetection;
-
-	typedef PointWithDetection                      InputPoint;
+   typedef mrs_laser_maps::PointDetectionAndScanId InputPoint;
 	typedef pcl::PointCloud<InputPoint>             InputPointCloud;
 
 	HeightImage();
@@ -62,7 +60,8 @@ public:
                           float clamp_thresh_min,
                           float clamp_thresh_max);
 
-   void detectObjects(int num_min_count,
+   void detectObjects(int min_number_of_object_points_per_cell,
+                      int min_number_of_object_scans_per_cell,
                       bool inflate_objects);
 
 	void fillObjectColorImage(sensor_msgs::ImagePtr img);
@@ -104,15 +103,14 @@ private:
    float m_max_neighborhood_height_threshold;
    float m_inflation_radius;
 
-	cv::Mat_<float> m_median_height;
 	cv::Mat_<float> m_min_height;
 	cv::Mat_<float> m_max_height;
+   cv::Mat_<float> m_object_median_height;
 	cv::Mat_<float> m_object_min_height;
 	cv::Mat_<float> m_object_max_height;
 	cv::Mat_<float> m_object_detection;
 	cv::Mat_<int> m_objects_inflated;
 	cv::Mat_<int> m_object_count;
-	cv::Mat_<int> m_object_last_scan_id;
 	cv::Mat_<int> m_object_scans_count;
 
    std::vector<cv::Point2i> m_mean_object_pixels;
