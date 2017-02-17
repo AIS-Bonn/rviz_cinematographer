@@ -3,7 +3,7 @@
 
   <!-- ========= Bagplayer ========== -->
   <arg name="use_bag" default="true"/>
-  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/5hz/velodyne_2017-02-10-14-10-29.bag"/>
+  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/5hz/velodyne_2017-02-10-14-03-36.bag"/>
   <arg name="rate" default="0.25"/>
   <arg name="start" default="10"/>
 
@@ -92,14 +92,13 @@
     <arg name="manager" value="velodyne_nodelet_manager" />
     <arg name="points_topic" value="/velodyne_points_filtered" />
     <arg name="circular_buffer_capacity" value="6000" />
-    <arg name="angle_between_scanpoints" default="0.2" />
+    <arg name="angle_between_scanpoints" default="0.1" />
     <arg name="certainty_threshold" value="0.0" />
     <arg name="object_size_in_m" value="0.05" />
     <arg name="distance_to_comparison_points" value="0.38" />
     <arg name="kernel_size_diff_factor" value="5" />
     <arg name="max_kernel_size" value="100" />
-    <arg name="publish_filtered_cloud" value="false" />
-    <arg name="publish_debug_cloud" value="false" />
+    <arg name="publish_debug_cloud" value="true" />
   </include>
 
   <group if="true">
@@ -124,7 +123,7 @@
   <!-- ============= Detection Height Image =============  -->
   <include  file="$(find detection_height_mapper)/launch/detection_height_mapper_nodelet.launch">
     <arg name="start_as_nodelet" value="true"/>
-    <arg name="input_topic" value="/mapping_nodelet/pointcloud"/>
+    <arg name="input_topic" value="/pointcloud"/>
   </include>
   </group>
 </launch>

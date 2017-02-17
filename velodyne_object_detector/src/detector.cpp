@@ -32,18 +32,16 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
  , m_median_max_dist("velodyne_object_detector/median_max_dist", 0.0, 0.5, 20.0, 10.5)
  , m_max_dist_for_median_computation("velodyne_object_detector/max_dist_for_median_computation", 0.0, 0.25, 10.0, 6.0)
  , m_points_topic("/velodyne_points")
- , m_publish_filtered_cloud(false)
- , m_publish_debug_cloud(false)
+ , m_publish_debug_clouds(false)
 {
    ROS_INFO("init velodyne object detector...");
 
    private_nh.getParam("points_topic", m_points_topic);
    m_velodyne_sub = node.subscribe(m_points_topic, 1000, &Detector::velodyneCallback, this);
 
-   private_nh.getParam("publish_filtered_cloud", m_publish_filtered_cloud);
-   private_nh.getParam("publish_debug_cloud", m_publish_debug_cloud);
+   private_nh.getParam("publish_debug_cloud", m_publish_debug_clouds);
 
-   if(m_publish_debug_cloud)
+   if(m_publish_debug_clouds)
    {
       m_plotter = new pcl::visualization::PCLPlotter ("Detection Plotter");
       m_plotter->setShowLegend (true);
@@ -52,10 +50,8 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
       plot();
 
       m_pub_debug_obstacle_cloud = node.advertise<DebugOutputPointCloud >("/velodyne_detector_debug_objects", 1);
+      m_pub_filtered_cloud = node.advertise<DebugOutputPointCloud >("/velodyne_detector_filtered", 1);
    }
-
-   if(m_publish_filtered_cloud)
-      m_pub_filtered_cloud = node.advertise<InputPointCloud >("/velodyne_detector_filtered", 1);
 
    m_pub_obstacle_cloud = node.advertise<OutputPointCloud >("/velodyne_detector_objects", 1);
 
@@ -104,7 +100,7 @@ void Detector::changeParameterSavely()
 {
    boost::mutex::scoped_lock lock(m_parameter_change_lock);
    ROS_DEBUG("New parameter");
-   if(m_publish_debug_cloud)
+   if(m_publish_debug_clouds)
       plot();
 }
 
@@ -194,15 +190,14 @@ void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 
    pcl::StopWatch timer;
 
-   DebugOutputPointCloud::Ptr debug_obstacle_cloud (new DebugOutputPointCloud);
-   debug_obstacle_cloud->header = input_cloud->header;
-
    OutputPointCloud::Ptr obstacle_cloud (new OutputPointCloud);
    obstacle_cloud->header = input_cloud->header;
 
-   InputPointCloud::Ptr filtered_cloud (new InputPointCloud);
+   DebugOutputPointCloud::Ptr debug_obstacle_cloud (new DebugOutputPointCloud);
+   debug_obstacle_cloud->header = input_cloud->header;
+
+   DebugOutputPointCloud::Ptr filtered_cloud (new DebugOutputPointCloud);
    filtered_cloud->header = input_cloud->header;
-   filtered_cloud->header.frame_id = "/velodyne";
 
    for(const auto& point : input_cloud->points)
    {
@@ -237,11 +232,12 @@ void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 
    ROS_DEBUG_STREAM("time for one cloud in ms : " << timer.getTime() );
 
-   if(m_publish_debug_cloud)
-      m_pub_debug_obstacle_cloud.publish(debug_obstacle_cloud);
-
-   if(m_publish_filtered_cloud)
+   if(m_publish_debug_clouds)
+   {
+      fillFilteredCloud(debug_obstacle_cloud, filtered_cloud);
       m_pub_filtered_cloud.publish(filtered_cloud);
+      m_pub_debug_obstacle_cloud.publish(debug_obstacle_cloud);
+   }
 
    m_pub_obstacle_cloud.publish(obstacle_cloud);
 
@@ -396,74 +392,79 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
          output_point.detection = certainty_value;
          obstacle_cloud->push_back(output_point);
 
-         if(m_publish_debug_cloud)
+         if(m_publish_debug_clouds)
          {
-           DebugOutputPoint debug_output_point;
-
-           debug_output_point.x = current_point.x;
-           debug_output_point.y = current_point.y;
-           debug_output_point.z = current_point.z;
-           debug_output_point.intensity = current_point.intensity;
-           debug_output_point.ring = current_point.ring;
-
-           debug_output_point.detection_distance = difference_distances;
-           debug_output_point.detection_intensity = difference_intensities;
-           debug_output_point.detection = certainty_value;
-
-//            ROS_INFO_STREAM("difference_intensities " << difference_intensities << " debug_output_point.detection_intensity " << debug_output_point.detection_intensity);
-
-
+            DebugOutputPoint debug_output_point;
+            
+            debug_output_point.x = current_point.x;
+            debug_output_point.y = current_point.y;
+            debug_output_point.z = current_point.z;
+            debug_output_point.intensity = current_point.intensity;
+            debug_output_point.ring = current_point.ring;
+            
+            debug_output_point.detection_distance = difference_distances;
+            debug_output_point.detection_intensity = difference_intensities;
+            debug_output_point.detection = certainty_value;
+            
             debug_obstacle_cloud->push_back(debug_output_point);
+            
+            // save factors for median filtered cloud 
+            float factor = 1.f;
+            if(!isnan((*median_it).dist_small_kernel) && !isnan(current_point.distance))
+               factor = (*median_it).dist_small_kernel / current_point.distance;
+
+            m_filtering_factors.push_back(factor);
          }
       }
    }
 }
 
-//void Detector::fillFilteredCloud(const InputPointCloud::ConstPtr &cloud,
-//                                                      InputPointCloud::Ptr filtered_cloud,
-//                                                      const std::vector<unsigned int> &indices_of_ring,
-//                                                      std::shared_ptr<std::vector<float> > distances_ring_filtered_big_kernel)
-//{
-//   tf::StampedTransform velodyne_link_transform;
-//   bool transform_found = true;
-//   try
-//   {
-//      m_tf_listener.lookupTransform("/velodyne", cloud->header.frame_id, pcl_conversions::fromPCL(cloud->header.stamp), velodyne_link_transform);
-//   }
-//   catch(tf::TransformException& ex)
-//   {
-//      ROS_ERROR("Transform unavailable %s", ex.what());
-//      transform_found = false;
-//   }
-//
-//   if(transform_found)
-//   {
-//      Eigen::Affine3d velodyne_link_transform_eigen;
-//      tf::transformTFToEigen(velodyne_link_transform, velodyne_link_transform_eigen);
-//
-//      InputPointCloud::Ptr cloud_transformed(new InputPointCloud);
-//      pcl::transformPointCloud(*cloud, *cloud_transformed, velodyne_link_transform_eigen);
-//
-//      // move the cloud points to the place they would have been if the median filter would have been applied to them
-//      int last_index = (int) indices_of_ring.size() - m_median_big_kernel_size / 2;
-//      for(int ring_point_index = 0; ring_point_index < last_index; ring_point_index++)
-//      {
-//         int current_cloud_point_index = indices_of_ring[ring_point_index];
-//         float factor = (*distances_ring_filtered_big_kernel)[ring_point_index] /
-//                        cloud->points[current_cloud_point_index].distance;
-//
-//         InputPoint inputPoint;
-//         inputPoint.x = cloud_transformed->points[current_cloud_point_index].x * factor;
-//         inputPoint.y = cloud_transformed->points[current_cloud_point_index].y * factor;
-//         inputPoint.z = cloud_transformed->points[current_cloud_point_index].z * factor;
-//         inputPoint.intensity = cloud_transformed->points[current_cloud_point_index].intensity;
-//         inputPoint.ring = cloud_transformed->points[current_cloud_point_index].ring;
-//         inputPoint.distance = cloud_transformed->points[current_cloud_point_index].distance;
-//
-//         filtered_cloud->push_back(inputPoint);
-//      }
-//   }
-//}
+void Detector::fillFilteredCloud(const DebugOutputPointCloud::ConstPtr &cloud,
+                                 DebugOutputPointCloud::Ptr filtered_cloud)
+{
+   if(cloud->size() != m_filtering_factors.size())
+   {
+      ROS_ERROR("fillFilteredCloud: cloud and factors have different sizes");
+      return;
+   }
+
+   tf::StampedTransform velodyne_link_transform;
+   bool transform_found = true;
+   try
+   {
+      m_tf_listener.lookupTransform("/velodyne", cloud->header.frame_id, pcl_conversions::fromPCL(cloud->header.stamp), velodyne_link_transform);
+   }
+   catch(tf::TransformException& ex)
+   {
+      ROS_ERROR("Transform unavailable %s", ex.what());
+      transform_found = false;
+   }
+
+   if(transform_found)
+   {
+      Eigen::Affine3d velodyne_link_transform_eigen;
+      tf::transformTFToEigen(velodyne_link_transform, velodyne_link_transform_eigen);
+
+      DebugOutputPointCloud::Ptr cloud_transformed(new DebugOutputPointCloud);
+      pcl::transformPointCloud(*cloud, *cloud_transformed, velodyne_link_transform_eigen);
+
+      filtered_cloud->header.frame_id = "/velodyne";
+
+      // move the cloud points to the place they would have been if the median filter would have been applied to them
+      for(int point_index = 0; point_index < cloud_transformed->size(); point_index++)
+      {
+         DebugOutputPoint output_point;
+         output_point.x = cloud_transformed->points[point_index].x * m_filtering_factors[point_index];
+         output_point.y = cloud_transformed->points[point_index].y * m_filtering_factors[point_index];
+         output_point.z = cloud_transformed->points[point_index].z * m_filtering_factors[point_index];
+         output_point.detection = cloud_transformed->points[point_index].detection;
+         output_point.ring = cloud_transformed->points[point_index].ring;
+
+         filtered_cloud->push_back(output_point);
+      }
+   }
+   m_filtering_factors.clear();
+}
 
 void Detector::plot()
 {

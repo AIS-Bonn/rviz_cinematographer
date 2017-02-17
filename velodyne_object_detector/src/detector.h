@@ -97,10 +97,8 @@ public:
 			               median_iterator& current_element,
                         OutputPointCloud::Ptr obstacle_cloud, DebugOutputPointCloud::Ptr debug_obstacle_cloud);
 
-   void fillFilteredCloud(const InputPointCloud::ConstPtr &cloud,
-                          InputPointCloud::Ptr filtered_cloud,
-                          const std::vector<unsigned int> &indices_of_ring,
-                          std::shared_ptr<std::vector<float> > distances_ring_filtered_big_kernel);
+   void fillFilteredCloud(const DebugOutputPointCloud::ConstPtr &cloud,
+                          DebugOutputPointCloud::Ptr filtered_cloud);
 
    void plot();
 
@@ -153,14 +151,15 @@ private:
 
    std::string m_points_topic;
 
-   bool m_publish_filtered_cloud;
-   bool m_publish_debug_cloud;
+   bool m_publish_debug_clouds;
 
    boost::mutex m_parameter_change_lock;
    std::vector<BufferMediansPtr> m_median_filtered_circ_buffer_vector;
 
    std::vector<boost::optional<median_iterator>> m_median_iters_by_ring;
    std::vector<boost::optional<median_iterator>> m_detection_iters_by_ring;
+
+   std::vector<float> m_filtering_factors;
 };
 
 } // namespace velodyne_object_detector
