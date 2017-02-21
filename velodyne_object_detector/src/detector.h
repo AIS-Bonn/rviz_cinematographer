@@ -121,21 +121,27 @@ private:
 
    pcl::visualization::PCLPlotter *m_plotter;
 
-   float m_angle_between_scanpoints;
+   int m_circular_buffer_capacity_launch;
+   float m_angle_between_scanpoints_launch;
+   float m_certainty_threshold_launch;
+   float m_dist_weight_launch;
+   float m_intensity_weight_launch;
+   float m_object_size_launch;
+   float m_distance_to_comparison_points_launch;
+   int m_kernel_size_diff_factor_launch;
+   float m_median_min_dist_launch;
+   float m_median_thresh1_dist_launch;
+   float m_median_thresh2_dist_launch;
+   float m_median_max_dist_launch;
+   float m_max_dist_for_median_computation_launch;
+   int m_max_kernel_size;
 
    float m_max_prob_by_distance;
    float m_max_intensity_range;
 
-   float m_certainty_threshold_launch;
-   float m_object_size_launch;
-   int m_circular_buffer_capacity_launch;
-   float m_distance_to_comparison_points_launch;
-   int m_kernel_size_diff_factor_launch;
-   int m_max_kernel_size;
-
    config_server::Parameter<float> m_certainty_threshold;
-   config_server::Parameter<float> m_dist_coeff;
-   config_server::Parameter<float> m_intensity_coeff;
+   config_server::Parameter<float> m_dist_weight;
+   config_server::Parameter<float> m_intensity_weight;
    config_server::Parameter<float> m_weight_for_small_intensities;
 
    config_server::Parameter<float> m_object_size;

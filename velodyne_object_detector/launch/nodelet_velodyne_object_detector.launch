@@ -1,11 +1,14 @@
 <!--  -->
 <launch>
 
+  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 1 /velodyne /base_link 100" />
+  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster2" args="0 0 0 0 0 0 1 /velodyne /odom 100" />
+
   <!-- ========= Bagplayer ========== -->
   <arg name="use_bag" default="true"/>
-  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/5hz/velodyne_2017-02-10-14-03-36.bag"/>
-  <arg name="rate" default="0.25"/>
-  <arg name="start" default="10"/>
+  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/mario_panel/box_circle.bag"/>
+  <arg name="rate" default="1"/>
+  <arg name="start" default="0"/>
 
   <node if="$(arg use_bag)" pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
     <remap from="/velodyne_points" to="/velodyne_points_frombag" />
@@ -55,17 +58,13 @@
 
   <!-- ============= Pointcloud Conversion (incl. nodelet_manager) =============  -->
   <!-- declare arguments with default values -->
-  <arg name="pcap" default="" />
   <arg name="calibration" default="$(find velodyne_pointcloud)/params/VLP16db.yaml"/>
   <arg name="min_range" default="0.01" />
   <arg name="max_range" default="130.0" />
+  <arg name="frame_id" default="odom" />
 
   <node pkg="nodelet" type="nodelet" name="velodyne_nodelet_manager"
         args="manager" output="screen" />
-  <arg name="read_once" default="false" />
-  <arg name="read_fast" default="false" />
-  <arg name="repeat_delay" default="0.0" />
-  <arg name="frame_id" default="odom" />
 
   <node pkg="nodelet" type="nodelet" name="transform_nodelet"
         args="load velodyne_pointcloud/TransformNodelet velodyne_nodelet_manager"  output="screen">
@@ -86,22 +85,35 @@
   
 
   <!-- ============= Object Detection =============  -->
-  <include file="$(find velodyne_object_detector)/launch/object_detector_nodelet.launch">
+  <include file="$(find velodyne_object_detector)/launch/panel_detector_nodelet.launch"/>
+
+<!--  <include file="$(find velodyne_object_detector)/launch/object_detector_nodelet.launch">
     <arg name="start_as_nodelet" value="true"/>
 
     <arg name="manager" value="velodyne_nodelet_manager" />
     <arg name="points_topic" value="/velodyne_points_filtered" />
     <arg name="circular_buffer_capacity" value="6000" />
-    <arg name="angle_between_scanpoints" default="0.1" />
+    <arg name="angle_between_scanpoints" value="0.2" />
+
     <arg name="certainty_threshold" value="0.0" />
+    <arg name="dist_weight" value="0.75" />
+    <arg name="intensity_weight" value="0.25" />
     <arg name="object_size_in_m" value="0.05" />
     <arg name="distance_to_comparison_points" value="0.38" />
-    <arg name="kernel_size_diff_factor" value="5" />
-    <arg name="max_kernel_size" value="100" />
-    <arg name="publish_debug_cloud" value="true" />
-  </include>
 
-  <group if="true">
+    <arg name="median_min_dist" value="0.15" />
+    <arg name="median_thresh1_dist" value="0.45" />
+    <arg name="median_thresh2_dist" value="7.0" />
+    <arg name="median_max_dist" value="10.0" />
+
+    <arg name="kernel_size_diff_factor" value="5" />
+    <arg name="max_dist_for_median_computation" value="0.0" />
+    <arg name="max_kernel_size" value="1000" />
+    <arg name="publish_debug_cloud" value="false" />
+  </include>-->
+
+
+  <group if="false">
   <!-- ============= Mapping =============  -->
   <include file="$(find mrs_laser_mapping)/launch/velodyne_mapping.launch">
     <arg name="build_alloc_map" value="false"/>

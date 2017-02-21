@@ -2,7 +2,33 @@
 <!-- run velodyne_object_detector/VelodyneObjectDetectorNodelet in a nodelet manager -->
 
 <launch>
-    <arg name="start_as_nodelet" default="true" />
+
+    <include file="$(find velodyne_object_detector)/launch/object_detector_nodelet.launch">
+        <arg name="start_as_nodelet" value="true"/>
+
+        <arg name="manager" value="velodyne_nodelet_manager" />
+        <arg name="points_topic" value="/velodyne_points_filtered" />
+        <arg name="circular_buffer_capacity" value="6000" />
+        <arg name="angle_between_scanpoints" value="0.2" />
+
+        <arg name="certainty_threshold" value="0.0" />
+        <arg name="dist_weight" value="1.0" />
+        <arg name="intensity_weight" value="0.0" />
+        <arg name="object_size_in_m" value="0.76" />
+        <arg name="distance_to_comparison_points" value="2.0" />
+
+        <arg name="median_min_dist" value="0.15" />
+        <arg name="median_thresh1_dist" value="0.45" />
+        <arg name="median_thresh2_dist" value="200.0" />
+        <arg name="median_max_dist" value="200.0" />
+
+        <arg name="kernel_size_diff_factor" value="5" />
+        <arg name="max_dist_for_median_computation" value="0.0" />
+        <arg name="max_kernel_size" value="1000" />
+        <arg name="publish_debug_cloud" value="true" />
+    </include>
+
+<!--    <arg name="start_as_nodelet" default="true" />
 
     <arg name="manager" default="velodyne_nodelet_manager" />
     <arg name="points_topic" default="/velodyne_points" />
@@ -10,19 +36,18 @@
     <arg name="angle_between_scanpoints" default="0.2" />
 
     <arg name="certainty_threshold" default="0.0" />
-    <arg name="dist_weight" default="0.75" />
-    <arg name="intensity_weight" default="0.25" />
-    <arg name="object_size_in_m" default="1.2" />
-    <arg name="distance_to_comparison_points" default="0.15" />
+    <arg name="dist_weight" default="1.0" />
+    <arg name="intensity_weight" default="0.0" />
+    <arg name="object_size_in_m" default="0.86" />
+    <arg name="distance_to_comparison_points" default="1.22" />
 
     <arg name="median_min_dist" default="0.15" />
     <arg name="median_thresh1_dist" default="0.45" />
-    <arg name="median_thresh2_dist" default="7.0" />
-    <arg name="median_max_dist" default="10.0" />
+    <arg name="median_thresh2_dist" default="200.0" />
+    <arg name="median_max_dist" default="200.0" />
 
-    <arg name="kernel_size_diff_factor" default="9" />
-    <arg name="max_dist_for_median_computation" default="0.0" />
-    <arg name="max_kernel_size" default="100" />
+    <arg name="kernel_size_diff_factor" default="5" />
+    <arg name="max_kernel_size" default="1000" />
     <arg name="publish_debug_cloud" default="false" />
 
     <node unless="$(arg start_as_nodelet)" launch-prefix="" pkg="velodyne_object_detector" type="velodyne_object_detector_node" name="velodyne_object_detector"
@@ -43,7 +68,6 @@
         <param name="median_max_dist" value="$(arg median_max_dist)"/>
 
         <param name="kernel_size_diff_factor" value="$(arg kernel_size_diff_factor)"/>
-        <param name="max_dist_for_median_computation" value="$(arg max_dist_for_median_computation)"/>
         <param name="max_kernel_size" value="$(arg max_kernel_size)"/>
         <param name="publish_debug_cloud" value="$(arg publish_debug_cloud)"/>
     </node>
@@ -66,9 +90,8 @@
         <param name="median_max_dist" value="$(arg median_max_dist)"/>
 
         <param name="kernel_size_diff_factor" value="$(arg kernel_size_diff_factor)"/>
-        <param name="max_dist_for_median_computation" value="$(arg max_dist_for_median_computation)"/>
         <param name="max_kernel_size" value="$(arg max_kernel_size)"/>
         <param name="publish_debug_cloud" value="$(arg publish_debug_cloud)"/>
-    </node>
+    </node>-->
 
 </launch>

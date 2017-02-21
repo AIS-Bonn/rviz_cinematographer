@@ -11,25 +11,33 @@ namespace velodyne_object_detector
 /** @brief Constructor. */
 Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
 : PUCK_NUM_RINGS(16)
- , m_angle_between_scanpoints(0.2f) // 0.1 for 5Hz 0.2 for 10Hz 0.4 for 20Hz
- , m_max_prob_by_distance(0.75f)
- , m_max_intensity_range(100.f)
+ , m_circular_buffer_capacity_launch(6000)
+ , m_angle_between_scanpoints_launch(0.2f) // 0.1 for 5Hz 0.2 for 10Hz 0.4 for 20Hz
+ , m_certainty_threshold_launch(0.0)
+ , m_dist_weight_launch(0.75)
+ , m_intensity_weight_launch(0.25)
  , m_object_size_launch(1.2f)
- , m_circular_buffer_capacity_launch(3000)
  , m_distance_to_comparison_points_launch(2.f)
- , m_kernel_size_diff_factor_launch(6)
+ , m_kernel_size_diff_factor_launch(5)
+ , m_median_min_dist_launch(0.15)
+ , m_median_thresh1_dist_launch(0.45)
+ , m_median_thresh2_dist_launch(7.0)
+ , m_median_max_dist_launch(10.0)
+ , m_max_dist_for_median_computation_launch(0.0)
  , m_max_kernel_size(100)
- , m_certainty_threshold("velodyne_object_detector/certainty_threshold", 0.0, 0.01, 1.0, 0.5)
- , m_dist_coeff("velodyne_object_detector/dist_coeff", 0.0, 0.1, 10.0, 0.5)
- , m_intensity_coeff("velodyne_object_detector/intensity_coeff", 0.0, 0.0001, 0.01, 0.0064)//(1.f - m_max_prob_by_distance)/m_max_intensity_range)
+ , m_max_prob_by_distance(1.f)
+ , m_max_intensity_range(100.f)
+ , m_certainty_threshold("velodyne_object_detector/certainty_threshold", 0.0, 0.01, 1.0, m_certainty_threshold_launch)
+ , m_dist_weight("velodyne_object_detector/dist_weight", 0.0, 0.1, 10.0, m_dist_weight_launch)
+ , m_intensity_weight("velodyne_object_detector/intensity_weight", 0.0, 0.01, 10.0, m_intensity_weight_launch)
  , m_weight_for_small_intensities("velodyne_object_detector/weight_for_small_intensities", 1.f, 1.f, 30.f, 10.f)
  , m_object_size("velodyne_object_detector/object_size_in_m", 0.005, 0.005, m_object_size_launch*2, m_object_size_launch)
  , m_distance_to_comparison_points("velodyne_object_detector/distance_to_comparison_points", 0.0, 0.01, m_distance_to_comparison_points_launch*2, 0.38f)
- , m_kernel_size_diff_factor("velodyne_object_detector/kernel_size_diff_factor", 1, 1, 20, 6)
- , m_median_min_dist("velodyne_object_detector/median_min_dist", 0.0, 0.01, .2, 0.15)
- , m_median_thresh1_dist("velodyne_object_detector/median_thresh1_dist", 0.0, 0.05, 2.5, 0.45)
- , m_median_thresh2_dist("velodyne_object_detector/median_thresh2_dist", 0.0, 0.1, 8.0, 7.0)
- , m_median_max_dist("velodyne_object_detector/median_max_dist", 0.0, 0.5, 20.0, 10.5)
+ , m_kernel_size_diff_factor("velodyne_object_detector/kernel_size_diff_factor", 1, 1, 20, m_kernel_size_diff_factor_launch)
+ , m_median_min_dist("velodyne_object_detector/median_min_dist", 0.0, 0.01, .2, m_median_min_dist_launch)
+ , m_median_thresh1_dist("velodyne_object_detector/median_thresh1_dist", 0.0, 0.05, 2.5, m_median_thresh1_dist_launch)
+ , m_median_thresh2_dist("velodyne_object_detector/median_thresh2_dist", 0.0, 0.1, 8.0, m_median_thresh2_dist_launch)
+ , m_median_max_dist("velodyne_object_detector/median_max_dist", 0.0, 0.5, 20.0, m_median_max_dist_launch)
  , m_max_dist_for_median_computation("velodyne_object_detector/max_dist_for_median_computation", 0.0, 0.25, 10.0, 6.0)
  , m_points_topic("/velodyne_points")
  , m_publish_debug_clouds(false)
@@ -58,6 +66,12 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
    if(private_nh.getParam("certainty_threshold", m_certainty_threshold_launch))
       m_certainty_threshold.set(m_certainty_threshold_launch);
 
+   if(private_nh.getParam("dist_weight", m_dist_weight_launch))
+      m_dist_weight.set(m_dist_weight_launch);
+
+   if(private_nh.getParam("intensity_weight", m_intensity_weight_launch))
+      m_intensity_weight.set(m_intensity_weight_launch);
+
    if(private_nh.getParam("object_size_in_m", m_object_size_launch))
       m_object_size.set(m_object_size_launch);
 
@@ -67,9 +81,24 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
    if(private_nh.getParam("kernel_size_diff_factor", m_kernel_size_diff_factor_launch))
       m_kernel_size_diff_factor.set(m_kernel_size_diff_factor_launch);
 
+   if(private_nh.getParam("median_min_dist", m_median_min_dist_launch))
+      m_median_min_dist.set(m_median_min_dist_launch);
+
+   if(private_nh.getParam("median_thresh1_dist", m_median_thresh1_dist_launch))
+      m_median_thresh1_dist.set(m_median_thresh1_dist_launch);
+
+   if(private_nh.getParam("median_thresh2_dist", m_median_thresh2_dist_launch))
+      m_median_thresh2_dist.set(m_median_thresh2_dist_launch);
+
+   if(private_nh.getParam("median_max_dist", m_median_max_dist_launch))
+      m_median_max_dist.set(m_median_max_dist_launch);
+
+   if(private_nh.getParam("max_dist_for_median_computation", m_max_dist_for_median_computation_launch))
+      m_max_dist_for_median_computation.set(m_max_dist_for_median_computation_launch);
+
    private_nh.getParam("circular_buffer_capacity", m_circular_buffer_capacity_launch);
    private_nh.getParam("max_kernel_size", m_max_kernel_size);
-   private_nh.getParam("angle_between_scanpoints", m_angle_between_scanpoints);
+   private_nh.getParam("angle_between_scanpoints", m_angle_between_scanpoints_launch);
 
       for(int i = 0; i < PUCK_NUM_RINGS; i++)
    {    
@@ -81,8 +110,8 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
    m_detection_iters_by_ring.resize(PUCK_NUM_RINGS);
 
    m_certainty_threshold.setCallback(boost::bind(&Detector::changeParameterSavely, this));
-   m_dist_coeff.setCallback(boost::bind(&Detector::changeParameterSavely, this));
-   m_intensity_coeff.setCallback(boost::bind(&Detector::changeParameterSavely, this));
+   m_dist_weight.setCallback(boost::bind(&Detector::changeParameterSavely, this));
+   m_intensity_weight.setCallback(boost::bind(&Detector::changeParameterSavely, this));
    m_weight_for_small_intensities.setCallback(boost::bind(&Detector::changeParameterSavely, this));
 
    m_object_size.setCallback(boost::bind(&Detector::changeParameterSavely, this));
@@ -249,7 +278,7 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered>
    while (!buffer_median_filtered->empty() && iter != buffer_median_filtered->end())
    {
       float alpha = static_cast<float>(std::atan((m_object_size()/2.f)/(*iter).point.distance) * 180.f / M_PI);
-      int kernel_size = (int)std::ceil(alpha / m_angle_between_scanpoints) + 1;
+      int kernel_size = (int)std::ceil(alpha / m_angle_between_scanpoints_launch) + 1;
 
       kernel_size = std::max(kernel_size, 1);
       kernel_size = std::min(kernel_size, m_max_kernel_size);
@@ -291,7 +320,7 @@ float Detector::computeCertainty(float difference_distances, float difference_in
    difference_intensities = std::min(difference_intensities, m_max_intensity_range/m_weight_for_small_intensities());
    difference_intensities *= m_weight_for_small_intensities();
 
-//   ROS_INFO_STREAM("difference_intensities inner " << (difference_intensities * m_intensity_coeff()));
+//   ROS_INFO_STREAM("difference_intensities inner " << (difference_intensities * m_intensity_weight()));
 
 
    if(difference_distances < m_median_min_dist() || difference_distances > m_median_max_dist())
@@ -302,15 +331,15 @@ float Detector::computeCertainty(float difference_distances, float difference_in
    {
       if(difference_distances >= m_median_min_dist() && difference_distances < m_median_thresh1_dist())
       {
-         certainty_value = difference_distances * m_dist_coeff() * (m_max_prob_by_distance/m_median_thresh1_dist()) + difference_intensities * m_intensity_coeff();
+         certainty_value = difference_distances * m_dist_weight() * (m_max_prob_by_distance/m_median_thresh1_dist()) + difference_intensities * (m_intensity_weight()/m_max_intensity_range);
       }
       if(difference_distances >= m_median_thresh1_dist() && difference_distances < m_median_thresh2_dist())
       {
-         certainty_value = m_dist_coeff() * m_max_prob_by_distance + difference_intensities * m_intensity_coeff();
+         certainty_value = m_dist_weight() * m_max_prob_by_distance + difference_intensities * (m_intensity_weight()/m_max_intensity_range);
       }
       if(difference_distances >= m_median_thresh2_dist() && difference_distances < m_median_max_dist())
       {
-         certainty_value = (m_max_prob_by_distance / (m_median_max_dist() - m_median_thresh2_dist())) * (m_median_max_dist() - difference_distances * m_dist_coeff()) + difference_intensities * m_intensity_coeff();
+         certainty_value = (m_max_prob_by_distance / (m_median_max_dist() - m_median_thresh2_dist())) * (m_median_max_dist() - difference_distances * m_dist_weight()) + difference_intensities * (m_intensity_weight()/m_max_intensity_range);
       }
    }
    certainty_value = std::min(certainty_value, 1.0f);
@@ -323,8 +352,8 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
                                OutputPointCloud::Ptr obstacle_cloud, DebugOutputPointCloud::Ptr debug_obstacle_cloud)
 
 {
-   float alpha = static_cast<float>(std::atan((m_distance_to_comparison_points()/2.f)/(*median_it).dist_small_kernel) * 180.f / M_PI);
-   int dist_to_comparsion_point = (int)std::round(alpha / m_angle_between_scanpoints);
+   float alpha = static_cast<float>(std::atan(m_distance_to_comparison_points()/(*median_it).dist_small_kernel) * 180.f / M_PI);
+   int dist_to_comparsion_point = (int)std::round(alpha / m_angle_between_scanpoints_launch);
 
    dist_to_comparsion_point = std::max(dist_to_comparsion_point, 0);
    dist_to_comparsion_point = std::min(dist_to_comparsion_point, m_max_kernel_size);
@@ -340,8 +369,8 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
    for(; median_it != buffer_median_filtered->end(); ++median_it)
    {
       // compute index of neighbors to compare to
-      alpha = static_cast<float>(std::atan((m_distance_to_comparison_points()/2.f)/(*median_it).dist_small_kernel) * 180.f / M_PI);
-      dist_to_comparsion_point = (int)std::round(alpha / m_angle_between_scanpoints);
+      alpha = static_cast<float>(std::atan(m_distance_to_comparison_points()/(*median_it).dist_small_kernel) * 180.f / M_PI);
+      dist_to_comparsion_point = (int)std::round(alpha / m_angle_between_scanpoints_launch);
 
       dist_to_comparsion_point = std::max(dist_to_comparsion_point, 0);
       dist_to_comparsion_point = std::min(dist_to_comparsion_point, m_max_kernel_size);
@@ -403,7 +432,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
             debug_output_point.ring = current_point.ring;
             
             debug_output_point.detection_distance = difference_distances;
-            debug_output_point.detection_intensity = difference_intensities;
+            debug_output_point.detection_intensity = debug_obstacle_cloud->size();//difference_intensities;
             debug_output_point.detection = certainty_value;
             
             debug_obstacle_cloud->push_back(debug_output_point);
@@ -451,7 +480,7 @@ void Detector::fillFilteredCloud(const DebugOutputPointCloud::ConstPtr &cloud,
       filtered_cloud->header.frame_id = "/velodyne";
 
       // move the cloud points to the place they would have been if the median filter would have been applied to them
-      for(int point_index = 0; point_index < cloud_transformed->size(); point_index++)
+      for(int point_index = 0; point_index < (int)cloud_transformed->size(); point_index++)
       {
          DebugOutputPoint output_point;
          output_point.x = cloud_transformed->points[point_index].x * m_filtering_factors[point_index];
@@ -488,8 +517,8 @@ void Detector::plot()
    distance_proportion[0] = 0.0;
    distance_proportion[1] = 0.0;
    distance_proportion[2] = 0.0;
-   distance_proportion[3] = m_max_prob_by_distance * m_dist_coeff();
-   distance_proportion[4] = m_max_prob_by_distance * m_dist_coeff();
+   distance_proportion[3] = m_max_prob_by_distance * m_dist_weight();
+   distance_proportion[4] = m_max_prob_by_distance * m_dist_weight();
    distance_proportion[5] = 0.0;
    distance_proportion[6] = 0.0;
    distance_proportion[7] = 0.0;
@@ -497,10 +526,10 @@ void Detector::plot()
    std::vector<double> intensity_proportion(range, 0.0);
    intensity_proportion[0] = 0.0;
    intensity_proportion[1] = 0.0;
-   intensity_proportion[2] = m_max_intensity_range * m_intensity_coeff();
-   intensity_proportion[3] = m_max_prob_by_distance * m_dist_coeff() + m_max_intensity_range * m_intensity_coeff();
-   intensity_proportion[4] = m_max_prob_by_distance * m_dist_coeff() + m_max_intensity_range * m_intensity_coeff();
-   intensity_proportion[5] = m_max_intensity_range * m_intensity_coeff();
+   intensity_proportion[2] = m_max_intensity_range * m_intensity_weight();
+   intensity_proportion[3] = m_max_prob_by_distance * m_dist_weight() + m_max_intensity_range * m_intensity_weight();
+   intensity_proportion[4] = m_max_prob_by_distance * m_dist_weight() + m_max_intensity_range * m_intensity_weight();
+   intensity_proportion[5] = m_max_intensity_range * m_intensity_weight();
    intensity_proportion[6] = 0.0;
    intensity_proportion[7] = 0.0;
 
