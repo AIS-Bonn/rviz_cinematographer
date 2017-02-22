@@ -41,7 +41,6 @@ void HeightImage::resizeStorage()
 	m_max_height.create(m_buckets_y, m_buckets_x);
 	m_object_detection.create(m_buckets_y, m_buckets_x);
 	m_object_min_height.create(m_buckets_y, m_buckets_x);
-	m_object_max_height.create(m_buckets_y, m_buckets_x);
 	m_object_count.create(m_buckets_y, m_buckets_x);
 	m_object_scans_count.create(m_buckets_y, m_buckets_x);
 	m_objects_inflated.create(m_buckets_y, m_buckets_x);
@@ -51,7 +50,6 @@ void HeightImage::resizeStorage()
 	m_max_height = NAN;
 	m_object_detection = NAN;
 	m_object_min_height = NAN;
-	m_object_max_height = NAN;
 	m_objects_inflated = 0;
 	m_object_count = 0;
 	m_object_scans_count = 0;
@@ -179,7 +177,6 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
       }
 
       float* binval_object_min_height = &m_object_min_height(bin_y, bin_x);
-      float* binval_object_max_height = &m_object_max_height(bin_y, bin_x);
       int* binval_object_count = &m_object_count(bin_y, bin_x);
       float* binval_detection = &m_object_detection(bin_y, bin_x);
 
@@ -190,7 +187,6 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
          {
             *binval_detection = point.detection;
             *binval_object_min_height = point.z;
-            *binval_object_max_height = point.z;
             *binval_object_count = 1;
 
             storage_z[idx].push_back(point.z);
@@ -208,10 +204,6 @@ void HeightImage::processPointcloud(const InputPointCloud& cloud,
          if(point.z < *binval_object_min_height)
          {
             *binval_object_min_height = point.z;
-         }
-         if(point.z > *binval_object_max_height)
-         {
-            *binval_object_max_height = point.z;
          }
 
          *binval_object_count += 1;
@@ -283,9 +275,10 @@ void HeightImage::detectObjects(int min_number_of_object_points_per_cell,
 		{
 			float *detection = &m_object_detection(y, x);
 			int* scans_count = &m_object_scans_count(y, x);
-         int* object_count = &m_object_count(y, x);
+      int* object_count = &m_object_count(y, x);
 
-         float object_height = m_object_max_height(y, x) - m_object_min_height(y, x);
+      // compute object height in a more robust way
+      float object_height = (m_object_median_height(y, x) - m_object_min_height(y, x)) * 2.f;
 			float object_altitude = m_object_min_height(y, x) - m_min_height(y, x);
 			
 			if(std::isfinite(*detection))
