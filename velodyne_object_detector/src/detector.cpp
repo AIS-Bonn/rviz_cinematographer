@@ -36,8 +36,8 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
  , m_kernel_size_diff_factor("velodyne_object_detector/kernel_size_diff_factor", 1, 1, 20, m_kernel_size_diff_factor_launch)
  , m_median_min_dist("velodyne_object_detector/median_min_dist", 0.0, 0.01, .2, m_median_min_dist_launch)
  , m_median_thresh1_dist("velodyne_object_detector/median_thresh1_dist", 0.0, 0.05, 2.5, m_median_thresh1_dist_launch)
- , m_median_thresh2_dist("velodyne_object_detector/median_thresh2_dist", 0.0, 0.1, 8.0, m_median_thresh2_dist_launch)
- , m_median_max_dist("velodyne_object_detector/median_max_dist", 0.0, 0.5, 20.0, m_median_max_dist_launch)
+ , m_median_thresh2_dist("velodyne_object_detector/median_thresh2_dist", 0.0, 0.1, 150.0, m_median_thresh2_dist_launch)
+ , m_median_max_dist("velodyne_object_detector/median_max_dist", 0.0, 0.5, 150.0, m_median_max_dist_launch)
  , m_max_dist_for_median_computation("velodyne_object_detector/max_dist_for_median_computation", 0.0, 0.25, 10.0, 6.0)
  , m_points_topic("/velodyne_points")
  , m_publish_debug_clouds(false)
@@ -432,7 +432,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
             debug_output_point.ring = current_point.ring;
             
             debug_output_point.detection_distance = difference_distances;
-            debug_output_point.detection_intensity = debug_obstacle_cloud->size();//difference_intensities;
+            debug_output_point.detection_intensity = difference_intensities;
             debug_output_point.detection = certainty_value;
             
             debug_obstacle_cloud->push_back(debug_output_point);
@@ -526,10 +526,10 @@ void Detector::plot()
    std::vector<double> intensity_proportion(range, 0.0);
    intensity_proportion[0] = 0.0;
    intensity_proportion[1] = 0.0;
-   intensity_proportion[2] = m_max_intensity_range * m_intensity_weight();
-   intensity_proportion[3] = m_max_prob_by_distance * m_dist_weight() + m_max_intensity_range * m_intensity_weight();
-   intensity_proportion[4] = m_max_prob_by_distance * m_dist_weight() + m_max_intensity_range * m_intensity_weight();
-   intensity_proportion[5] = m_max_intensity_range * m_intensity_weight();
+   intensity_proportion[2] = m_max_intensity_range * (m_intensity_weight()/100.f);
+   intensity_proportion[3] = m_max_prob_by_distance * m_dist_weight() + m_max_intensity_range * (m_intensity_weight()/100.f);
+   intensity_proportion[4] = m_max_prob_by_distance * m_dist_weight() + m_max_intensity_range * (m_intensity_weight()/100.f);
+   intensity_proportion[5] = m_max_intensity_range * (m_intensity_weight()/100.f);
    intensity_proportion[6] = 0.0;
    intensity_proportion[7] = 0.0;
 

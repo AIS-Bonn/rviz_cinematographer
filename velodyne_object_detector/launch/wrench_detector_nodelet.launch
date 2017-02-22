@@ -9,18 +9,18 @@
         <arg name="manager" value="velodyne_nodelet_manager" />
         <arg name="points_topic" value="/velodyne_points_filtered" />
         <arg name="circular_buffer_capacity" value="6000" />
-        <arg name="angle_between_scanpoints" value="0.2" />
+        <arg name="angle_between_scanpoints" value="0.1" />
 
         <arg name="certainty_threshold" value="0.0" />
-        <arg name="dist_weight" value="1.0" />
-        <arg name="intensity_weight" value="0.0" />
-        <arg name="object_size_in_m" value="0.76" />
-        <arg name="distance_to_comparison_points" value="1.7" />
+        <arg name="dist_weight" value="0.6" />
+        <arg name="intensity_weight" value="0.4" />
+        <arg name="object_size_in_m" value="0.03" />
+        <arg name="distance_to_comparison_points" value="0.04" />
 
-        <arg name="median_min_dist" value="0.15" />
-        <arg name="median_thresh1_dist" value="0.45" />
-        <arg name="median_thresh2_dist" value="200.0" />
-        <arg name="median_max_dist" value="200.0" />
+        <arg name="median_min_dist" value="0.01" />
+        <arg name="median_thresh1_dist" value="0.05" />
+        <arg name="median_thresh2_dist" value="0.5" />
+        <arg name="median_max_dist" value="0.8" />
 
         <arg name="kernel_size_diff_factor" value="5" />
         <arg name="max_dist_for_median_computation" value="0.0" />
