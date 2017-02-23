@@ -7,6 +7,12 @@
     <arg name="manager" default="velodyne_nodelet_manager" />
     <arg name="input_topic" default="/mapping_nodelet/pointcloud" />
     <arg name="fixed_frame" default="/world_corrected" />
+
+    <arg name="geofencing_min_x" default="-100.0" />
+    <arg name="geofencing_max_x" default="100.0" />
+    <arg name="geofencing_min_y" default="-100.0" />
+    <arg name="geofencing_max_y" default="100.0" />
+
     <arg name="object_min_height" default="0.1" />
     <arg name="object_max_height" default="0.3" />
     <arg name="object_min_footprint_in_sqm" default="0.05" />
@@ -20,6 +26,12 @@
           type="detection_height_mapper_node" name="detection_height_mapper" output="screen">
         <param name="input_topic" value="$(arg input_topic)"/>
         <param name="fixed_frame" value="$(arg fixed_frame)"/>
+
+        <param name="geofencing_min_x" value="$(arg geofencing_min_x)"/>
+        <param name="geofencing_max_x" value="$(arg geofencing_max_x)"/>
+        <param name="geofencing_min_y" value="$(arg geofencing_min_y)"/>
+        <param name="geofencing_max_y" value="$(arg geofencing_max_y)"/>
+
         <param name="object_min_height" value="$(arg object_min_height)"/>
         <param name="object_max_height" value="$(arg object_max_height)"/>
         <param name="object_min_footprint_in_sqm" value="$(arg object_min_footprint_in_sqm)"/>
@@ -34,6 +46,12 @@
           args="load detection_height_mapper/detection_height_mapper_nodelet $(arg manager)" output="screen" >
         <param name="input_topic" value="$(arg input_topic)"/>
         <param name="fixed_frame" value="$(arg fixed_frame)"/>
+
+        <param name="geofencing_min_x" value="$(arg geofencing_min_x)"/>
+        <param name="geofencing_max_x" value="$(arg geofencing_max_x)"/>
+        <param name="geofencing_min_y" value="$(arg geofencing_min_y)"/>
+        <param name="geofencing_max_y" value="$(arg geofencing_max_y)"/>
+
         <param name="object_min_height" value="$(arg object_min_height)"/>
         <param name="object_max_height" value="$(arg object_max_height)"/>
         <param name="object_min_footprint_in_sqm" value="$(arg object_min_footprint_in_sqm)"/>

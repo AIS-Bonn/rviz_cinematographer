@@ -13,6 +13,10 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    : m_height_image_size_x("detection_height_mapper/image_size_x", 0, 16, 256, 100)
    , m_height_image_size_y("detection_height_mapper/image_size_y", 0, 16, 256, 100)
    , m_height_image_resolution("detection_height_mapper/image_resolution", 0.01, 0.01, 0.5, 0.1)
+   , m_geofencing_min_x("detection_height_mapper/geofencing_min_x", -100.0, 0.5, 100.0, -100.0)
+   , m_geofencing_max_x("detection_height_mapper/geofencing_max_x", -100.0, 0.5, 100.0, 100.0)
+   , m_geofencing_min_y("detection_height_mapper/geofencing_min_y", -100.0, 0.5, 100.0, -100.0)
+   , m_geofencing_max_y("detection_height_mapper/geofencing_max_y", -100.0, 0.5, 100.0, 100.0)
    , m_height_image_min_z("detection_height_mapper/image_min_z", -20.f, 0.1f, 20.f, -20.0)
    , m_height_image_max_z("detection_height_mapper/image_max_z", -20.f, 0.1f, 20.f, 20.0)
    , m_min_object_points_per_cell("detection_height_mapper/object_min_points", 0, 1, 100, 10)
@@ -38,6 +42,22 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    ROS_INFO_STREAM("detection_height_mapper nodelet init");
    private_nh.getParam("input_topic", m_input_topic);
    private_nh.getParam("fixed_frame", m_fixed_frame);
+
+   float geofencing_min_x;
+   if(private_nh.getParam("geofencing_min_x", geofencing_min_x))
+      m_geofencing_min_x.set(geofencing_min_x);
+
+   float geofencing_max_x;
+   if(private_nh.getParam("geofencing_max_x", geofencing_max_x))
+      m_geofencing_max_x.set(geofencing_max_x);
+
+   float geofencing_min_y;
+   if(private_nh.getParam("geofencing_min_y", geofencing_min_y))
+      m_geofencing_min_y.set(geofencing_min_y);
+
+   float geofencing_max_y;
+   if(private_nh.getParam("geofencing_max_y", geofencing_max_y))
+      m_geofencing_max_y.set(geofencing_max_y);
 
    float object_min_height;
    if(private_nh.getParam("object_min_height", object_min_height))
@@ -88,6 +108,14 @@ void Mapper::callback(const detection_height_image::HeightImage::InputPointCloud
 
    ros::Time start = ros::Time::now();
 
+   detection_height_image::HeightImage::InputPointCloud::Ptr cloud_filtered(new detection_height_image::HeightImage::InputPointCloud);
+
+   if(!geofencing(input_cloud, cloud_filtered, m_fixed_frame, m_geofencing_min_x(), m_geofencing_max_x(), m_geofencing_min_y(), m_geofencing_max_y()))
+      return;
+
+   m_height_image_size_x.set(std::max(fabsf(m_geofencing_min_x()), fabsf(m_geofencing_max_x())) * 2.f);
+   m_height_image_size_y.set(std::max(fabsf(m_geofencing_min_y()), fabsf(m_geofencing_max_y())) * 2.f);
+
    detection_height_image::HeightImage height_image;
    height_image.setSize(m_height_image_size_x(), m_height_image_size_y());
    height_image.setResolution(m_height_image_resolution(), m_height_image_resolution());
@@ -105,28 +133,76 @@ void Mapper::callback(const detection_height_image::HeightImage::InputPointCloud
 
    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
    transform.translate(Eigen::Vector3f(m_height_image_size_x()/2, m_height_image_size_y()/2, 0.f));
-   height_image.processPointcloud(*input_cloud, transform, m_object_odds_hit(), m_object_odds_miss(), m_object_clamp_thresh_min(), m_object_clamp_thresh_max());
+   height_image.processPointcloud(*cloud_filtered, transform, m_object_odds_hit(), m_object_odds_miss(), m_object_clamp_thresh_min(), m_object_clamp_thresh_max());
 
    height_image.detectObjects(m_min_object_points_per_cell(), m_min_object_scans_per_cell(), m_inflate_objects());
 
    sensor_msgs::ImagePtr img(new sensor_msgs::Image);
    height_image.fillObjectColorImage(img);
-   img->header.frame_id = input_cloud->header.frame_id;
-   img->header.stamp = pcl_conversions::fromPCL(input_cloud->header.stamp);
+   img->header.frame_id = cloud_filtered->header.frame_id;
+   img->header.stamp = pcl_conversions::fromPCL(cloud_filtered->header.stamp);
    m_pub_height_image.publish(img);
 
    nav_msgs::OccupancyGridPtr grid(new nav_msgs::OccupancyGrid);
    height_image.fillObjectMap(grid.get());
-   grid->header.frame_id = input_cloud->header.frame_id;
-   grid->header.stamp = pcl_conversions::fromPCL(input_cloud->header.stamp);
+   grid->header.frame_id = cloud_filtered->header.frame_id;
+   grid->header.stamp = pcl_conversions::fromPCL(cloud_filtered->header.stamp);
    m_pub_height_image_grid.publish(grid);
 
    // get object positions from height image and filter those that are already known
    std::vector<detection_height_mapper::ObjectPosition> object_positions;
    height_image.getObjectPositions(object_positions, transform.inverse());
-   std::string source_frame = input_cloud->header.frame_id;
+   std::string source_frame = cloud_filtered->header.frame_id;
    std::string target_frame = m_fixed_frame;
-   if(!transformObjectPositions(object_positions, target_frame, source_frame, pcl_conversions::fromPCL(input_cloud->header.stamp)))
+   publishTransformedObjectPositions(object_positions, target_frame, source_frame, pcl_conversions::fromPCL(cloud_filtered->header.stamp));
+
+   ros::Duration exec_time = ros::Time::now() - start;
+   ROS_DEBUG_STREAM("Detection Height Image: Handling one pointcloud took " << exec_time.toSec() << " seconds.");
+}
+
+bool Mapper::geofencing(const detection_height_image::HeightImage::InputPointCloud::ConstPtr input_cloud,
+                        detection_height_image::HeightImage::InputPointCloud::Ptr output_cloud,
+                        std::string target_frame,
+                        float min_x, float max_x, float min_y, float max_y)
+{
+   tf::StampedTransform transform;
+   try
+   {
+      m_tf_listener.lookupTransform(target_frame, input_cloud->header.frame_id, pcl_conversions::fromPCL(input_cloud->header.stamp), transform);
+   }
+   catch(tf::TransformException& ex)
+   {
+      ROS_ERROR("Mapper::geofencing: Transform unavailable %s", ex.what());
+      return false;
+   }
+
+   Eigen::Affine3d transform_eigen;
+   tf::transformTFToEigen(transform, transform_eigen);
+
+   detection_height_image::HeightImage::InputPointCloud::Ptr cloud_transformed(new detection_height_image::HeightImage::InputPointCloud);
+   pcl::transformPointCloud(*input_cloud, *cloud_transformed, transform_eigen);
+
+   for(const auto& point : cloud_transformed->points)
+   {
+      if(point.x > min_x && point.x < max_x &&
+         point.y > min_y && point.y < max_y)
+      {
+         output_cloud->push_back(point);
+      }
+   }
+
+   output_cloud->header.frame_id = target_frame;
+   output_cloud->header.stamp = input_cloud->header.stamp;
+
+   return true;
+}
+
+void Mapper::publishTransformedObjectPositions(std::vector<detection_height_mapper::ObjectPosition>& object_positions,
+                                               std::string target_frame,
+                                               std::string source_frame,
+                                               ros::Time stamp)
+{
+   if(!transformObjectPositions(object_positions, target_frame, source_frame, stamp))
       return;
 
    for(auto& object_position: object_positions)
@@ -138,17 +214,14 @@ void Mapper::callback(const detection_height_image::HeightImage::InputPointCloud
    {
 
       ROS_DEBUG_STREAM("object " << object_position.id << " x= " << object_position.position.point.x
-                                << " y= " << object_position.position.point.y
-                                << " z= " << object_position.position.point.z);
+                                 << " y= " << object_position.position.point.y
+                                 << " z= " << object_position.position.point.z);
 
       object_position.position.header.frame_id = target_frame;
-      object_position.position.header.stamp = pcl_conversions::fromPCL(input_cloud->header.stamp);
+      object_position.position.header.stamp = stamp;
       m_pub_object_positions.publish(object_position.position);
       m_pub_object_positions_with_info.publish(object_position);
    }
-
-   ros::Duration exec_time = ros::Time::now() - start;
-   ROS_DEBUG_STREAM("Detection Height Image: Handling one pointcloud took " << exec_time.toSec() << " seconds.");
 }
 
 bool Mapper::transformObjectPositions(std::vector<detection_height_mapper::ObjectPosition>& object_positions,
@@ -163,7 +236,7 @@ bool Mapper::transformObjectPositions(std::vector<detection_height_mapper::Objec
    }
    catch(tf::TransformException& ex)
    {
-      ROS_ERROR("Transform unavailable %s", ex.what());
+      ROS_ERROR("Mapper::transformObjectPositions: Transform unavailable %s", ex.what());
       return false;
    }
 

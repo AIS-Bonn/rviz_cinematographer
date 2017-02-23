@@ -85,32 +85,32 @@ private:
    void inflateObjects(cv::Mat& prob_mat,
                        float inflation_radius);
 
-   float m_res_x;
-   float m_res_y;
-   float m_length_x;
-   float m_length_y;
-   float m_robot_radius;
-   int m_buckets_x;
-	 int m_buckets_y;
-   float m_min_height_threshold;
-   float m_max_height_threshold;
-   float m_min_object_height_threshold;
-   float m_max_object_height_threshold;
-   float m_min_footprint_size;
-   float m_max_footprint_size;
-   float m_max_object_altitude_threshold;
-   float m_object_detection_threshold;
-   float m_max_neighborhood_height_threshold;
-   float m_inflation_radius;
+	float m_res_x;
+	float m_res_y;
+	float m_length_x;
+	float m_length_y;
+	float m_robot_radius;
+	int m_buckets_x;
+	int m_buckets_y;
+	float m_min_height_threshold;
+	float m_max_height_threshold;
+	float m_min_object_height_threshold;
+	float m_max_object_height_threshold;
+	float m_min_footprint_size;
+	float m_max_footprint_size;
+	float m_max_object_altitude_threshold;
+	float m_object_detection_threshold;
+	float m_max_neighborhood_height_threshold;
+	float m_inflation_radius;
 
-	 cv::Mat_<float> m_min_height;
-	 cv::Mat_<float> m_max_height;
-   cv::Mat_<float> m_object_median_height;
-	 cv::Mat_<float> m_object_min_height;
-	 cv::Mat_<float> m_object_detection;
-	 cv::Mat_<int> m_objects_inflated;
-   cv::Mat_<int> m_object_count;
-	 cv::Mat_<int> m_object_scans_count;
+	cv::Mat_<float> m_min_height;
+	cv::Mat_<float> m_max_height;
+	cv::Mat_<float> m_object_median_height;
+	cv::Mat_<float> m_object_min_height;
+	cv::Mat_<float> m_object_detection;
+	cv::Mat_<int> m_objects_inflated;
+	cv::Mat_<int> m_object_count;
+	cv::Mat_<int> m_object_scans_count;
 
    std::vector<cv::Point2i> m_mean_object_pixels;
 };

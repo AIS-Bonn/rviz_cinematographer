@@ -46,7 +46,18 @@ namespace detection_height_mapper
    private:
       void callback(const detection_height_image::HeightImage::InputPointCloud::ConstPtr &input_cloud);
 
+      bool geofencing(const detection_height_image::HeightImage::InputPointCloud::ConstPtr input_cloud,
+                      detection_height_image::HeightImage::InputPointCloud::Ptr output_cloud,
+                      std::string target_frame,
+                      float min_x, float max_x, float min_y, float max_y);
+
+      void publishTransformedObjectPositions(std::vector<detection_height_mapper::ObjectPosition>& object_positions,
+                                             std::string target_frame,
+                                             std::string source_frame,
+                                             ros::Time stamp);
+
       void filterObjects(detection_height_mapper::ObjectPosition& new_object_position);
+
       bool transformObjectPositions(std::vector<detection_height_mapper::ObjectPosition>& object_positions,
                                     std::string target_frame,
                                     std::string source_frame,
@@ -64,6 +75,10 @@ namespace detection_height_mapper
       config_server::Parameter<int> m_height_image_size_x;
       config_server::Parameter<int> m_height_image_size_y;
       config_server::Parameter<float> m_height_image_resolution;
+      config_server::Parameter<float> m_geofencing_min_x;
+      config_server::Parameter<float> m_geofencing_max_x;
+      config_server::Parameter<float> m_geofencing_min_y;
+      config_server::Parameter<float> m_geofencing_max_y;
       config_server::Parameter<float> m_height_image_min_z;
       config_server::Parameter<float> m_height_image_max_z;
       config_server::Parameter<int> m_min_object_points_per_cell;
