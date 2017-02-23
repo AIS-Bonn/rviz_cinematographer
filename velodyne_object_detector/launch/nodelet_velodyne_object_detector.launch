@@ -1,19 +1,21 @@
 <!--  -->
 <launch>
 
-<!--
-  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 1 /velodyne /base_link 100" />
-  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster2" args="0 0 0 0 0 0 1 /velodyne /odom 100" />
--->
+
+  <!--<node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 1 /base_link /laser_scanner_link 100" />-->
+  <!--<node pkg="tf" type="static_transform_publisher" name="link1_broadcaster1" args="0 0 0 0 0 0 1 /laser_scanner_link /velodyne 100" />-->
+  <!--<node pkg="tf" type="static_transform_publisher" name="link1_broadcaster2" args="0 0 0 0 0 0 1 /velodyne /odom 100" />-->
+
 
   <!-- ========= Bagplayer ========== -->
   <arg name="use_bag" default="true"/>
-  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/5hz/velodyne_2017-02-10-13-59-01.bag"/>
+  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/dynamic/start_45_velodyne_2017-02-22-16-14-53.bag"/>
   <arg name="rate" default="0.25"/>
-  <arg name="start" default="10"/>
+  <arg name="start" default="45"/>
 
   <node if="$(arg use_bag)" pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
     <remap from="/velodyne_points" to="/velodyne_points_frombag" />
+    <!--<remap from="/tf" to="/tf_frombag" />-->
   </node>
 
   <param if="$(arg use_bag)" name="/use_sim_time" value="true" />
