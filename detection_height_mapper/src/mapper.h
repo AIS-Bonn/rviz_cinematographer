@@ -44,6 +44,8 @@ namespace detection_height_mapper
       ~Mapper() {}
 
    private:
+      void adaptFenceToImage();
+
       void callback(const detection_height_image::HeightImage::InputPointCloud::ConstPtr &input_cloud);
 
       bool geofencing(const detection_height_image::HeightImage::InputPointCloud::ConstPtr input_cloud,
@@ -98,6 +100,7 @@ namespace detection_height_mapper
       config_server::Parameter<float> m_object_robot_radius_param;
       config_server::Parameter<float> m_max_position_noise_param;
       config_server::Parameter<bool> m_inflate_objects;
+      config_server::Parameter<int> m_debug_mode;
 
       std::vector<detection_height_mapper::ObjectPosition> m_object_positions_accumulated;
 

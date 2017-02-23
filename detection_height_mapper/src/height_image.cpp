@@ -23,6 +23,7 @@ HeightImage::HeightImage()
  , m_object_detection_threshold(0.9f)
  , m_max_neighborhood_height_threshold(std::numeric_limits<float>::max())
  , m_inflation_radius(0.25f)
+ , m_debug_mode(false)
 {
 	resizeStorage();
 }
@@ -122,6 +123,11 @@ void HeightImage::setMaxNeighborhoodHeight(float max_neighborhood_height)
 void HeightImage::setInflationRadius(float inflation_radius)
 {
    m_inflation_radius = inflation_radius;
+}
+
+void HeightImage::setDebug(int debug_mode)
+{
+   m_debug_mode = debug_mode;
 }
 
 template<class T>
@@ -275,25 +281,42 @@ void HeightImage::detectObjects(int min_number_of_object_points_per_cell,
 		{
 			float *detection = &m_object_detection(y, x);
 			int* scans_count = &m_object_scans_count(y, x);
-      int* object_count = &m_object_count(y, x);
+         int* object_count = &m_object_count(y, x);
 
-      // compute object height in a more robust way
-      float object_height = (m_object_median_height(y, x) - m_object_min_height(y, x)) * 2.f;
+         // compute object height in a more robust way
+         float object_height = (m_object_median_height(y, x) - m_object_min_height(y, x)) * 2.f;
 			float object_altitude = m_object_min_height(y, x) - m_min_height(y, x);
 			
 			if(std::isfinite(*detection))
 			{
-				if(*detection > m_object_detection_threshold
-			     && object_height < m_max_object_height_threshold
-			     && object_height > m_min_object_height_threshold
-              && object_altitude < m_max_object_altitude_threshold
-              && *object_count > min_number_of_object_points_per_cell
-              && *scans_count > min_number_of_object_points_per_cell)
-			   {
-					m_objects_inflated(y, x) = 1;
-			   }
+            if(m_debug_mode)
+            {
+               if(*detection > m_object_detection_threshold)
+                  m_objects_inflated(y, x) = m_objects_inflated(y, x) | 0b00000001;
+               if(object_height < m_max_object_height_threshold)
+                  m_objects_inflated(y, x) = m_objects_inflated(y, x) | 0b00000010;
+               if(object_height > m_min_object_height_threshold)
+                  m_objects_inflated(y, x) = m_objects_inflated(y, x) | 0b00000100;
+               if(object_altitude < m_max_object_altitude_threshold)
+                  m_objects_inflated(y, x) = m_objects_inflated(y, x) | 0b00001000;
+               if(*object_count > min_number_of_object_points_per_cell)
+                  m_objects_inflated(y, x) = m_objects_inflated(y, x) | 0b00010000;
+               if(*scans_count > min_number_of_object_scans_per_cell)
+                  m_objects_inflated(y, x) = m_objects_inflated(y, x) | 0b00100000;
+            }
+            else
+            {
+               if(*detection > m_object_detection_threshold
+                  && object_height < m_max_object_height_threshold
+                  && object_height > m_min_object_height_threshold
+                  && object_altitude < m_max_object_altitude_threshold
+                  && *object_count > min_number_of_object_points_per_cell
+                  && *scans_count > min_number_of_object_scans_per_cell)
+               {
+                  m_objects_inflated(y, x) = 1;
+               }
+            }
 			}
-			
 		}
 	}
 
@@ -308,7 +331,10 @@ void HeightImage::detectObjects(int min_number_of_object_points_per_cell,
    float area_of_one_cell = m_res_x * m_res_y;
    int min_number_of_cells = (int)std::round(m_min_footprint_size/area_of_one_cell);
    int max_number_of_cells = (int)std::ceil(m_max_footprint_size/area_of_one_cell);
-	filterObjectsBySize(m_objects_inflated, min_number_of_cells, max_number_of_cells);
+   if(m_debug_mode)
+      filterObjectsBySize(m_objects_debug, min_number_of_cells, max_number_of_cells);
+   else
+      filterObjectsBySize(m_objects_inflated, min_number_of_cells, max_number_of_cells);
 }
 
 void HeightImage::fillObjectMap(nav_msgs::OccupancyGrid* map)
@@ -374,16 +400,32 @@ void HeightImage::fillObjectColorImage(sensor_msgs::ImagePtr img)
 			// scale height and cap to zero to one, the higher the mean the brighter
 			float brightness = limited(0.f, (*height - m_min_height_threshold) / (m_max_height_threshold - m_min_height_threshold), 1.f);
 
-         cv_ptr->image.at<cv::Vec4b>(y, x) = cv::Scalar(0,limited<uint8_t>(brightness * 255),
-                                                        0, 255);
+         cv_ptr->image.at<cv::Vec4b>(y, x) = cv::Scalar(0,limited<uint8_t>(brightness * 255), 0, 255);
+
+         if(m_debug_mode && m_objects_debug(y, x) > 0)
+         {
+            uint8_t filter = 0b00000001 << (m_debug_mode - 1);
+            if(!(m_objects_debug(y, x) & filter))
+               cv_ptr->image.at<cv::Vec4b>(y, x) = cv::Scalar(255, 0, 0, 255);
+         }
       }
 	}
 
-   cv::RNG rng( 0xFFFFFFFF );
-   for(const auto& mean_pixel: m_mean_object_pixels)
+   if(m_debug_mode)
    {
-      // colorize objects in height image with different colors
-      cv::circle(cv_ptr->image, mean_pixel, (int)(1.f / m_res_x) , cv::Scalar(rng.uniform(0, 255), 0, rng.uniform(0, 255), 255), -1, 8, 0);
+      for(const auto& mean_pixel: m_mean_object_pixels)
+      {
+         cv::circle(cv_ptr->image, mean_pixel, (int)(1.f / m_res_x) , cv::Scalar(255, 128, 0, 255), 3, 8, 0);
+      }
+   }
+   else
+   {
+      cv::RNG rng( 0xFFFFFFFF );
+      for(const auto& mean_pixel: m_mean_object_pixels)
+      {
+         // colorize objects in height image with different colors
+         cv::circle(cv_ptr->image, mean_pixel, (int)(1.f / m_res_x) , cv::Scalar(rng.uniform(0, 255), 0, rng.uniform(0, 255), 255), -1, 8, 0);
+      }
    }
 
    cv_ptr->toImageMsg(*img);
@@ -425,8 +467,14 @@ void HeightImage::filterObjectsBySize(cv::Mat& prob_mat,
 {
    // binarize prob_mat
 	cv::Mat_<uint8_t> binarized_object;
-	prob_mat.convertTo(binarized_object, CV_8U, 255);
-	cv::threshold(binarized_object, binarized_object, 0, 1, cv::THRESH_BINARY);
+	prob_mat.convertTo(binarized_object, CV_8U);
+   if(m_debug_mode)
+   {
+      cv::threshold(binarized_object, binarized_object, 126, 255, cv::THRESH_TOZERO);
+      cv::threshold(binarized_object, binarized_object, 0, 1, cv::THRESH_BINARY);
+   }
+   else
+      cv::threshold(binarized_object, binarized_object, 0, 1, cv::THRESH_BINARY);
 
 	// perform morphological opening to get rid of single pixel detections
 //	int morph_size = 1;
@@ -450,13 +498,21 @@ void HeightImage::filterObjectsBySize(cv::Mat& prob_mat,
          if(cv::contourArea(contours[i]) <= max_size_of_valid_object &&
             cv::contourArea(contours[i]) >= min_size_of_valid_object)
          {
-            drawContours(prob_mat, contours, i, object_color, CV_FILLED, 8, hierarchy);
+            if(!m_debug_mode)
+               drawContours(prob_mat, contours, i, object_color, CV_FILLED, 8, hierarchy);
 
             cv::Point2i mean_object_pixel(0, 0);
             for(int point_index = 0; point_index < (int)contours[i].size(); point_index++)
             {
                mean_object_pixel.x += contours[i][point_index].x;
                mean_object_pixel.y += contours[i][point_index].y;
+
+               if(m_debug_mode)
+               {
+                  int row = contours[i][point_index].y;
+                  int col = contours[i][point_index].x;
+                  prob_mat.at<int>(row, col) = prob_mat.at<int>(row, col) | 0b10000000;
+               }
             }
             mean_object_pixel.x /= contours[i].size();
             mean_object_pixel.y /= contours[i].size();
@@ -466,7 +522,8 @@ void HeightImage::filterObjectsBySize(cv::Mat& prob_mat,
          }
          else
          {
-            drawContours(prob_mat, contours, i, no_object_color, CV_FILLED, 8, hierarchy);
+            if(!m_debug_mode)
+               drawContours(prob_mat, contours, i, no_object_color, CV_FILLED, 8, hierarchy);
          }
       }
 
@@ -487,7 +544,7 @@ void HeightImage::filterObjectsByNeighborHeight(cv::Mat& prob_mat,
    {
       for(int col = 0; col < prob_mat.cols; ++col)
       {
-         if(prob_mat.at<int>(row, col) == 0)
+         if(prob_mat.at<int>(row, col) < 1)
             continue;
 
          float local_min_height = std::numeric_limits<float>::max();
@@ -518,7 +575,13 @@ void HeightImage::filterObjectsByNeighborHeight(cv::Mat& prob_mat,
          double neighborhood_height = local_max_height - local_min_height;
          if(neighborhood_height > height_threshold)
          {
-            prob_mat.at<int>(row, col) = 0;
+            if(!m_debug_mode)
+               prob_mat.at<int>(row, col) = 0;
+         }
+         else
+         {
+            if(m_debug_mode)
+               prob_mat.at<int>(row, col) = prob_mat.at<int>(row, col) | 0b01000000;
          }
       }
    }
@@ -527,7 +590,7 @@ void HeightImage::filterObjectsByNeighborHeight(cv::Mat& prob_mat,
 void HeightImage::inflateObjects(cv::Mat& prob_mat,
                                  float inflation_radius)
 {
-   std::vector<cv::Point> points_to_inflate;
+   std::vector<cv::Point3i> points_to_inflate;
 
    // radius in number of bins
    inflation_radius /= m_res_x;
@@ -536,15 +599,28 @@ void HeightImage::inflateObjects(cv::Mat& prob_mat,
    {
       for(int x = 0; x < m_objects_inflated.cols; ++x)
       {
-         if(m_objects_inflated.at<int>(y, x) < 1)
+         int local_thresh = 1;
+         if(m_debug_mode)
+            local_thresh = 127;
+
+         if(m_objects_inflated.at<int>(y, x) < local_thresh)
             continue;
 
-         points_to_inflate.push_back(cv::Point(x, y));
+         points_to_inflate.push_back(cv::Point3i(y, x, m_objects_inflated.at<int>(y, x)));
       }
    }
 
-   for(const auto &point : points_to_inflate)
-      cv::circle(m_objects_inflated, point, inflation_radius, cv::Scalar(1), -1, 8, 0);
+   if(m_debug_mode)
+   {
+      m_objects_debug = m_objects_inflated.clone();
+      for(const auto &point : points_to_inflate)
+         cv::circle(m_objects_debug, cv::Point(point.y, point.x), inflation_radius, cv::Scalar(point.z), -1, 8, 0);
+   }
+   else
+   {
+      for(const auto &point : points_to_inflate)
+         cv::circle(m_objects_inflated, cv::Point(point.y, point.x), inflation_radius, cv::Scalar(1), -1, 8, 0);
+   }
 }
 
 }

@@ -36,6 +36,7 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    , m_object_robot_radius_param("detection_height_mapper/object_robot_radius", 0.0, 0.1, 10.0, 1.0)
    , m_max_position_noise_param("detection_height_mapper/max_position_noise", 0.0, 0.1, 10.0, 1.0)
    , m_inflate_objects("detection_height_mapper/inflate_objects", true)
+   , m_debug_mode("detection_height_mapper/debug_mode", 0, 1, 8, 0)
    , m_input_topic("/mrs_laser_mapping/pointcloud")
    , m_fixed_frame("/world_corrected")
 {
@@ -98,6 +99,24 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    m_pub_height_image_grid = node.advertise<nav_msgs::OccupancyGrid>("object_grid", 1);
    m_pub_object_positions = node.advertise<detection_height_mapper::ObjectPosition::_position_type>("object_positions", 1);
    m_pub_object_positions_with_info = node.advertise<detection_height_mapper::ObjectPosition>("object_positions_with_info", 1);
+
+   m_height_image_size_x.setCallback(boost::bind(&Mapper::adaptFenceToImage, this));
+   m_height_image_size_y.setCallback(boost::bind(&Mapper::adaptFenceToImage, this));
+}
+
+void Mapper::adaptFenceToImage()
+{
+   if(m_height_image_size_x() / 2.f != fabsf(m_geofencing_min_x()) || m_height_image_size_x() / 2.f != fabsf(m_geofencing_max_x()))
+   {
+      m_geofencing_min_x.set(-m_height_image_size_x() / 2.f);
+      m_geofencing_max_x.set(m_height_image_size_x() / 2.f);
+   }
+
+   if(m_height_image_size_y() / 2.f != fabsf(m_geofencing_min_y()) || m_height_image_size_y() / 2.f != fabsf(m_geofencing_max_y()))
+   {
+      m_geofencing_min_y.set(-m_height_image_size_y() / 2.f);
+      m_geofencing_max_y.set(m_height_image_size_y() / 2.f);
+   }
 }
 
 /** @brief Callback for point clouds. */
@@ -113,9 +132,6 @@ void Mapper::callback(const detection_height_image::HeightImage::InputPointCloud
    if(!geofencing(input_cloud, cloud_filtered, m_fixed_frame, m_geofencing_min_x(), m_geofencing_max_x(), m_geofencing_min_y(), m_geofencing_max_y()))
       return;
 
-   m_height_image_size_x.set(std::max(fabsf(m_geofencing_min_x()), fabsf(m_geofencing_max_x())) * 2.f);
-   m_height_image_size_y.set(std::max(fabsf(m_geofencing_min_y()), fabsf(m_geofencing_max_y())) * 2.f);
-
    detection_height_image::HeightImage height_image;
    height_image.setSize(m_height_image_size_x(), m_height_image_size_y());
    height_image.setResolution(m_height_image_resolution(), m_height_image_resolution());
@@ -130,6 +146,7 @@ void Mapper::callback(const detection_height_image::HeightImage::InputPointCloud
    height_image.setMaxNeighborhoodHeight(m_object_max_neighborhood_height_param());
    height_image.setInflationRadius(m_object_inflation_radius_param());
    height_image.setRobotRadius(m_object_robot_radius_param());
+   height_image.setDebug(m_debug_mode());
 
    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
    transform.translate(Eigen::Vector3f(m_height_image_size_x()/2, m_height_image_size_y()/2, 0.f));

@@ -51,7 +51,8 @@ public:
    void setMaxObjectAltitude(float max_altitude);
    void setDetectionThreshold(float detection_threshold);
    void setMaxNeighborhoodHeight(float max_neighborhood_height);
-   void setInflationRadius(float inflation_radius);
+	void setInflationRadius(float inflation_radius);
+	void setDebug(int debug_mode);
 
 	void processPointcloud(const InputPointCloud& cloud,
                           const Eigen::Affine3f& transform,
@@ -102,6 +103,7 @@ private:
 	float m_object_detection_threshold;
 	float m_max_neighborhood_height_threshold;
 	float m_inflation_radius;
+	int m_debug_mode;
 
 	cv::Mat_<float> m_min_height;
 	cv::Mat_<float> m_max_height;
@@ -109,6 +111,7 @@ private:
 	cv::Mat_<float> m_object_min_height;
 	cv::Mat_<float> m_object_detection;
 	cv::Mat_<int> m_objects_inflated;
+	cv::Mat_<int> m_objects_debug;
 	cv::Mat_<int> m_object_count;
 	cv::Mat_<int> m_object_scans_count;
 
