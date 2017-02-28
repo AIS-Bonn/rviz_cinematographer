@@ -439,7 +439,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
             
             // save factors for median filtered cloud 
             float factor = 1.f;
-            if(!isnan((*median_it).dist_small_kernel) && !isnan(current_point.distance))
+            if(!std::isnan((*median_it).dist_small_kernel) && !std::isnan(current_point.distance))
                factor = (*median_it).dist_small_kernel / current_point.distance;
 
             m_filtering_factors.push_back(factor);
