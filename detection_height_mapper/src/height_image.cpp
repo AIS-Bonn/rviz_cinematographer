@@ -293,6 +293,7 @@ void HeightImage::detectObjects(int min_number_of_object_points_per_cell,
             {
                if(*detection > m_object_detection_threshold)
                   m_objects_inflated(y, x) = m_objects_inflated(y, x) | 0b00000001;
+               // TODO: check for bugs
                if(object_height < m_max_object_height_threshold)
                   m_objects_inflated(y, x) = m_objects_inflated(y, x) | 0b00000010;
                if(object_height > m_min_object_height_threshold)

@@ -22,6 +22,11 @@
     <arg name="object_inflation_radius" default="0.25" />
     <arg name="object_robot_radius" default="1.0" />
 
+    <arg name="odds_hit" default="1.0" />
+    <arg name="odds_miss" default="1.0" />
+    <arg name="odds_min" default="-9.0" />
+    <arg name="odds_max" default="10.0" />
+
     <node unless="$(arg start_as_nodelet)" launch-prefix="" pkg="detection_height_mapper"
           type="detection_height_mapper_node" name="detection_height_mapper" output="screen">
         <param name="input_topic" value="$(arg input_topic)"/>
@@ -40,6 +45,11 @@
         <param name="object_max_neighborhood_height" value="$(arg object_max_neighborhood_height)"/>
         <param name="object_inflation_radius" value="$(arg object_inflation_radius)"/>
         <param name="object_robot_radius" value="$(arg object_robot_radius)"/>
+
+        <param name="odds_hit" value="$(arg odds_hit)"/>
+        <param name="odds_miss" value="$(arg odds_miss)"/>
+        <param name="odds_min" value="$(arg odds_min)"/>
+        <param name="odds_max" value="$(arg odds_max)"/>
     </node>
 
     <node if="$(arg start_as_nodelet)" pkg="nodelet" type="nodelet" name="detection_height_mapper_nodelet"
@@ -60,6 +70,11 @@
         <param name="object_max_neighborhood_height" value="$(arg object_max_neighborhood_height)"/>
         <param name="object_inflation_radius" value="$(arg object_inflation_radius)"/>
         <param name="object_robot_radius" value="$(arg object_robot_radius)"/>
+
+        <param name="odds_hit" value="$(arg odds_hit)"/>
+        <param name="odds_miss" value="$(arg odds_miss)"/>
+        <param name="odds_min" value="$(arg odds_min)"/>
+        <param name="odds_max" value="$(arg odds_max)"/>
     </node>
 
 </launch>

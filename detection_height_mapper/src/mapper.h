@@ -58,7 +58,7 @@ namespace detection_height_mapper
                                              std::string source_frame,
                                              ros::Time stamp);
 
-      void filterObjects(detection_height_mapper::ObjectPosition& new_object_position);
+      void filterObjects(std::vector<detection_height_mapper::ObjectPosition>& new_object_positions);
 
       bool transformObjectPositions(std::vector<detection_height_mapper::ObjectPosition>& object_positions,
                                     std::string target_frame,
@@ -71,6 +71,7 @@ namespace detection_height_mapper
       ros::Publisher m_pub_height_image_grid;
       ros::Publisher m_pub_object_positions;
       ros::Publisher m_pub_object_positions_with_info;
+      ros::Publisher m_pub_vis_marker;
 
       tf::TransformListener m_tf_listener;
 
@@ -102,7 +103,13 @@ namespace detection_height_mapper
       config_server::Parameter<bool> m_inflate_objects;
       config_server::Parameter<int> m_debug_mode;
 
+      float m_odds_hit;
+      float m_odds_miss;
+      float m_odds_min;
+      float m_odds_max;
+
       std::vector<detection_height_mapper::ObjectPosition> m_object_positions_accumulated;
+      std::vector<float> m_object_odds;
 
       std::string m_input_topic;
       std::string m_fixed_frame;

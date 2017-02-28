@@ -34,9 +34,13 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    , m_object_max_neighborhood_height_param("detection_height_mapper/object_max_neighborhood_height", 0.0, 0.1, 10.0, 0.4)
    , m_object_inflation_radius_param("detection_height_mapper/object_inflation_radius", 0.0, 0.05, 2.0, 0.25)
    , m_object_robot_radius_param("detection_height_mapper/object_robot_radius", 0.0, 0.1, 10.0, 1.0)
-   , m_max_position_noise_param("detection_height_mapper/max_position_noise", 0.0, 0.1, 10.0, 1.0)
+   , m_max_position_noise_param("detection_height_mapper/max_position_noise", 0.0, 0.1, 10.0, 0.5)
    , m_inflate_objects("detection_height_mapper/inflate_objects", true)
    , m_debug_mode("detection_height_mapper/debug_mode", 0, 1, 8, 0)
+   , m_odds_hit(1.f)
+   , m_odds_miss(1.f)
+   , m_odds_min(-9.f)
+   , m_odds_max(10.f)
    , m_input_topic("/mrs_laser_mapping/pointcloud")
    , m_fixed_frame("/world_corrected")
 {
@@ -92,6 +96,11 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    if(private_nh.getParam("object_robot_radius", object_robot_radius))
       m_object_robot_radius_param.set(object_robot_radius);
 
+   private_nh.getParam("odds_hit", m_odds_hit);
+   private_nh.getParam("odds_miss", m_odds_miss);
+   private_nh.getParam("odds_min", m_odds_min);
+   private_nh.getParam("odds_max", m_odds_max);
+
    m_cloud_sub = node.subscribe(m_input_topic, 10, &Mapper::callback, this,
                   ros::TransportHints().tcpNoDelay(true));
 
@@ -99,6 +108,7 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    m_pub_height_image_grid = node.advertise<nav_msgs::OccupancyGrid>("object_grid", 1);
    m_pub_object_positions = node.advertise<detection_height_mapper::ObjectPosition::_position_type>("object_positions", 1);
    m_pub_object_positions_with_info = node.advertise<detection_height_mapper::ObjectPosition>("object_positions_with_info", 1);
+   m_pub_vis_marker = node.advertise<visualization_msgs::Marker>("object_marker", 1 );
 
    m_height_image_size_x.setCallback(boost::bind(&Mapper::adaptFenceToImage, this));
    m_height_image_size_y.setCallback(boost::bind(&Mapper::adaptFenceToImage, this));
@@ -222,10 +232,7 @@ void Mapper::publishTransformedObjectPositions(std::vector<detection_height_mapp
    if(!transformObjectPositions(object_positions, target_frame, source_frame, stamp))
       return;
 
-   for(auto& object_position: object_positions)
-   {
-      filterObjects(object_position);
-   }
+   filterObjects(object_positions);
 
    for(auto& object_position: m_object_positions_accumulated)
    {
@@ -238,6 +245,30 @@ void Mapper::publishTransformedObjectPositions(std::vector<detection_height_mapp
       object_position.position.header.stamp = stamp;
       m_pub_object_positions.publish(object_position.position);
       m_pub_object_positions_with_info.publish(object_position);
+
+      visualization_msgs::Marker marker;
+      marker.header.frame_id = target_frame;
+      marker.header.stamp = stamp;
+      marker.ns = "object_detector_namespace";
+      marker.id = object_position.id;
+      marker.type = visualization_msgs::Marker::CYLINDER;
+      marker.action = visualization_msgs::Marker::ADD;
+      marker.pose.position.x = object_position.position.point.x;
+      marker.pose.position.y = object_position.position.point.y;
+      marker.pose.position.z = object_position.position.point.z;
+      marker.pose.orientation.x = 0.0;
+      marker.pose.orientation.y = 0.0;
+      marker.pose.orientation.z = 0.0;
+      marker.pose.orientation.w = 1.0;
+      marker.scale.x = 0.1;
+      marker.scale.y = 0.1;
+      marker.scale.z = 0.8;
+      marker.color.a = 1.0;
+      marker.color.r = 1.0;
+      marker.color.g = 0.5;
+      marker.color.b = 0.0;
+
+      m_pub_vis_marker.publish( marker );
    }
 }
 
@@ -275,27 +306,75 @@ bool Mapper::transformObjectPositions(std::vector<detection_height_mapper::Objec
    return true;
 }
 
-void Mapper::filterObjects(detection_height_mapper::ObjectPosition& new_object_position)
+void Mapper::filterObjects(std::vector<detection_height_mapper::ObjectPosition>& new_object_positions)
 {
-   bool new_object = true;
+   std::vector<bool> new_object(new_object_positions.size(), true);
+   std::vector<bool> old_object_updated(m_object_positions_accumulated.size(), false);
    // compare distances of new object to old objects
-   for(unsigned int i = 0; i < m_object_positions_accumulated.size(); i++)
+   for(unsigned int old_obj_index = 0; old_obj_index < m_object_positions_accumulated.size(); old_obj_index++)
    {
-      float distance = static_cast<float>(hypot(new_object_position.position.point.x - m_object_positions_accumulated[i].position.point.x,
-                                                new_object_position.position.point.y - m_object_positions_accumulated[i].position.point.y));
-
-      if(distance < m_max_position_noise_param())
+      for(unsigned int new_obj_index = 0; new_obj_index < new_object_positions.size(); new_obj_index++)
       {
-         new_object = false;
-         break;
+         float distance = static_cast<float>(hypot(new_object_positions[new_obj_index].position.point.x - m_object_positions_accumulated[old_obj_index].position.point.x,
+                                                   new_object_positions[new_obj_index].position.point.y - m_object_positions_accumulated[old_obj_index].position.point.y));
+
+         if(distance < m_max_position_noise_param())
+         {
+            // update position
+            m_object_positions_accumulated[old_obj_index].position.point.x = new_object_positions[new_obj_index].position.point.x;
+            m_object_positions_accumulated[old_obj_index].position.point.y = new_object_positions[new_obj_index].position.point.y;
+
+            new_object[new_obj_index] = false;
+            old_object_updated[old_obj_index] = true;
+            break;
+         }
       }
    }
 
-   // add new object if its not close to any old object
-   if(new_object)
+   // update odds value of all old objects
+   for(unsigned int old_obj_index = 0; old_obj_index < m_object_positions_accumulated.size();)
    {
-      new_object_position.id = m_object_positions_accumulated.size();
-      m_object_positions_accumulated.push_back(new_object_position);
+      // update odds
+      if(old_object_updated[old_obj_index])
+      {
+         m_object_odds[old_obj_index] += m_odds_hit;
+      }
+      else
+      {
+         m_object_odds[old_obj_index] -= m_odds_miss;
+      }
+      m_object_odds[old_obj_index] = std::min<float>(m_object_odds[old_obj_index], m_odds_max);
+
+      // delete old objects that were not seen for a while
+      if(m_object_odds[old_obj_index] < m_odds_min)
+      {
+         m_object_positions_accumulated.erase(m_object_positions_accumulated.begin() + old_obj_index);
+         m_object_odds.erase(m_object_odds.begin() + old_obj_index);
+
+         visualization_msgs::Marker marker;
+         marker.ns = "object_detector_namespace";
+         marker.id = m_object_positions_accumulated[old_obj_index].id;
+         marker.action = visualization_msgs::Marker::DELETE;
+         m_pub_vis_marker.publish( marker );
+
+         ROS_DEBUG_STREAM("deleting object with id " << marker.id );
+      }
+      else
+      {
+         old_obj_index++;
+      }
+   }
+
+   // add all objects that were marked as new
+   for(unsigned int new_obj_index = 0; new_obj_index < new_object_positions.size(); new_obj_index++)
+   {
+      // add new object if its not close to any old object
+      if(new_object[new_obj_index])
+      {
+         new_object_positions[new_obj_index].id = m_object_positions_accumulated.size();
+         m_object_positions_accumulated.push_back(new_object_positions[new_obj_index]);
+         m_object_odds.push_back(0.f);
+      }
    }
 }
 
