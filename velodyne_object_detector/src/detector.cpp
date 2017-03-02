@@ -284,21 +284,21 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered>
       kernel_size = std::min(kernel_size, m_max_kernel_size);
 
       int big_kernel_size = kernel_size * m_kernel_size_diff_factor();
-      big_kernel_size = std::max(big_kernel_size, 9);
+      big_kernel_size = std::max(big_kernel_size, 2);
 
       const int big_kernel_size_half = big_kernel_size / 2;
       
       if(std::distance(buffer_median_filtered->begin(), iter) >= big_kernel_size_half && std::distance(iter, buffer_median_filtered->end()) > big_kernel_size_half)
       {
-        calcMedianFromBuffer(kernel_size, big_kernel_size, buffer_median_filtered, median_const_iterator(iter),
+         calcMedianFromBuffer(kernel_size, big_kernel_size, buffer_median_filtered, median_const_iterator(iter),
                              [&](const InputPoint &fn) -> float { return fn.distance; },
                              m_max_dist_for_median_computation(),
                              (*iter).dist_small_kernel, (*iter).dist_big_kernel);
 
-        calcMedianFromBuffer(kernel_size, big_kernel_size, buffer_median_filtered, median_const_iterator(iter),
+         calcMedianFromBuffer(kernel_size, big_kernel_size, buffer_median_filtered, median_const_iterator(iter),
                              [&](const InputPoint &fn) -> float { return fn.intensity; },
                              0.f, 
-			     (*iter).intens_small_kernel, (*iter).intens_big_kernel);
+			                    (*iter).intens_small_kernel, (*iter).intens_big_kernel);
       }
 
       if(std::distance(iter, buffer_median_filtered->end()) <= big_kernel_size_half)
@@ -388,7 +388,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
 
       // probably not necessary, due to if - break statement above
       auto window_end = median_it + dist_to_comparsion_point_bounded;
-      if(std::distance(window_end, buffer_median_filtered->end()) < 0)
+      if(std::distance(window_end, buffer_median_filtered->end()) <= 0)
          window_end = buffer_median_filtered->end() - 1;
 
       // compute differences and resulting certainty value
