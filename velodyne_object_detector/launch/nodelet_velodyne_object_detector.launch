@@ -1,11 +1,14 @@
 <!--  -->
 <launch>
 
+  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster1" args="0 0 0 0 0 0 1 /laser_scanner_link /velodyne 100" />
+
   <!-- ========= Bagplayer ========== -->
   <arg name="use_bag" default="true"/>
-  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/5hz/velodyne_2017-02-10-13-59-01.bag"/>
-  <arg name="rate" default="0.25"/>
-  <arg name="start" default="0"/>
+  <!--<arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/dynamic/moving_obstacles_2017-03-02-14-22-32.bag"/>-->
+  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/dynamic/moving_obstacles_2017-03-02-14-22-32.bag"/>
+  <arg name="rate" default="1"/>
+  <arg name="start" default="200"/>
 
   <node if="$(arg use_bag)" pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
     <remap from="/velodyne_points" to="/velodyne_points_frombag" />
@@ -78,9 +81,10 @@
     <remap from="~input" to="/velodyne_points" />
     <remap from="~output" to="/velodyne_points_filtered" />
     <param name="tf_message_filter_target_frame" type="string" value="base_link"/>
-    <rosparam command="load" file="$(find mrs_laser_mapping)/config/mario_velodyne_filter.yaml" />
+    <!--<rosparam command="load" file="$(find mrs_laser_mapping)/config/mario_velodyne_filter.yaml" />-->
+    <rosparam command="load" file="$(find mrs_laser_mapping)/config/dji_velodyne_filter.yaml" />
   </node>
-  
+
 
   <!-- ============= Object Detection =============  -->
   <!--<include file="$(find velodyne_object_detector)/launch/wrench_detector_nodelet.launch"/>-->
@@ -88,22 +92,37 @@
   <include file="$(find velodyne_object_detector)/launch/toad_detector_nodelet.launch"/>
 
 
-  <group if="1">
+  <!-- ============= Object Clustering =============  -->
+  <include file="$(find object_clustering)/launch/object_clustering.launch">
+    <arg name="start_as_nodelet" value="false"/>
+    <arg name="input_topic" value="/velodyne_detector_objects"/>
+    <arg name="fixed_frame" value="world"/>
+    <arg name="max_object_height" value="0.33" />
+    <arg name="max_object_width" value="0.36" />
+    <arg name="max_object_altitude" value="0.45" />
+    <arg name="certainty_thresh" value="0.1" />
+    <arg name="cluster_tolerance" value="1.0" />
+    <arg name="min_cluster_size" value="2" />
+    <arg name="max_cluster_size" value="25000" />
+    <arg name="geofencing_min_x" value="6.0" />
+    <arg name="geofencing_max_x" value="53.0" />
+    <arg name="geofencing_min_y" value="-37.0" />
+    <arg name="geofencing_max_y" value="6.0" />
+  </include>
+
+
+  <group if="0">
   <!-- ============= Mapping =============  -->
   <include file="$(find mrs_laser_mapping)/launch/velodyne_mapping.launch">
     <arg name="build_alloc_map" value="false"/>
-    <arg name="scan_assembler_frame_id" value="odom"/> 
+    <arg name="scan_assembler_frame_id" value="odom"/>
     <arg name="input_topic" value="/velodyne_detector_objects"/>
     <arg name="sensor_frame_id" value="velodyne"/>
-<!--    <arg name="map_size" value="128" /> 
-    <arg name="map_resolution" value="20.0" /> 
-    <arg name="map_levels" value="6" /> 
-    <arg name="map_cell_capacity" value="5000" /> 
-    
-    <arg name="map_downsampled_size" value="128" /> 
-    <arg name="map_downsampled_resolution" value="20.0" /> 
-    <arg name="map_downsampled_levels" value="6" /> 
-    <arg name="map_downsampled_cell_capacity" value="100" /> -->
+
+    <!--<arg name="map_size" value="128" />
+    <arg name="map_resolution" value="10.0" />
+    <arg name="map_levels" value="3" />
+    <arg name="map_cell_capacity" value="5000" />-->
   </include>
 
 

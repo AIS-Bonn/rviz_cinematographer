@@ -9,7 +9,7 @@
         <arg name="manager" value="velodyne_nodelet_manager" />
         <arg name="points_topic" value="/velodyne_points_filtered" />
         <arg name="circular_buffer_capacity" value="6000" />
-        <arg name="angle_between_scanpoints" value="0.1" />
+        <arg name="angle_between_scanpoints" value="0.2" />
 
         <arg name="certainty_threshold" value="0.0" />
         <arg name="dist_weight" value="1" />
@@ -25,7 +25,7 @@
         <arg name="kernel_size_diff_factor" value="5" />
         <arg name="max_dist_for_median_computation" value="0.0" />
         <arg name="max_kernel_size" value="1000" />
-        <arg name="publish_debug_cloud" value="false" />
+        <arg name="publish_debug_cloud" value="true" />
     </include>
 
 </launch>
