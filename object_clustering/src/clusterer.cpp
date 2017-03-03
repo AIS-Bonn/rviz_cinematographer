@@ -168,7 +168,7 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& detection)
 	ec.setInputCloud(positives);
 	ec.extract(cluster_indices);
 
-   ROS_INFO_STREAM("Number of found clusters is " << cluster_indices.size() << ". ");
+   ROS_DEBUG_STREAM("Number of found clusters is " << cluster_indices.size() << ". ");
 
    visualization_msgs::MarkerArray marker_array;
 
@@ -240,7 +240,7 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& detection)
       pose_msgs.poses.push_back(pose_msg);
 	}
 
-   ROS_INFO_STREAM("Number of found clusters after filtering " << marker_array.markers.size() << ". ");
+   ROS_DEBUG_STREAM("Number of found clusters after filtering " << marker_array.markers.size() << ". ");
 
    m_pub_vis_marker.publish(marker_array);
    m_pub_pose.publish(pose_msgs);
