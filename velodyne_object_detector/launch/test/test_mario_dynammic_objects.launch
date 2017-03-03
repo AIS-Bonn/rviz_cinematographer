@@ -1,0 +1,136 @@
+<!--  -->
+<launch>
+
+  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster1" args="0 0 0 0 0 0 1 /laser_scanner_link /velodyne 100" />
+
+  <!-- ========= Bagplayer ========== -->
+  <arg name="use_bag" default="true"/>
+  <!--<arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/dynamic/moving_obstacles_2017-03-02-14-22-32.bag"/>-->
+  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/dynamic/moving_obstacles_2017-03-02-14-22-32.bag"/>
+  <arg name="rate" default="1"/>
+  <arg name="start" default="200"/>
+
+  <node if="$(arg use_bag)" pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
+    <remap from="/velodyne_points" to="/velodyne_points_frombag" />
+    <!--<remap from="/tf" to="/tf_frombag" />-->
+  </node>
+
+  <param if="$(arg use_bag)" name="/use_sim_time" value="true" />
+
+  <node unless="$(arg use_bag)" name="pcd_publisher" pkg="pcd_publisher" type="pcd_publisher" output="screen">
+    <param name="path_to_file" value="/home/razlaw/clouds/5hz/map6.pcd"/>
+    <param name="output_topic" value="/pointcloud" />
+    <param name="output_frame_id" value="/world_corrected"/>
+    <!--<param name="path_to_file" value="/home/razlaw/clouds/5hz/near_and_far_object.pcd"/>
+    <param name="output_topic" value="/velodyne_points_filtered" />
+    <param name="output_frame_id" value="/velodyne"/>-->
+    <param name="publishing_rate" value="2"/>
+  </node>
+
+
+  <!-- ============= Rviz / rqt =============  -->
+  <arg name="use_rqt" default="true"/>
+  <node unless="$(arg use_rqt)" name="rivz" pkg="rviz" type="rviz" />
+  <node if="$(arg use_rqt)" name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" required="true" args=""/>
+
+
+  <!-- ========= Config Server ========== -->
+  <!-- will try to read an initial configuration file form CONFIGPATH/config_ROBOTNAME -->
+  <node if="$(arg use_rqt)" name="config_server" pkg="config_server" type="config_server" output="screen" required="true">
+    <param name="config_path" value="CONFIGPATH" />
+    <param name="robot_name" value="ROBOTNAME" />
+    <param name="robot_type" value="ROBOTTYPE" />
+  </node> 
+
+<!-- needed for older bagfiles + change frame_id below to local_odom
+  <param name="robot_description" command="$(find xacro)/xacro.py $(find mbzirc_urdf)/urdf/m600/m600.urdf.xacro" />
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
+    <param name="publish_frequency" type="double" value="100.0" />
+    <param name="tf_prefix" type="string" value="" />
+  </node>
+  
+  <node pkg="mbzirc_msg_bridge" type="mbzirc_msg_bridge" name="mbzirc_msg_bridge" output="screen">
+    <remap from="~odom_in" to="/dji_sdk/odometry" />
+    <remap from="~global_position_in" to="/dji_sdk/global_position" />
+    <remap from="~attitude_in" to="/dji_sdk/attitude_quaternion" />
+    <param name="base_frame" value="base_link" />
+  </node>
+-->
+
+  <!-- ============= Pointcloud Conversion (incl. nodelet_manager) =============  -->
+  <!-- declare arguments with default values -->
+  <arg name="calibration" default="$(find velodyne_pointcloud)/params/VLP16db.yaml"/>
+  <arg name="min_range" default="0.01" />
+  <arg name="max_range" default="130.0" />
+  <arg name="frame_id" default="odom" />
+
+  <node pkg="nodelet" type="nodelet" name="velodyne_nodelet_manager"
+        args="manager" output="screen" />
+
+  <node pkg="nodelet" type="nodelet" name="transform_nodelet"
+        args="load velodyne_pointcloud/TransformNodelet velodyne_nodelet_manager"  output="screen">
+    <param name="calibration" value="$(arg calibration)"/>
+    <param name="min_range" value="$(arg min_range)"/>
+    <param name="max_range" value="$(arg max_range)"/>
+    <param name="frame_id" value="$(arg frame_id)"/>
+  </node>
+
+  
+  <!-- ============= Self Filter =============  -->
+  <node pkg="ais_laser_filters" type="cloud_to_cloud_filter_chain" output="screen" name="cloud_filters">
+    <remap from="~input" to="/velodyne_points" />
+    <remap from="~output" to="/velodyne_points_filtered" />
+    <param name="tf_message_filter_target_frame" type="string" value="base_link"/>
+    <!--<rosparam command="load" file="$(find mrs_laser_mapping)/config/mario_velodyne_filter.yaml" />-->
+    <rosparam command="load" file="$(find mrs_laser_mapping)/config/dji_velodyne_filter.yaml" />
+  </node>
+
+
+  <!-- ============= Object Detection =============  -->
+  <!--<include file="$(find velodyne_object_detector)/launch/wrench_detector_nodelet.launch"/>-->
+  <!--<include file="$(find velodyne_object_detector)/launch/panel_detector_nodelet.launch"/>-->
+  <include file="$(find velodyne_object_detector)/launch/toad_detector_nodelet.launch"/>
+
+
+  <!-- ============= Object Clustering =============  -->
+  <include file="$(find object_clustering)/launch/object_clustering.launch">
+    <arg name="start_as_nodelet" value="false"/>
+    <arg name="input_topic" value="/velodyne_detector_objects"/>
+    <arg name="fixed_frame" value="world"/>
+    <arg name="max_object_height" value="0.33" />
+    <arg name="max_object_width" value="0.36" />
+    <arg name="max_object_altitude" value="0.45" />
+    <arg name="certainty_thresh" value="0.1" />
+    <arg name="cluster_tolerance" value="1.0" />
+    <arg name="min_cluster_size" value="2" />
+    <arg name="max_cluster_size" value="25000" />
+    <arg name="geofencing_min_x" value="6.0" />
+    <arg name="geofencing_max_x" value="53.0" />
+    <arg name="geofencing_min_y" value="-37.0" />
+    <arg name="geofencing_max_y" value="6.0" />
+  </include>
+
+
+  <group if="0">
+  <!-- ============= Mapping =============  -->
+  <include file="$(find mrs_laser_mapping)/launch/velodyne_mapping.launch">
+    <arg name="build_alloc_map" value="false"/>
+    <arg name="scan_assembler_frame_id" value="odom"/>
+    <arg name="input_topic" value="/velodyne_detector_objects"/>
+    <arg name="sensor_frame_id" value="velodyne"/>
+
+    <!--<arg name="map_size" value="128" />
+    <arg name="map_resolution" value="10.0" />
+    <arg name="map_levels" value="3" />
+    <arg name="map_cell_capacity" value="5000" />-->
+  </include>
+
+
+  <!-- ============= Detection Height Image =============  -->
+  <include  file="$(find detection_height_mapper)/launch/detection_height_mapper_nodelet.launch">
+    <arg name="start_as_nodelet" value="true"/>
+    <arg name="input_topic" value="/pointcloud"/>
+    <arg name="fixed_frame" default="/world_corrected" />
+  </include>
+  </group>
+</launch>
