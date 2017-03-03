@@ -34,7 +34,7 @@ Mapper::Mapper(ros::NodeHandle node, ros::NodeHandle private_nh)
    , m_object_max_neighborhood_height_param("detection_height_mapper/object_max_neighborhood_height", 0.0, 0.1, 10.0, 0.4)
    , m_object_inflation_radius_param("detection_height_mapper/object_inflation_radius", 0.0, 0.05, 2.0, 0.25)
    , m_object_robot_radius_param("detection_height_mapper/object_robot_radius", 0.0, 0.1, 10.0, 1.0)
-   , m_max_position_noise_param("detection_height_mapper/max_position_noise", 0.0, 0.1, 10.0, 0.5)
+   , m_max_position_noise_param("detection_height_mapper/max_position_noise", 0.0, 0.1, 10.0, 1.0)
    , m_inflate_objects("detection_height_mapper/inflate_objects", true)
    , m_debug_mode("detection_height_mapper/debug_mode", 0, 1, 8, 0)
    , m_odds_hit(1.f)
@@ -262,7 +262,7 @@ void Mapper::publishTransformedObjectPositions(std::vector<detection_height_mapp
       marker.pose.orientation.w = 1.0;
       marker.scale.x = 0.1;
       marker.scale.y = 0.1;
-      marker.scale.z = 0.8;
+      marker.scale.z = 10.8;
       marker.color.a = 1.0;
       marker.color.r = 1.0;
       marker.color.g = 0.5;
