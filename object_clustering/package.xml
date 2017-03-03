@@ -1,0 +1,18 @@
+<package format="2">
+	<name>object_clustering</name>
+	<description>Cluster potential objects in point clouds</description>
+	<version>0.0.1</version>
+	<license>BSD</license>
+
+	<maintainer email="s6jarazl@uni-bonn.de">Jan Razlaw</maintainer>
+
+	<buildtool_depend>catkin</buildtool_depend>
+	<depend>velodyne_object_detector</depend>
+	<depend>pcl_ros</depend>
+	<depend>nodelet</depend>
+	<depend>config_server</depend>
+
+	<export>
+		<nodelet plugin="${prefix}/nodelet_plugins.xml" />
+	</export>
+</package>
