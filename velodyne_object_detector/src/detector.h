@@ -16,6 +16,8 @@
 #include <tf/transform_listener.h>
 #include <tf_conversions/tf_eigen.h>
 
+#include <velodyne_object_detector/point_type.h>
+
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
 
@@ -28,8 +30,6 @@
 
 #include <boost/circular_buffer.hpp>
 #include <boost/thread/mutex.hpp>
-
-#include <velodyne_object_detector/point_type.h>
 
 #include <config_server/parameter.h>
 

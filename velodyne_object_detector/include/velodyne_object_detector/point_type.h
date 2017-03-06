@@ -19,7 +19,22 @@
 #ifndef __VELODYNE_POINTCLOUD_POINT_TYPES_H
 #define __VELODYNE_POINTCLOUD_POINT_TYPES_H
 
-#include <pcl/point_types.h>
+#define PCL_NO_PRECOMPILE
+
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/kdtree/impl/kdtree_flann.hpp>
+
+
+#include <pcl/search/kdtree.h>
+#include <pcl/search/impl/kdtree.hpp>
+
+#include <pcl/search/flann_search.h>
+#include <pcl/search/impl/flann_search.hpp>
+
+
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/segmentation/impl/extract_clusters.hpp>
+
 
 namespace velodyne_pointcloud
 {

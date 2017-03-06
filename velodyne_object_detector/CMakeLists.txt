@@ -18,7 +18,11 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   eigen_conversions
   tf_conversions
+  velodyne_pointcloud
 )
+
+add_definitions(-DPCL_NO_PRECOMPILE=1)
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
