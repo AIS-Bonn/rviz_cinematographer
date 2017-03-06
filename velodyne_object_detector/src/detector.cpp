@@ -45,7 +45,7 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
    ROS_INFO("init velodyne object detector...");
 
    private_nh.getParam("points_topic", m_points_topic);
-   m_velodyne_sub = node.subscribe(m_points_topic, 1000, &Detector::velodyneCallback, this);
+   m_velodyne_sub = node.subscribe(m_points_topic, 1, &Detector::velodyneCallback, this);
 
    private_nh.getParam("publish_debug_cloud", m_publish_debug_clouds);
 
