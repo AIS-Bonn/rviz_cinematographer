@@ -7,12 +7,12 @@
     <arg name="manager" default="velodyne_nodelet_manager" />
     <arg name="input_topic" default="/velodyne_detector_objects" />
     <arg name="fixed_frame" default="world" />
-    <arg name="max_object_height" default="1.8" />
-    <arg name="max_object_width" default="2.0" />
-    <arg name="max_object_altitude" default="0.89" />
+    <arg name="max_object_height" default="0.33" />
+    <arg name="max_object_width" default="0.36" />
+    <arg name="max_object_altitude" default="0.45" />
     <arg name="certainty_thresh" default="0.1" />
     <arg name="cluster_tolerance" default="1.0" />
-    <arg name="min_cluster_size" default="4" />
+    <arg name="min_cluster_size" default="2" />
     <arg name="max_cluster_size" default="25000" />
     <arg name="geofencing_min_x" default="-100.0" />
     <arg name="geofencing_max_x" default="100.0" />
