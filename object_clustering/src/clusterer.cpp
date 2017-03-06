@@ -105,7 +105,7 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& detection)
 
 	Eigen::Affine3f transform;
 	{
-		if(!m_tf.waitForTransform(m_fixed_frame, detection->header.frame_id, stamp, ros::Duration(2.0)))
+		if(!m_tf.waitForTransform(m_fixed_frame, detection->header.frame_id, stamp, ros::Duration(0.5)))
 		{
 			ROS_ERROR_STREAM("Could not wait for transform to frame " << m_fixed_frame);
 			return;
@@ -158,15 +158,34 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& detection)
 
 		positives->push_back(point);
 	}
-	ROS_DEBUG("positives: %lu", positives->size());
-   
+	ROS_DEBUG("positives: %lu ", positives->size());
+
+   // workaround for usage with nodelet
+   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+   pcl::copyPointCloud(*positives, *cloud_xyz);
+
+   if(positives->size() != cloud_xyz->size())
+      ROS_WARN_STREAM("Object clustering: cloud sizes do not match after copy.");
+
 	std::vector<pcl::PointIndices> cluster_indices;
-	pcl::EuclideanClusterExtraction<PointWithDetection> ec;
-	ec.setClusterTolerance (m_cluster_tolerance()); // in m
-	ec.setMinClusterSize (m_min_cluster_size());
-	ec.setMaxClusterSize (m_max_cluster_size());
-	ec.setInputCloud(positives);
-	ec.extract(cluster_indices);
+   try{
+      // Creating the KdTree object for the search method of the extraction
+      pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+      tree->setInputCloud(cloud_xyz);
+
+      pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+      ec.setClusterTolerance (m_cluster_tolerance()); // in m
+      ec.setMinClusterSize (m_min_cluster_size());
+      ec.setMaxClusterSize (m_max_cluster_size());
+      ec.setSearchMethod (tree);
+      ec.setInputCloud(cloud_xyz);
+      ec.extract(cluster_indices);
+   }
+   catch(...)
+   {
+      ROS_ERROR(" extraction failed ");
+      return;
+   }
 
    ROS_DEBUG_STREAM("Number of found clusters is " << cluster_indices.size() << ". ");
 
@@ -184,7 +203,7 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& detection)
 
 		for(auto idx : cluster_indices[i].indices)
 		{
-			auto pos = (*positives)[idx].getVector3fMap();
+			auto pos = (*cloud_xyz)[idx].getVector3fMap();
 			mean += pos;
 
 			for(std::size_t i = 0; i < 3; ++i)
