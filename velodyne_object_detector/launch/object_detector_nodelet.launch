@@ -24,6 +24,7 @@
     <arg name="max_dist_for_median_computation" default="0.0" />
     <arg name="max_kernel_size" default="100" />
     <arg name="publish_debug_cloud" default="false" />
+    <arg name="output_topic" default="/velodyne_detector_objects" />
 
     <node unless="$(arg start_as_nodelet)" launch-prefix="" pkg="velodyne_object_detector" type="velodyne_object_detector_node" name="velodyne_object_detector"
           output="screen" >
@@ -46,6 +47,8 @@
         <param name="max_dist_for_median_computation" value="$(arg max_dist_for_median_computation)"/>
         <param name="max_kernel_size" value="$(arg max_kernel_size)"/>
         <param name="publish_debug_cloud" value="$(arg publish_debug_cloud)"/>
+
+	<remap from="/velodyne_detector_objects" to="$(arg output_topic)" />
     </node>
 
     <node if="$(arg start_as_nodelet)" pkg="nodelet" type="nodelet" name="velodyne_object_detector_nodelet"
@@ -69,6 +72,8 @@
         <param name="max_dist_for_median_computation" value="$(arg max_dist_for_median_computation)"/>
         <param name="max_kernel_size" value="$(arg max_kernel_size)"/>
         <param name="publish_debug_cloud" value="$(arg publish_debug_cloud)"/>
+
+	<remap from="/velodyne_detector_objects" to="$(arg output_topic)" />
     </node>
 
 </launch>
