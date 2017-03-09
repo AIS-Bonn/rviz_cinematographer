@@ -105,7 +105,7 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
       BufferMediansPtr median_filtered_circ_buffer(new BufferMedians(m_circular_buffer_capacity_launch));
       m_median_filtered_circ_buffer_vector.push_back(median_filtered_circ_buffer);
    }
-   
+
    m_median_iters_by_ring.resize(PUCK_NUM_RINGS);
    m_detection_iters_by_ring.resize(PUCK_NUM_RINGS);
 
@@ -134,12 +134,12 @@ void Detector::changeParameterSavely()
 }
 
 void Detector::calcMedianFromBuffer(const int kernel_size,
-                             const int big_kernel_size,
-			                    const BufferMediansPtr& buffer,
-                             const median_const_iterator& current_element,
-                             std::function<float(Detector::InputPoint)> f,
-                             float max_dist_for_median_computation,
-                             float& small_kernel_val, float& big_kernel_val) const
+                                    const int big_kernel_size,
+                                    const BufferMediansPtr& buffer,
+                                    const median_const_iterator& current_element,
+                                    std::function<float(Detector::InputPoint)> f,
+                                    float max_dist_for_median_computation,
+                                    float& small_kernel_val, float& big_kernel_val) const
 {
   assert(std::distance(buffer->begin(), buffer->end())>big_kernel_size);
   
@@ -150,25 +150,22 @@ void Detector::calcMedianFromBuffer(const int kernel_size,
   median_const_iterator small_kernel_end = current_element + kernel_size_half;
   median_const_iterator big_kernel_start = current_element - big_kernel_size_half;
   median_const_iterator big_kernel_end = current_element + big_kernel_size_half;
-   long int small_kernel_start_offset = -1;
-   long int small_kernel_end_offset = -1;
+  long int small_kernel_start_offset = -1;
+  long int small_kernel_end_offset = -1;
 
   // get distances of neighbors
   std::vector<float> neighborhood_values;
   neighborhood_values.reserve(big_kernel_size);
-  std::vector<float> neighborhood_values_small_dist_kernel;
-  neighborhood_values_small_dist_kernel.reserve(kernel_size);
-
   
   // filter if difference of distances of neighbor and the current point exceeds a threshold
   if(max_dist_for_median_computation == 0.f)
   {
-    median_const_iterator it_tmp = big_kernel_start;
+     median_const_iterator it_tmp = big_kernel_start;
      small_kernel_start_offset = std::distance(big_kernel_start, small_kernel_start);
      small_kernel_end_offset = std::distance(big_kernel_start, small_kernel_end);
-    // use advance to cast const
-    while (it_tmp <= big_kernel_end)
-      neighborhood_values.push_back(f((*it_tmp++).point));
+     // use advance to cast const
+     while (it_tmp <= big_kernel_end)
+        neighborhood_values.push_back(f((*it_tmp++).point));
   }
   else
   {
@@ -177,7 +174,7 @@ void Detector::calcMedianFromBuffer(const int kernel_size,
 
       // check for each point in the buffer if it exceeds the distance threshold to the current point
       median_const_iterator it_tmp = big_kernel_start;
-     int counter = 0;
+      int counter = 0;
       while ( it_tmp <= big_kernel_end )
       {
          const float val_tmp = f((*it_tmp).point);
@@ -200,14 +197,14 @@ void Detector::calcMedianFromBuffer(const int kernel_size,
   }
 
   // get median of neighborhood distances with smaller kernel
-   long int small_kernel_middle_offset = (small_kernel_end_offset + small_kernel_start_offset) / 2;
+  long int small_kernel_middle_offset = (small_kernel_end_offset + small_kernel_start_offset) / 2;
   std::nth_element(neighborhood_values.begin() + small_kernel_start_offset,
                    neighborhood_values.begin() + small_kernel_middle_offset,
-                   neighborhood_values.begin() + small_kernel_end_offset);
+                   neighborhood_values.begin() + small_kernel_end_offset + 1);
 
   small_kernel_val = neighborhood_values[small_kernel_middle_offset];
   
-   // get median of neighborhood distances with bigger kernel
+  // get median of neighborhood distances with bigger kernel
   std::nth_element(neighborhood_values.begin(), neighborhood_values.begin() + neighborhood_values.size() / 2, neighborhood_values.end());
 
   big_kernel_val = neighborhood_values[neighborhood_values.size() / 2];
@@ -253,8 +250,11 @@ void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 
      if (m_detection_iters_by_ring[ring])
      {
-	      detectObstacles(m_median_filtered_circ_buffer_vector.at(ring), *m_detection_iters_by_ring.at(ring),
-                          obstacle_cloud, debug_obstacle_cloud);
+	      detectObstacles(m_median_filtered_circ_buffer_vector.at(ring),
+                        *m_detection_iters_by_ring.at(ring),
+                        *m_median_iters_by_ring.at(ring),
+                        obstacle_cloud,
+                        debug_obstacle_cloud);
      }
 //      ROS_INFO_STREAM("ring : " << ring << " " << m_median_filtered_circ_buffer_vector.at(ring)->size() << " points: " << obstacle_cloud->points.size());
    }
@@ -298,7 +298,7 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered>
          calcMedianFromBuffer(kernel_size, big_kernel_size, buffer_median_filtered, median_const_iterator(iter),
                              [&](const InputPoint &fn) -> float { return fn.intensity; },
                              0.f, 
-			                    (*iter).intens_small_kernel, (*iter).intens_big_kernel);
+			                       (*iter).intens_small_kernel, (*iter).intens_big_kernel);
       }
 
       if(std::distance(iter, buffer_median_filtered->end()) <= big_kernel_size_half)
@@ -348,10 +348,17 @@ float Detector::computeCertainty(float difference_distances, float difference_in
    return certainty_value;
 }
 
-void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,	median_iterator& median_it,
-                               OutputPointCloud::Ptr obstacle_cloud, DebugOutputPointCloud::Ptr debug_obstacle_cloud)
+void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
+                               median_iterator& median_it,
+                               median_iterator& end,
+                               OutputPointCloud::Ptr obstacle_cloud,
+                               DebugOutputPointCloud::Ptr debug_obstacle_cloud)
 
 {
+   // iterator to the first element in the buffer where a computation of the median value was not possible
+   // so to say the .end() of median values in the buffer
+   median_iterator end_of_values = end + 1;
+
    float alpha = static_cast<float>(std::atan(m_distance_to_comparison_points()/(*median_it).dist_small_kernel) * 180.f / M_PI);
    int dist_to_comparsion_point = (int)std::round(alpha / m_angle_between_scanpoints_launch);
 
@@ -360,13 +367,14 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
 
    median_iterator::difference_type dist_to_comparsion_point_bounded = dist_to_comparsion_point;
 
-   if((int)buffer_median_filtered->size() <= 2*dist_to_comparsion_point_bounded+1 || std::distance( median_it, buffer_median_filtered->end()) <= dist_to_comparsion_point_bounded + 1)
+   if(std::distance( buffer_median_filtered->begin(), end_of_values) <= 2*dist_to_comparsion_point_bounded+1 ||
+       std::distance( median_it, end_of_values) <= dist_to_comparsion_point_bounded + 1)
    {
       ROS_WARN("not enough medians in buffer");
       return;
    }
    
-   for(; median_it != buffer_median_filtered->end(); ++median_it)
+   for(; median_it != end_of_values; ++median_it)
    {
       // compute index of neighbors to compare to
       alpha = static_cast<float>(std::atan(m_distance_to_comparison_points()/(*median_it).dist_small_kernel) * 180.f / M_PI);
@@ -377,19 +385,17 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
 
       dist_to_comparsion_point_bounded = dist_to_comparsion_point;
 
-      if(std::distance(median_it, buffer_median_filtered->end()) <= dist_to_comparsion_point_bounded + 1)
+      if(std::distance(median_it, end_of_values) <= dist_to_comparsion_point_bounded + 1)
          break;
 
       auto window_start = median_it;
+      // handle special case for first points in buffer
       if(std::distance(buffer_median_filtered->begin(), median_it) > dist_to_comparsion_point_bounded)
          window_start -= dist_to_comparsion_point_bounded;
       else
          window_start = buffer_median_filtered->begin();
 
-      // probably not necessary, due to if - break statement above
       auto window_end = median_it + dist_to_comparsion_point_bounded;
-      if(std::distance(window_end, buffer_median_filtered->end()) <= 0)
-         window_end = buffer_median_filtered->end() - 1;
 
       // compute differences and resulting certainty value
       float difference_distance_start = (*median_it).dist_small_kernel - (*window_start).dist_big_kernel;

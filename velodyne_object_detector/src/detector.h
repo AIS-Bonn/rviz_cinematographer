@@ -88,14 +88,15 @@ public:
    void velodyneCallback(const InputPointCloud::ConstPtr &input_cloud);
 
    void filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
-			  median_iterator& iter
- 			);
+			  					 median_iterator& iter);
 
    float computeCertainty(float difference_distances, float difference_intensities);
 
    void detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
-			               median_iterator& current_element,
-                        OutputPointCloud::Ptr obstacle_cloud, DebugOutputPointCloud::Ptr debug_obstacle_cloud);
+			                  median_iterator& median_it,
+												median_iterator& end,
+												OutputPointCloud::Ptr obstacle_cloud,
+												DebugOutputPointCloud::Ptr debug_obstacle_cloud);
 
    void fillFilteredCloud(const DebugOutputPointCloud::ConstPtr &cloud,
                           DebugOutputPointCloud::Ptr filtered_cloud);
@@ -104,7 +105,7 @@ public:
 
    void calcMedianFromBuffer(const int kernel_size,
                              const int big_kernel_size,
-			                     const BufferMediansPtr& buffer,
+			                       const BufferMediansPtr& buffer,
                              const median_const_iterator& current_element,
                              std::function<float(Detector::InputPoint)> f,
                              float max_dist_for_median_computation,
@@ -162,7 +163,7 @@ private:
    boost::mutex m_parameter_change_lock;
    std::vector<BufferMediansPtr> m_median_filtered_circ_buffer_vector;
 
-   std::vector<boost::optional<median_iterator>> m_median_iters_by_ring;
+	 std::vector<boost::optional<median_iterator>> m_median_iters_by_ring;
    std::vector<boost::optional<median_iterator>> m_detection_iters_by_ring;
 
    std::vector<float> m_filtering_factors;
