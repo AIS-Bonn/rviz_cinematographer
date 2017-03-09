@@ -1,6 +1,8 @@
 <!--  -->
 <launch>
 
+  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster1" args="0 0 0 0 0 0 1 /laser_scanner_link /velodyne 100" />
+
   <!-- ========= Bagplayer ========== -->
   <arg name="use_bag" default="true"/>
   <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/autonomous_approach/approach_with_gps_2017-02-27-15-19-21.bag"/>
@@ -73,9 +75,10 @@
   </node>
 
   
-  <!-- ============= Self Filter =============  -->
-  <node pkg="ais_laser_filters" type="cloud_to_cloud_filter_chain" output="screen" name="cloud_filters">
-    <remap from="~input" to="/velodyne_points" />
+  <!-- ============= Self Filter ============= -->
+  <node pkg="nodelet" type="nodelet" name="cloud_to_cloud_filter_chain_nodelet"
+        args="load ais_laser_filters/cloud_to_cloud_filter_chain_nodelet velodyne_nodelet_manager" output="screen" >
+     <remap from="~input" to="/velodyne_points" />
     <remap from="~output" to="/velodyne_points_filtered" />
     <param name="tf_message_filter_target_frame" type="string" value="base_link"/>
     <rosparam command="load" file="$(find mrs_laser_mapping)/config/mario_velodyne_filter.yaml" />
