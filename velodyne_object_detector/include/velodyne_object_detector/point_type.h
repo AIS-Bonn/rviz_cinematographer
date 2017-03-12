@@ -65,6 +65,7 @@ namespace velodyne_pointcloud
    {
       PCL_ADD_POINT4D;                    // quad-word XYZ
       float detection;                    // detection probability
+      uint16_t ring;                      ///< laser ring number
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
    } EIGEN_ALIGN16;
 }; // namespace velodyne_pointcloud
@@ -94,6 +95,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZDetection,
                                   (float, y, y)
                                   (float, z, z)
                                   (float, detection, detection)
+                                  (uint16_t, ring, ring)
 )
 
 #endif // __VELODYNE_POINTCLOUD_POINT_TYPES_H

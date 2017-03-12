@@ -424,6 +424,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
          output_point.x = current_point.x;
          output_point.y = current_point.y;
          output_point.z = current_point.z;
+         output_point.ring = current_point.ring;
          output_point.detection = certainty_value;
          obstacle_cloud->push_back(output_point);
 
