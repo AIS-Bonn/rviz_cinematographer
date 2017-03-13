@@ -33,24 +33,30 @@ private:
 	tf::TransformListener m_tf;
 
 	ros::Subscriber m_sub_cloud;
-	ros::Publisher m_pub_geofenced_cloud;
-   ros::Publisher m_pub_pose;
-   ros::Publisher m_pub_vis_marker;
+	ros::Publisher m_pub_filtered_cloud;
+  ros::Publisher m_pub_pose;
+  ros::Publisher m_pub_vis_marker;
 
 	config_server::Parameter<float> m_max_object_height;
-   config_server::Parameter<float> m_max_object_width;
-   config_server::Parameter<float> m_max_object_altitude;
-   config_server::Parameter<float> m_min_certainty_thresh;
-   config_server::Parameter<float> m_cluster_tolerance;
-   config_server::Parameter<int> m_min_cluster_size;
-   config_server::Parameter<int> m_max_cluster_size;
-   config_server::Parameter<float> m_geofencing_min_x;
-   config_server::Parameter<float> m_geofencing_max_x;
-   config_server::Parameter<float> m_geofencing_min_y;
-   config_server::Parameter<float> m_geofencing_max_y;
+  config_server::Parameter<float> m_max_object_width;
+  config_server::Parameter<float> m_max_object_altitude;
+  config_server::Parameter<float> m_min_certainty_thresh;
 
-   std::string m_fixed_frame;
-   std::string m_input_topic;
+  config_server::Parameter<float> m_cluster_tolerance;
+  config_server::Parameter<int> m_min_cluster_size;
+  config_server::Parameter<int> m_max_cluster_size;
+
+  config_server::Parameter<bool> m_apply_geofencing;
+  config_server::Parameter<float> m_geofencing_min_x;
+  config_server::Parameter<float> m_geofencing_max_x;
+  config_server::Parameter<float> m_geofencing_min_y;
+  config_server::Parameter<float> m_geofencing_max_y;
+
+  config_server::Parameter<bool> m_apply_radius_filter;
+  config_server::Parameter<float> m_filter_radius;
+
+  std::string m_fixed_frame;
+  std::string m_input_topic;
 
 	void handleCloud(const InputPointCloud::ConstPtr& detection);
 };
