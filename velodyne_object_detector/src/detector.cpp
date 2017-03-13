@@ -100,7 +100,7 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
    private_nh.getParam("max_kernel_size", m_max_kernel_size);
    private_nh.getParam("angle_between_scanpoints", m_angle_between_scanpoints_launch);
 
-      for(int i = 0; i < PUCK_NUM_RINGS; i++)
+   for(int i = 0; i < PUCK_NUM_RINGS; i++)
    {    
       BufferMediansPtr median_filtered_circ_buffer(new BufferMedians(m_circular_buffer_capacity_launch));
       m_median_filtered_circ_buffer_vector.push_back(median_filtered_circ_buffer);
@@ -212,6 +212,15 @@ void Detector::calcMedianFromBuffer(const int kernel_size,
 
 void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 {
+   if(m_pub_obstacle_cloud.getNumSubscribers() == 0 &&
+      m_pub_debug_obstacle_cloud.getNumSubscribers() == 0 &&
+      m_pub_filtered_cloud.getNumSubscribers() == 0)
+   {
+      ROS_DEBUG_STREAM("no subscriber to velodyne_object_detector. resetting buffer");
+      resetBuffer();
+      return;
+   }
+
    boost::mutex::scoped_lock lock(m_parameter_change_lock);
 
    pcl::StopWatch timer;
@@ -460,6 +469,7 @@ void Detector::fillFilteredCloud(const DebugOutputPointCloud::ConstPtr &cloud,
 {
    if(cloud->size() != m_filtering_factors.size())
    {
+      m_filtering_factors.clear();
       ROS_ERROR("fillFilteredCloud: cloud and factors have different sizes");
       return;
    }
@@ -553,6 +563,16 @@ void Detector::plot()
    m_plotter->addPlotData(xAxis, constant_one, "One", vtkChart::LINE, black);
 
    m_plotter->spinOnce(0);
+}
+
+void Detector::resetBuffer()
+{
+   for(int i = 0; i < PUCK_NUM_RINGS; i++)
+   {
+      m_median_filtered_circ_buffer_vector[i]->clear();
+      m_median_iters_by_ring[i].reset();
+      m_detection_iters_by_ring[i].reset();
+   }
 }
 
 } // namespace velodyne_object_detector

@@ -103,6 +103,8 @@ public:
 
    void plot();
 
+   void resetBuffer();
+
    void calcMedianFromBuffer(const int kernel_size,
                              const int big_kernel_size,
 			                       const BufferMediansPtr& buffer,
