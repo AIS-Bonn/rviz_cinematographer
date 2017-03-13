@@ -167,6 +167,12 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& detection)
    if(positives->size() != cloud_xyz->size())
       ROS_WARN_STREAM("Object clustering: cloud sizes do not match after copy.");
 
+  if (cloud_xyz->points.empty())
+  {
+    ROS_DEBUG_STREAM("no points for clustering.");
+    return;
+  }
+  
 	std::vector<pcl::PointIndices> cluster_indices;
    try{
       // Creating the KdTree object for the search method of the extraction
