@@ -6,9 +6,9 @@
   <!-- ========= Bagplayer ========== -->
   <arg name="use_bag" default="true"/>
   <!--<arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/dynamic/moving_obstacles_2017-03-02-14-22-32.bag"/>-->
-  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/around_panel_indoor/around_2017-03-06-19-05-24.bag"/>
+  <arg name="bagname" default="/home/razlaw/bags/challenge_panel/robot_2017-03-13-10-07-58.bag"/>
   <arg name="rate" default="1"/>
-  <arg name="start" default="0"/>
+  <arg name="start" default="330"/>
 
   <node if="$(arg use_bag)" pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
     <remap from="/velodyne_points" to="/velodyne_points_frombag" />
@@ -89,8 +89,13 @@
 
   <!-- ============= Object Detection =============  -->
   <!--<include file="$(find velodyne_object_detector)/launch/wrench_detector_nodelet.launch"/>-->
-  <!--<include file="$(find velodyne_object_detector)/launch/panel_detector_nodelet.launch"/>-->
-  <include file="$(find velodyne_object_detector)/launch/toad_detector_nodelet.launch"/>
+  <include file="$(find velodyne_object_detector)/launch/panel_detector_nodelet.launch"/>
+  <!--<include file="$(find velodyne_object_detector)/launch/toad_detector_nodelet.launch"/>-->
+
+
+  <!-- Panel detection filter for rough approach -->
+  <node if="0" name="panel_filter" pkg="nodelet" type="nodelet" args="load panel_filter/PanelFilter velodyne_nodelet_manager" output="screen" respawn="true">
+  </node>
 
 
   <!-- ============= Object Clustering =============  -->
@@ -98,17 +103,17 @@
     <arg name="start_as_nodelet" value="true"/>
     <arg name="input_topic" value="/velodyne_detector_objects"/>
     <arg name="fixed_frame" value="world"/>
-    <arg name="max_object_height" value="0.33" />
-    <arg name="max_object_width" value="0.36" />
-    <arg name="max_object_altitude" value="0.45" />
-    <arg name="certainty_thresh" value="0.1" />
-    <arg name="cluster_tolerance" value="1.0" />
-    <arg name="min_cluster_size" value="2" />
+    <arg name="max_object_height" value="2.0" />
+    <arg name="max_object_width" value="1.8" />
+    <arg name="max_object_altitude" value="0.3" />
+    <arg name="certainty_thresh" value="0.66" />
+    <arg name="cluster_tolerance" value="1.5" />
+    <arg name="min_cluster_size" value="5" />
     <arg name="max_cluster_size" value="25000" />
-    <arg name="geofencing_min_x" value="6.0" />
-    <arg name="geofencing_max_x" value="53.0" />
-    <arg name="geofencing_min_y" value="-37.0" />
-    <arg name="geofencing_max_y" value="6.0" />
+    <arg name="geofencing_min_x" value="-200.0" />
+    <arg name="geofencing_max_x" value="200.0" />
+    <arg name="geofencing_min_y" value="-200.0" />
+    <arg name="geofencing_max_y" value="200.0" />
   </include>
 
 
