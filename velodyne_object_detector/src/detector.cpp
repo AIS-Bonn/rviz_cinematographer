@@ -35,7 +35,7 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
  , m_distance_to_comparison_points("velodyne_object_detector/distance_to_comparison_points", 0.0, 0.01, m_distance_to_comparison_points_launch*2, 0.38f)
  , m_kernel_size_diff_factor("velodyne_object_detector/kernel_size_diff_factor", 1, 1, 20, m_kernel_size_diff_factor_launch)
  , m_median_min_dist("velodyne_object_detector/median_min_dist", 0.0, 0.01, .2, m_median_min_dist_launch)
- , m_median_thresh1_dist("velodyne_object_detector/median_thresh1_dist", 0.0, 0.05, 2.5, m_median_thresh1_dist_launch)
+ , m_median_thresh1_dist("velodyne_object_detector/median_thresh1_dist", 0.0001, 0.05, 12.5, m_median_thresh1_dist_launch)
  , m_median_thresh2_dist("velodyne_object_detector/median_thresh2_dist", 0.0, 0.1, 150.0, m_median_thresh2_dist_launch)
  , m_median_max_dist("velodyne_object_detector/median_max_dist", 0.0, 0.5, 150.0, m_median_max_dist_launch)
  , m_max_dist_for_median_computation("velodyne_object_detector/max_dist_for_median_computation", 0.0, 0.25, 10.0, 6.0)
@@ -299,12 +299,14 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered>
       
       if(std::distance(buffer_median_filtered->begin(), iter) >= big_kernel_size_half && std::distance(iter, buffer_median_filtered->end()) > big_kernel_size_half)
       {
-         calcMedianFromBuffer(kernel_size, big_kernel_size, buffer_median_filtered, median_const_iterator(iter),
+         if(m_dist_weight() != 0.f)
+            calcMedianFromBuffer(kernel_size, big_kernel_size, buffer_median_filtered, median_const_iterator(iter),
                              [&](const InputPoint &fn) -> float { return fn.distance; },
                              m_max_dist_for_median_computation(),
                              (*iter).dist_small_kernel, (*iter).dist_big_kernel);
 
-         calcMedianFromBuffer(kernel_size, big_kernel_size, buffer_median_filtered, median_const_iterator(iter),
+         if(m_intensity_weight() != 0.f)
+            calcMedianFromBuffer(kernel_size, big_kernel_size, buffer_median_filtered, median_const_iterator(iter),
                              [&](const InputPoint &fn) -> float { return fn.intensity; },
                              0.f, 
 			                       (*iter).intens_small_kernel, (*iter).intens_big_kernel);
@@ -338,6 +340,7 @@ float Detector::computeCertainty(float difference_distances, float difference_in
    }
    else
    {
+      // TODO: adapt the term in the first if statement to the one that was intended in the first place
       if(difference_distances >= m_median_min_dist() && difference_distances < m_median_thresh1_dist())
       {
          certainty_value = difference_distances * m_dist_weight() * (m_max_prob_by_distance/m_median_thresh1_dist()) + difference_intensities * (m_intensity_weight()/m_max_intensity_range);
@@ -348,7 +351,7 @@ float Detector::computeCertainty(float difference_distances, float difference_in
       }
       if(difference_distances >= m_median_thresh2_dist() && difference_distances < m_median_max_dist())
       {
-         certainty_value = (m_max_prob_by_distance / (m_median_max_dist() - m_median_thresh2_dist())) * (m_median_max_dist() - difference_distances * m_dist_weight()) + difference_intensities * (m_intensity_weight()/m_max_intensity_range);
+         certainty_value = (m_max_prob_by_distance / (m_median_max_dist() - m_median_thresh2_dist())) * ((m_median_max_dist() - difference_distances) * m_dist_weight()) + difference_intensities * (m_intensity_weight()/m_max_intensity_range);
       }
    }
    certainty_value = std::min(certainty_value, 1.0f);
@@ -407,20 +410,28 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
       auto window_end = median_it + dist_to_comparsion_point_bounded;
 
       // compute differences and resulting certainty value
-      float difference_distance_start = (*median_it).dist_small_kernel - (*window_start).dist_big_kernel;
-      float difference_distance_end = (*median_it).dist_small_kernel - (*window_end).dist_big_kernel;
+      float difference_distances = 0.f;
+      if(m_dist_weight() != 0.f)
+      {
+         float difference_distance_start = (*median_it).dist_small_kernel - (*window_start).dist_big_kernel;
+         float difference_distance_end = (*median_it).dist_small_kernel - (*window_end).dist_big_kernel;
 
-      float difference_distance_sum = difference_distance_start + difference_distance_end;
-      float difference_distance_max = std::max(difference_distance_start, difference_distance_end);
-      float difference_distances = std::max(difference_distance_sum, difference_distance_max);
+         float difference_distance_sum = difference_distance_start + difference_distance_end;
+         float difference_distance_max = std::max(difference_distance_start, difference_distance_end);
+         difference_distances = std::max(difference_distance_sum, difference_distance_max);
+      }
 
 
-      float difference_intensities_start = (*median_it).intens_small_kernel - (*window_start).intens_big_kernel;
-      float difference_intensities_end = (*median_it).intens_small_kernel - (*window_end).intens_big_kernel;
+      float difference_intensities = 0.f;
+      if(m_intensity_weight() != 0.f)
+      {
+         float difference_intensities_start = (*median_it).intens_small_kernel - (*window_start).intens_big_kernel;
+         float difference_intensities_end = (*median_it).intens_small_kernel - (*window_end).intens_big_kernel;
 
-      float difference_intensities_sum = difference_intensities_start + difference_intensities_end;
-      float difference_intensities_min = std::min(difference_intensities_start, difference_intensities_end);
-      float difference_intensities = std::min(difference_intensities_sum, difference_intensities_min);
+         float difference_intensities_sum = difference_intensities_start + difference_intensities_end;
+         float difference_intensities_min = std::min(difference_intensities_start, difference_intensities_end);
+         difference_intensities = std::min(difference_intensities_sum, difference_intensities_min);
+      }
 
 
       float certainty_value = computeCertainty(-difference_distances, difference_intensities);
