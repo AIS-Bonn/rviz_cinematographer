@@ -5,10 +5,10 @@
 
   <!-- ========= Bagplayer ========== -->
   <arg name="use_bag" default="true"/>
-  <!--<arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/dynamic/moving_obstacles_2017-03-02-14-22-32.bag"/>-->
-  <arg name="bagname" default="/home/razlaw/bags/challenge_panel/robot_2017-03-13-10-07-58.bag"/>
+  <!--<arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/autonomous_approach/approach_with_gps_2017-02-27-15-19-21.bag"/>-->
+  <arg name="bagname" default="/home/razlaw/bags/rehearsal/robot_2017-03-14-09-00-27.bag"/>
   <arg name="rate" default="1"/>
-  <arg name="start" default="330"/>
+  <arg name="start" default="30"/>
 
   <node if="$(arg use_bag)" pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
     <remap from="/velodyne_points" to="/velodyne_points_frombag" />
@@ -93,11 +93,24 @@
   <!--<include file="$(find velodyne_object_detector)/launch/toad_detector_nodelet.launch"/>-->
 
 
+  <node name="detection_mask_server" pkg="map_server" type="map_server" args="$(find mario_launch)/maps/panel_detection_map.yaml">
+    <param name="frame_id" value="world" />
+
+    <remap from="/map" to="/detection_mask" />
+  </node>
+
   <!-- Panel detection filter for rough approach -->
-  <node if="0" name="panel_filter" pkg="nodelet" type="nodelet" args="load panel_filter/PanelFilter velodyne_nodelet_manager" output="screen" respawn="true">
+  <node if="1" name="panel_filter" pkg="nodelet" type="nodelet" args="load panel_filter/PanelFilter velodyne_nodelet_manager" output="screen" respawn="true">
+    <param name="max_size_z" value="1.3"/>
+    <param name="max_size_horiz" value="1.3"/>
+    <param name="min_diagonal_cluster_width" value="0.5"/>
+    <param name="min_cluster_size" value="8"/>
+    <param name="apply_radius_filter" value="false"/>
+    <param name="filter_radius" value="30.0"/>
   </node>
 
 
+  <group if="0">
   <!-- ============= Object Clustering =============  -->
   <include file="$(find object_clustering)/launch/object_clustering.launch">
     <arg name="start_as_nodelet" value="true"/>
@@ -117,7 +130,6 @@
   </include>
 
 
-  <group if="0">
   <!-- ============= Mapping =============  -->
   <include file="$(find mrs_laser_mapping)/launch/velodyne_mapping.launch">
     <arg name="build_alloc_map" value="false"/>
