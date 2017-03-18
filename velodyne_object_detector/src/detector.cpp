@@ -21,8 +21,8 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
  , m_kernel_size_diff_factor_launch(5)
  , m_median_min_dist_launch(2.5)
  , m_median_thresh1_dist_launch(5.0)
- , m_median_thresh2_dist_launch(7.0)
- , m_median_max_dist_launch(10.0)
+ , m_median_thresh2_dist_launch(200.0)
+ , m_median_max_dist_launch(200.0)
  , m_max_dist_for_median_computation_launch(0.0)
  , m_max_kernel_size(100)
  , m_max_prob_by_distance(1.f)
@@ -578,11 +578,11 @@ void Detector::plot()
 
 void Detector::resetBuffer()
 {
-   for(int i = 0; i < PUCK_NUM_RINGS; i++)
+   for(int ring = 0; ring < PUCK_NUM_RINGS; ring++)
    {
-      m_median_filtered_circ_buffer_vector[i]->clear();
-      m_median_iters_by_ring[i].reset();
-      m_detection_iters_by_ring[i].reset();
+      m_median_filtered_circ_buffer_vector.at(ring)->clear();
+      m_median_iters_by_ring.at(ring).reset();
+      m_detection_iters_by_ring.at(ring).reset();
    }
 }
 
