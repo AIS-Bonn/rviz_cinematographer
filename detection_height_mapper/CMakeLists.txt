@@ -19,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   eigen_conversions
   tf_conversions
-  velodyne_object_detector
+  laser_object_detector
   mrs_laser_maps
   message_generation
 )
@@ -116,7 +116,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES cognitive_robotics
-  CATKIN_DEPENDS velodyne_object_detector message_runtime mrs_laser_maps
+  CATKIN_DEPENDS laser_object_detector message_runtime mrs_laser_maps
 #  DEPENDS system_lib
 )
 
@@ -165,8 +165,8 @@ install(TARGETS detection_height_mapper_nodelet
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
 ## Declare a C++ library
-#add_library(velodyne_object_detector_nodelet
-#        src/velodyne_object_detector_nodelet.cpp
+#add_library(laser_object_detector_nodelet
+#        src/laser_object_detector_nodelet.cpp
 #)
 
 ## Add cmake target dependencies of the library
@@ -175,18 +175,18 @@ install(TARGETS detection_height_mapper_nodelet
 # add_dependencies(cognitive_robotics ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-#add_executable(velodyne_object_detector
-#        src/velodyne_object_detector.cpp
+#add_executable(laser_object_detector
+#        src/laser_object_detector.cpp
 #)
 
 ## Add cmake target dependencies of the executable
-#add_dependencies(velodyne_object_detector
+#add_dependencies(laser_object_detector
 #        ${${PROJECT_NAME}_EXPORTED_TARGETS}
 #        ${catkin_EXPORTED_TARGETS}
 #)
 
 ## Specify libraries to link a library or executable target against
-#target_link_libraries(velodyne_object_detector
+#target_link_libraries(laser_object_detector
 #        ${catkin_LIBRARIES}
 #)
 

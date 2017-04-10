@@ -43,7 +43,7 @@
   <arg name="distance_to_comparison_points" default="3" />
   <arg name="publish_filtered_cloud" default="false" />
 
-  <include file="$(find velodyne_object_detector)/launch/object_detector_nodelet.launch">
+  <include file="$(find laser_object_detector)/launch/object_detector_nodelet.launch">
     <arg name="manager" value="$(arg manager)" />
     <arg name="points_topic" value="$(arg points_topic)" />
     <arg name="certainty_threshold" value="$(arg certainty_threshold)" />

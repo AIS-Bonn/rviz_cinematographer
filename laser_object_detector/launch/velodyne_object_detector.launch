@@ -13,7 +13,7 @@
   <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" required="true" args="">
   </node>
 
-  <node name="velodyne_object_detector_node" pkg="velodyne_object_detector" type="velodyne_object_detector_node" output="screen">
+  <node name="laser_object_detector_node" pkg="laser_object_detector" type="laser_object_detector_node" output="screen">
     <param name="points_topic" value="/velodyne_points"/>
     <param name="certainty_threshold_launch" value="0.0"/>
   </node>

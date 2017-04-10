@@ -1,0 +1,7 @@
+<library path="lib/liblaser_object_detector_nodelet">
+  <class name="laser_object_detector/laser_object_detector_nodelet" type="laser_object_detector::LaserObjectDetectorNodelet" base_class_type="nodelet::Nodelet">
+  <description>
+    Detect small objects in laser data for the MBZIRC challenge
+  </description>
+  </class>
+</library>

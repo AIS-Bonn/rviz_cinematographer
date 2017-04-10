@@ -5,7 +5,7 @@
 
     <include file="$(find object_clustering)/launch/object_clustering.launch">
         <arg name="start_as_nodelet" value="true"/>
-        <arg name="input_topic" value="/velodyne_detector_objects"/>
+        <arg name="input_topic" value="/laser_detector_objects"/>
         <arg name="fixed_frame" value="world"/>
         <arg name="max_object_height" value="0.33" />
         <arg name="max_object_width" value="0.36" />

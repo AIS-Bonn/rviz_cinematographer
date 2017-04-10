@@ -10,7 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
 	tf_conversions
 	pcl_conversions
 	eigen_conversions
-	velodyne_object_detector
+	laser_object_detector
 	config_server
 	nodelet
 )

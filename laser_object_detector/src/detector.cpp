@@ -1,16 +1,18 @@
 /** @file
 
-    This class detects objects of a specific size in velodyne laser point clouds
+    This class detects objects of a specific size in laser point clouds
 
 */
 
 #include "detector.h"
 
-namespace velodyne_object_detector
+namespace laser_object_detector
 {
 /** @brief Constructor. */
 Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
 : PUCK_NUM_RINGS(16)
+ , HOKUYO_NUM_RINGS(1)  
+ , m_input_is_velodyne(true)       
  , m_circular_buffer_capacity_launch(6000)
  , m_angle_between_scanpoints_launch(0.2f) // 0.1 for 5Hz 0.2 for 10Hz 0.4 for 20Hz
  , m_certainty_threshold_launch(0.0)
@@ -27,26 +29,31 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
  , m_max_kernel_size(100)
  , m_max_prob_by_distance(1.f)
  , m_max_intensity_range(100.f)
- , m_certainty_threshold("velodyne_object_detector/certainty_threshold", 0.0, 0.01, 1.0, m_certainty_threshold_launch)
- , m_dist_weight("velodyne_object_detector/dist_weight", 0.0, 0.1, 10.0, m_dist_weight_launch)
- , m_intensity_weight("velodyne_object_detector/intensity_weight", 0.0, 0.01, 10.0, m_intensity_weight_launch)
- , m_weight_for_small_intensities("velodyne_object_detector/weight_for_small_intensities", 1.f, 1.f, 30.f, 10.f)
- , m_object_size("velodyne_object_detector/object_size_in_m", 0.005, 0.005, 5.0, m_object_size_launch)
- , m_distance_to_comparison_points("velodyne_object_detector/distance_to_comparison_points", 0.0, 0.01, 10.0, 0.38f)
- , m_kernel_size_diff_factor("velodyne_object_detector/kernel_size_diff_factor", 1, 1, 20, m_kernel_size_diff_factor_launch)
- , m_median_min_dist("velodyne_object_detector/median_min_dist", 0.0, 0.01, 5.0, m_median_min_dist_launch)
- , m_median_thresh1_dist("velodyne_object_detector/median_thresh1_dist", 0.0001, 0.05, 12.5, m_median_thresh1_dist_launch)
- , m_median_thresh2_dist("velodyne_object_detector/median_thresh2_dist", 0.0, 0.1, 200.0, m_median_thresh2_dist_launch)
- , m_median_max_dist("velodyne_object_detector/median_max_dist", 0.0, 0.5, 200.0, m_median_max_dist_launch)
- , m_max_dist_for_median_computation("velodyne_object_detector/max_dist_for_median_computation", 0.0, 0.25, 10.0, 6.0)
- , m_points_topic("/velodyne_points")
+ , m_certainty_threshold("laser_object_detector/certainty_threshold", 0.0, 0.01, 1.0, m_certainty_threshold_launch)
+ , m_dist_weight("laser_object_detector/dist_weight", 0.0, 0.1, 10.0, m_dist_weight_launch)
+ , m_intensity_weight("laser_object_detector/intensity_weight", 0.0, 0.01, 10.0, m_intensity_weight_launch)
+ , m_weight_for_small_intensities("laser_object_detector/weight_for_small_intensities", 1.f, 1.f, 30.f, 10.f)
+ , m_object_size("laser_object_detector/object_size_in_m", 0.005, 0.005, 5.0, m_object_size_launch)
+ , m_distance_to_comparison_points("laser_object_detector/distance_to_comparison_points", 0.0, 0.01, 10.0, 0.38f)
+ , m_kernel_size_diff_factor("laser_object_detector/kernel_size_diff_factor", 1, 1, 20, m_kernel_size_diff_factor_launch)
+ , m_median_min_dist("laser_object_detector/median_min_dist", 0.0, 0.01, 5.0, m_median_min_dist_launch)
+ , m_median_thresh1_dist("laser_object_detector/median_thresh1_dist", 0.0001, 0.05, 12.5, m_median_thresh1_dist_launch)
+ , m_median_thresh2_dist("laser_object_detector/median_thresh2_dist", 0.0, 0.1, 200.0, m_median_thresh2_dist_launch)
+ , m_median_max_dist("laser_object_detector/median_max_dist", 0.0, 0.5, 200.0, m_median_max_dist_launch)
+ , m_max_dist_for_median_computation("laser_object_detector/max_dist_for_median_computation", 0.0, 0.25, 10.0, 6.0)
+ , m_input_topic("/velodyne_points")
  , m_publish_debug_clouds(false)
+ , m_buffer_initialized(false)
 {
-   ROS_INFO("init velodyne object detector...");
+   ROS_INFO("init laser object detector...");
 
-   private_nh.getParam("points_topic", m_points_topic);
-   m_velodyne_sub = node.subscribe(m_points_topic, 1, &Detector::velodyneCallback, this);
-
+   private_nh.getParam("input_topic", m_input_topic);
+   private_nh.getParam("input_is_velodyne", m_input_is_velodyne);
+   if(m_input_is_velodyne)
+     m_velodyne_sub = node.subscribe(m_input_topic, 1, &Detector::velodyneCallback, this);
+   else
+     m_hokuyo_sub = node.subscribe(m_input_topic, 1, &Detector::hokuyoCallback, this);
+  
    private_nh.getParam("publish_debug_cloud", m_publish_debug_clouds);
 
    if(m_publish_debug_clouds)
@@ -57,11 +64,11 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
       m_plotter->setYTitle("object certainty");
       plot();
 
-      m_pub_debug_obstacle_cloud = node.advertise<DebugOutputPointCloud >("/velodyne_detector_debug_objects", 1);
-      m_pub_filtered_cloud = node.advertise<DebugOutputPointCloud >("/velodyne_detector_filtered", 1);
+      m_pub_debug_obstacle_cloud = node.advertise<DebugOutputPointCloud >("/laser_detector_debug_objects", 1);
+      m_pub_filtered_cloud = node.advertise<DebugOutputPointCloud >("/laser_detector_filtered", 1);
    }
 
-   m_pub_obstacle_cloud = node.advertise<OutputPointCloud >("/velodyne_detector_objects", 1);
+   m_pub_obstacle_cloud = node.advertise<OutputPointCloud >("/laser_detector_objects", 1);
 
    if(private_nh.getParam("certainty_threshold", m_certainty_threshold_launch))
       m_certainty_threshold.set(m_certainty_threshold_launch);
@@ -100,15 +107,6 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
    private_nh.getParam("max_kernel_size", m_max_kernel_size);
    private_nh.getParam("angle_between_scanpoints", m_angle_between_scanpoints_launch);
 
-   for(int i = 0; i < PUCK_NUM_RINGS; i++)
-   {    
-      BufferMediansPtr median_filtered_circ_buffer(new BufferMedians(m_circular_buffer_capacity_launch));
-      m_median_filtered_circ_buffer_vector.push_back(median_filtered_circ_buffer);
-   }
-
-   m_median_iters_by_ring.resize(PUCK_NUM_RINGS);
-   m_detection_iters_by_ring.resize(PUCK_NUM_RINGS);
-
    m_certainty_threshold.setCallback(boost::bind(&Detector::changeParameterSavely, this));
    m_dist_weight.setCallback(boost::bind(&Detector::changeParameterSavely, this));
    m_intensity_weight.setCallback(boost::bind(&Detector::changeParameterSavely, this));
@@ -133,113 +131,137 @@ void Detector::changeParameterSavely()
       plot();
 }
 
-void Detector::calcMedianFromBuffer(const int kernel_size,
-                                    const int big_kernel_size,
-                                    const BufferMediansPtr& buffer,
-                                    const median_const_iterator& current_element,
-                                    std::function<float(Detector::InputPoint)> f,
-                                    float max_dist_for_median_computation,
-                                    float& small_kernel_val, float& big_kernel_val) const
+void Detector::initBuffer(int number_of_rings)
 {
-  assert(std::distance(buffer->begin(), buffer->end())>big_kernel_size);
-  
-  const int kernel_size_half = kernel_size / 2;
-  const int big_kernel_size_half = big_kernel_size / 2;
-  
-  median_const_iterator small_kernel_start = current_element - kernel_size_half;
-  median_const_iterator small_kernel_end = current_element + kernel_size_half;
-  median_const_iterator big_kernel_start = current_element - big_kernel_size_half;
-  median_const_iterator big_kernel_end = current_element + big_kernel_size_half;
-  long int small_kernel_start_offset = -1;
-  long int small_kernel_end_offset = -1;
-
-  // get distances of neighbors
-  std::vector<float> neighborhood_values;
-  neighborhood_values.reserve(big_kernel_size);
-  
-  // filter if difference of distances of neighbor and the current point exceeds a threshold
-  if(max_dist_for_median_computation == 0.f)
+  for(int i = 0; i < number_of_rings; i++)
   {
-     median_const_iterator it_tmp = big_kernel_start;
-     small_kernel_start_offset = std::distance(big_kernel_start, small_kernel_start);
-     small_kernel_end_offset = std::distance(big_kernel_start, small_kernel_end);
-     // use advance to cast const
-     while (it_tmp <= big_kernel_end)
-        neighborhood_values.push_back(f((*it_tmp++).point));
-  }
-  else
-  {
-      // save distance of midpoint in the buffer aka the current point we are looking at
-      const float distance_of_current_point = f((*current_element).point);
-
-      // check for each point in the buffer if it exceeds the distance threshold to the current point
-      median_const_iterator it_tmp = big_kernel_start;
-      int counter = 0;
-      while ( it_tmp <= big_kernel_end )
-      {
-         const float val_tmp = f((*it_tmp).point);
-         const float abs_distance_difference_to_current_point = fabsf(distance_of_current_point - val_tmp);
-
-         if(abs_distance_difference_to_current_point < max_dist_for_median_computation)
-         {
-            neighborhood_values.push_back(val_tmp);
-            if(it_tmp >= small_kernel_start && it_tmp <= small_kernel_end)
-            {
-               if(small_kernel_start_offset < 0)
-                  small_kernel_start_offset = counter;
-
-               small_kernel_end_offset = counter;
-            }
-         }
-         counter++;
-         ++it_tmp;
-      }
+    BufferMediansPtr median_filtered_circ_buffer(new BufferMedians(m_circular_buffer_capacity_launch));
+    m_median_filtered_circ_buffer_vector.push_back(median_filtered_circ_buffer);
   }
 
-  // get median of neighborhood distances with smaller kernel
-  long int small_kernel_middle_offset = (small_kernel_end_offset + small_kernel_start_offset) / 2;
-  std::nth_element(neighborhood_values.begin() + small_kernel_start_offset,
-                   neighborhood_values.begin() + small_kernel_middle_offset,
-                   neighborhood_values.begin() + small_kernel_end_offset + 1);
+  m_median_iters_by_ring.resize(number_of_rings);
+  m_detection_iters_by_ring.resize(number_of_rings);
 
-  small_kernel_val = neighborhood_values[small_kernel_middle_offset];
+  m_buffer_initialized = true;
+}
+
+void Detector::resetBuffer()
+{
+  for(int ring = 0; ring < (int)m_median_filtered_circ_buffer_vector.size(); ring++)
+  {
+    m_median_filtered_circ_buffer_vector.at(ring)->clear();
+    m_median_iters_by_ring.at(ring).reset();
+    m_detection_iters_by_ring.at(ring).reset();
+  }
+}
+
+void Detector::hokuyoCallback(const sensor_msgs::LaserScanConstPtr& input_scan)
+{
+  if(m_pub_obstacle_cloud.getNumSubscribers() == 0 &&
+     m_pub_debug_obstacle_cloud.getNumSubscribers() == 0 &&
+     m_pub_filtered_cloud.getNumSubscribers() == 0)
+  {
+    ROS_DEBUG_STREAM("hokuyoCallback: no subscriber to laser_object_detector. resetting buffer");
+    resetBuffer();
+    return;
+  }
+
+  if(!m_buffer_initialized)
+    initBuffer(HOKUYO_NUM_RINGS);
   
-  // get median of neighborhood distances with bigger kernel
-  std::nth_element(neighborhood_values.begin(), neighborhood_values.begin() + neighborhood_values.size() / 2, neighborhood_values.end());
+  boost::mutex::scoped_lock lock(m_parameter_change_lock);
 
-  big_kernel_val = neighborhood_values[neighborhood_values.size() / 2];
+  sensor_msgs::PointCloud2 cloud;
+  InputPointCloud::Ptr cloud_transformed(new InputPointCloud());
+
+  std::string frame_id = "base_link";
+
+  if (!m_tf_listener.waitForTransform(frame_id, input_scan->header.frame_id, input_scan->header.stamp + ros::Duration().fromSec((input_scan->ranges.size()) * input_scan->time_increment), ros::Duration(0.1)))
+  {
+    ROS_ERROR_THROTTLE(10.0, "hokuyoCallback: could not wait for transform");
+    return;
+  }
+
+  // transform 2D scan line to 3D point cloud
+  try
+  {
+    m_scan_projector.transformLaserScanToPointCloud(frame_id, *input_scan, cloud, m_tf_listener, 35.f,
+                                                    (laser_geometry::channel_option::Intensity | laser_geometry::channel_option::Distance));
+
+    // fix fields.count member
+    for (unsigned int i = 0; i < cloud.fields.size(); i++)
+      cloud.fields[i].count = 1;
+
+    sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
+    sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
+    sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
+    sensor_msgs::PointCloud2Iterator<float> iter_intensity(cloud, "intensity");
+    sensor_msgs::PointCloud2Iterator<float> iter_distance(cloud, "distances");
+
+    cloud_transformed->points.reserve(cloud.height * cloud.width);
+    for(; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z, ++iter_intensity, ++iter_distance)
+    {
+      if(std::isnan(*iter_x) || std::isnan(*iter_y) || std::isnan(*iter_z))
+        continue;
+
+      InputPoint point;
+      point.x = *iter_x;
+      point.y = *iter_y;
+      point.z = *iter_z;
+      point.intensity = *iter_intensity;
+      point.distance = *iter_distance;
+      point.ring = 0;
+
+      m_median_filtered_circ_buffer_vector[point.ring]->push_back(point);
+    }
+  }
+  catch (tf::TransformException& exc)
+  {
+    ROS_ERROR_THROTTLE(10.0, "hokuyoCallback: No transform found");
+    ROS_ERROR_THROTTLE(10.0, "message: '%s'", exc.what());
+  }
+
+  processScan(pcl_conversions::toPCL(cloud.header));
 }
 
 void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 {
-   if(m_pub_obstacle_cloud.getNumSubscribers() == 0 &&
-      m_pub_debug_obstacle_cloud.getNumSubscribers() == 0 &&
-      m_pub_filtered_cloud.getNumSubscribers() == 0)
-   {
-      ROS_DEBUG_STREAM("no subscriber to velodyne_object_detector. resetting buffer");
-      resetBuffer();
-      return;
-   }
+  if(m_pub_obstacle_cloud.getNumSubscribers() == 0 &&
+     m_pub_debug_obstacle_cloud.getNumSubscribers() == 0 &&
+     m_pub_filtered_cloud.getNumSubscribers() == 0)
+  {
+    ROS_DEBUG_STREAM("velodyneCallback: no subscriber to laser_object_detector. resetting buffer");
+    resetBuffer();
+    return;
+  }
 
-   boost::mutex::scoped_lock lock(m_parameter_change_lock);
+  if(!m_buffer_initialized)
+    initBuffer(PUCK_NUM_RINGS);
+  
+  boost::mutex::scoped_lock lock(m_parameter_change_lock);
 
+  for(const auto& point : input_cloud->points)
+  {
+    m_median_filtered_circ_buffer_vector[point.ring]->push_back(point);
+  }
+  
+  processScan(input_cloud->header);
+}
+
+void Detector::processScan(pcl::PCLHeader header)
+{
    pcl::StopWatch timer;
 
    OutputPointCloud::Ptr obstacle_cloud (new OutputPointCloud);
-   obstacle_cloud->header = input_cloud->header;
+   obstacle_cloud->header = header;
 
    DebugOutputPointCloud::Ptr debug_obstacle_cloud (new DebugOutputPointCloud);
-   debug_obstacle_cloud->header = input_cloud->header;
+   debug_obstacle_cloud->header = header;
 
    DebugOutputPointCloud::Ptr filtered_cloud (new DebugOutputPointCloud);
-   filtered_cloud->header = input_cloud->header;
-
-   for(const auto& point : input_cloud->points)
-   {
-      m_median_filtered_circ_buffer_vector[point.ring]->push_back(point);
-   }
-
-   for (auto ring = 0; ring < PUCK_NUM_RINGS; ++ring)
+   filtered_cloud->header = header;
+  
+   for (auto ring = 0; ring < (int)m_median_filtered_circ_buffer_vector.size(); ++ring)
    {
      // initialize member iterators
      if (!m_median_filtered_circ_buffer_vector.at(ring)->empty() && !m_median_iters_by_ring[ring])
@@ -278,7 +300,83 @@ void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
    }
 
    m_pub_obstacle_cloud.publish(obstacle_cloud);
+}
 
+void Detector::calcMedianFromBuffer(const int kernel_size,
+                                    const int big_kernel_size,
+                                    const BufferMediansPtr& buffer,
+                                    const median_const_iterator& current_element,
+                                    std::function<float(Detector::InputPoint)> f,
+                                    float max_dist_for_median_computation,
+                                    float& small_kernel_val, float& big_kernel_val) const
+{
+  assert(std::distance(buffer->begin(), buffer->end())>big_kernel_size);
+
+  const int kernel_size_half = kernel_size / 2;
+  const int big_kernel_size_half = big_kernel_size / 2;
+
+  median_const_iterator small_kernel_start = current_element - kernel_size_half;
+  median_const_iterator small_kernel_end = current_element + kernel_size_half;
+  median_const_iterator big_kernel_start = current_element - big_kernel_size_half;
+  median_const_iterator big_kernel_end = current_element + big_kernel_size_half;
+  long int small_kernel_start_offset = -1;
+  long int small_kernel_end_offset = -1;
+
+  // get distances of neighbors
+  std::vector<float> neighborhood_values;
+  neighborhood_values.reserve(big_kernel_size);
+
+  // filter if difference of distances of neighbor and the current point exceeds a threshold
+  if(max_dist_for_median_computation == 0.f)
+  {
+    median_const_iterator it_tmp = big_kernel_start;
+    small_kernel_start_offset = std::distance(big_kernel_start, small_kernel_start);
+    small_kernel_end_offset = std::distance(big_kernel_start, small_kernel_end);
+    // use advance to cast const
+    while (it_tmp <= big_kernel_end)
+      neighborhood_values.push_back(f((*it_tmp++).point));
+  }
+  else
+  {
+    // save distance of midpoint in the buffer aka the current point we are looking at
+    const float distance_of_current_point = f((*current_element).point);
+
+    // check for each point in the buffer if it exceeds the distance threshold to the current point
+    median_const_iterator it_tmp = big_kernel_start;
+    int counter = 0;
+    while ( it_tmp <= big_kernel_end )
+    {
+      const float val_tmp = f((*it_tmp).point);
+      const float abs_distance_difference_to_current_point = fabsf(distance_of_current_point - val_tmp);
+
+      if(abs_distance_difference_to_current_point < max_dist_for_median_computation)
+      {
+        neighborhood_values.push_back(val_tmp);
+        if(it_tmp >= small_kernel_start && it_tmp <= small_kernel_end)
+        {
+          if(small_kernel_start_offset < 0)
+            small_kernel_start_offset = counter;
+
+          small_kernel_end_offset = counter;
+        }
+      }
+      counter++;
+      ++it_tmp;
+    }
+  }
+
+  // get median of neighborhood distances with smaller kernel
+  long int small_kernel_middle_offset = (small_kernel_end_offset + small_kernel_start_offset) / 2;
+  std::nth_element(neighborhood_values.begin() + small_kernel_start_offset,
+                   neighborhood_values.begin() + small_kernel_middle_offset,
+                   neighborhood_values.begin() + small_kernel_end_offset + 1);
+
+  small_kernel_val = neighborhood_values[small_kernel_middle_offset];
+
+  // get median of neighborhood distances with bigger kernel
+  std::nth_element(neighborhood_values.begin(), neighborhood_values.begin() + neighborhood_values.size() / 2, neighborhood_values.end());
+
+  big_kernel_val = neighborhood_values[neighborhood_values.size() / 2];
 }
 
 void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
@@ -485,11 +583,15 @@ void Detector::fillFilteredCloud(const DebugOutputPointCloud::ConstPtr &cloud,
       return;
    }
 
-   tf::StampedTransform velodyne_link_transform;
+   std::string laser_frame_id = "/velodyne";
+   if(!m_input_is_velodyne)
+     laser_frame_id = "/laser_scanner_center";
+
+   tf::StampedTransform laser_link_transform;
    bool transform_found = true;
    try
    {
-      m_tf_listener.lookupTransform("/velodyne", cloud->header.frame_id, pcl_conversions::fromPCL(cloud->header.stamp), velodyne_link_transform);
+      m_tf_listener.lookupTransform(laser_frame_id, cloud->header.frame_id, pcl_conversions::fromPCL(cloud->header.stamp), laser_link_transform);
    }
    catch(tf::TransformException& ex)
    {
@@ -499,13 +601,13 @@ void Detector::fillFilteredCloud(const DebugOutputPointCloud::ConstPtr &cloud,
 
    if(transform_found)
    {
-      Eigen::Affine3d velodyne_link_transform_eigen;
-      tf::transformTFToEigen(velodyne_link_transform, velodyne_link_transform_eigen);
+      Eigen::Affine3d laser_link_transform_eigen;
+      tf::transformTFToEigen(laser_link_transform, laser_link_transform_eigen);
 
       DebugOutputPointCloud::Ptr cloud_transformed(new DebugOutputPointCloud);
-      pcl::transformPointCloud(*cloud, *cloud_transformed, velodyne_link_transform_eigen);
+      pcl::transformPointCloud(*cloud, *cloud_transformed, laser_link_transform_eigen);
 
-      filtered_cloud->header.frame_id = "/velodyne";
+      filtered_cloud->header.frame_id = laser_frame_id;
 
       // move the cloud points to the place they would have been if the median filter would have been applied to them
       for(int point_index = 0; point_index < (int)cloud_transformed->size(); point_index++)
@@ -576,14 +678,4 @@ void Detector::plot()
    m_plotter->spinOnce(0);
 }
 
-void Detector::resetBuffer()
-{
-   for(int ring = 0; ring < PUCK_NUM_RINGS; ring++)
-   {
-      m_median_filtered_circ_buffer_vector.at(ring)->clear();
-      m_median_iters_by_ring.at(ring).reset();
-      m_detection_iters_by_ring.at(ring).reset();
-   }
-}
-
-} // namespace velodyne_object_detector
+} // namespace laser_object_detector

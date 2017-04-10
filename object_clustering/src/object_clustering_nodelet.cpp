@@ -34,7 +34,7 @@ namespace object_clustering
 } // namespace object_clustering
 
 
-// Register this plugin with pluginlib.  Names must match nodelet_velodyne.xml.
+// Register this plugin with pluginlib.  Names must match nodelet_plugin.xml.
 //
 // parameters: package, class name, class type, base class type
 PLUGINLIB_DECLARE_CLASS(object_clustering, ObjectClusteringNodelet,

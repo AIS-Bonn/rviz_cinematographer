@@ -34,7 +34,7 @@ namespace detection_height_mapper
 } // namespace detection_height_mapper
 
 
-// Register this plugin with pluginlib.  Names must match nodelet_velodyne.xml.
+// Register this plugin with pluginlib.  Names must match nodelet_plugin.xml.
 //
 // parameters: package, class name, class type, base class type
 PLUGINLIB_DECLARE_CLASS(detection_height_mapper, DetectionHeightMapperNodelet,

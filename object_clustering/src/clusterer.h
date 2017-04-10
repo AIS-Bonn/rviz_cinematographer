@@ -4,7 +4,7 @@
 #ifndef PANEL_FILTER_H
 #define PANEL_FILTER_H
 
-#include <velodyne_object_detector/point_type.h>
+#include <laser_object_detector/point_type.h>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>

@@ -1,7 +1,7 @@
 /* -*- mode: C++ -*- */
 /** @file
 
-    This class detects objects of a specific size in velodyne laser point clouds
+    This class detects objects of a specific size in laser point clouds
 
 */
 
@@ -16,10 +16,15 @@
 #include <tf/transform_listener.h>
 #include <tf_conversions/tf_eigen.h>
 
-#include <velodyne_object_detector/point_type.h>
+#include <laser_object_detector/point_type.h>
 
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
+
+#include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
+
+#include <laser_geometry/laser_geometry.h>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -34,7 +39,7 @@
 #include <config_server/parameter.h>
 
 
-namespace velodyne_object_detector
+namespace laser_object_detector
 {
 class Detector
 {
@@ -85,7 +90,9 @@ public:
    void changeParameterSavely();
    void resizeBuffers();
 
-   void velodyneCallback(const InputPointCloud::ConstPtr &input_cloud);
+	 void hokuyoCallback(const sensor_msgs::LaserScanConstPtr& input_scan);
+	 void velodyneCallback(const InputPointCloud::ConstPtr &input_cloud);
+	 void processScan(pcl::PCLHeader header);
 
    void filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
 			  					 median_iterator& iter);
@@ -103,7 +110,8 @@ public:
 
    void plot();
 
-   void resetBuffer();
+ 	 void initBuffer(int number_of_rings);
+	 void resetBuffer();
 
    void calcMedianFromBuffer(const int kernel_size,
                              const int big_kernel_size,
@@ -113,9 +121,13 @@ public:
                              float max_dist_for_median_computation,
                              float& small_kernel_val, float& big_kernel_val) const;
 private:
-   const int PUCK_NUM_RINGS;
+	 const int PUCK_NUM_RINGS;
+	 const int HOKUYO_NUM_RINGS;
 
-   ros::Subscriber m_velodyne_sub;
+	 bool m_input_is_velodyne;
+
+	 ros::Subscriber m_velodyne_sub;
+	 ros::Subscriber m_hokuyo_sub;
    ros::Publisher m_pub_obstacle_cloud;
    ros::Publisher m_pub_debug_obstacle_cloud;
    ros::Publisher m_pub_filtered_cloud;
@@ -158,7 +170,7 @@ private:
 
    config_server::Parameter<float> m_max_dist_for_median_computation;
 
-   std::string m_points_topic;
+   std::string m_input_topic;
 
    bool m_publish_debug_clouds;
 
@@ -169,8 +181,11 @@ private:
    std::vector<boost::optional<median_iterator>> m_detection_iters_by_ring;
 
    std::vector<float> m_filtering_factors;
+
+	 bool m_buffer_initialized;
+   laser_geometry::LaserProjection m_scan_projector;
 };
 
-} // namespace velodyne_object_detector
+} // namespace laser_object_detector
 
 #endif // _DETECTOR_H_

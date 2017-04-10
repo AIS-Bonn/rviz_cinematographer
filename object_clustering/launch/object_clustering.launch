@@ -5,7 +5,7 @@
     <arg name="start_as_nodelet" default="true" />
 
     <arg name="manager" default="velodyne_nodelet_manager" />
-    <arg name="input_topic" default="/velodyne_detector_objects" />
+    <arg name="input_topic" default="/laser_detector_objects" />
     <arg name="fixed_frame" default="world" />
 
     <arg name="max_object_height" default="0.33" />

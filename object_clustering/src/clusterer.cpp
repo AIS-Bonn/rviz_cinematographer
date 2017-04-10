@@ -36,7 +36,7 @@ Clusterer::Clusterer(ros::NodeHandle node, ros::NodeHandle private_nh)
    , m_apply_radius_filter("/object_clustering/apply_radius_filter", true)
    , m_filter_radius("/object_clustering/filter_radius", 0.0, 0.5, 200.0, 30.0)
    , m_fixed_frame("world")
-   , m_input_topic("/velodyne_detector_objects")
+   , m_input_topic("/laser_detector_objects")
 {
 	ROS_INFO("init object clusterer...");
 

@@ -27,7 +27,7 @@
 
 #include <nav_msgs/OccupancyGrid.h>
 
-#include <velodyne_object_detector/point_type.h>
+#include <laser_object_detector/point_type.h>
 
 #include <mrs_laser_maps/map_point_types.h>
 

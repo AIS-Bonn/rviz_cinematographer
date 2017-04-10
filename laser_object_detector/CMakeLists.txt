@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(velodyne_object_detector)
+project(laser_object_detector)
 
 add_definitions(-std=c++11)
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
@@ -19,6 +19,8 @@ find_package(catkin REQUIRED COMPONENTS
   eigen_conversions
   tf_conversions
   velodyne_pointcloud
+  laser_geometry
+  sensor_msgs
 )
 
 add_definitions(-DPCL_NO_PRECOMPILE=1)
@@ -138,41 +140,41 @@ include_directories(
 # add_dependencies(cognitive_robotics ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(velodyne_object_detector_node
-        src/velodyne_object_detector_node.cpp
+add_executable(laser_object_detector_node
+        src/laser_object_detector_node.cpp
         src/detector.cpp
 )
 
 ## Add cmake target dependencies of the executable
-add_dependencies(velodyne_object_detector_node
+add_dependencies(laser_object_detector_node
         ${${PROJECT_NAME}_EXPORTED_TARGETS}
         ${catkin_EXPORTED_TARGETS}
 )
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(velodyne_object_detector_node
+target_link_libraries(laser_object_detector_node
         ${catkin_LIBRARIES}
 )
 
-install(TARGETS velodyne_object_detector_node
+install(TARGETS laser_object_detector_node
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 ## Declare a C++ library
-add_library(velodyne_object_detector_nodelet
-        src/velodyne_object_detector_nodelet.cpp
+add_library(laser_object_detector_nodelet
+        src/laser_object_detector_nodelet.cpp
         src/detector.cpp
 )
 
-add_dependencies(velodyne_object_detector_nodelet
+add_dependencies(laser_object_detector_nodelet
         ${${PROJECT_NAME}_EXPORTED_TARGETS}
         ${catkin_EXPORTED_TARGETS}
 )
 
-target_link_libraries(velodyne_object_detector_nodelet
+target_link_libraries(laser_object_detector_nodelet
         ${catkin_LIBRARIES}
 )
 
-install(TARGETS velodyne_object_detector_nodelet
+install(TARGETS laser_object_detector_nodelet
         RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

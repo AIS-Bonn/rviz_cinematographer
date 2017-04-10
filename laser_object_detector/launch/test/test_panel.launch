@@ -5,9 +5,8 @@
 
   <!-- ========= Bagplayer ========== -->
   <arg name="use_bag" default="true"/>
-  <!--<arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/dynamic/moving_obstacles_2017-03-02-14-22-32.bag"/>-->
-  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/5hz/velodyne_2017-02-10-14-03-36.bag"/>
-  <arg name="rate" default="0.2"/>
+  <arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/autonomous_approach/approach_with_gps_2017-02-27-15-19-21.bag"/>
+  <arg name="rate" default="1"/>
   <arg name="start" default="0"/>
 
   <node if="$(arg use_bag)" pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
@@ -76,34 +75,38 @@
   </node>
 
   
-  <!-- ============= Self Filter =============  -->
-  <node pkg="ais_laser_filters" type="cloud_to_cloud_filter_chain" output="screen" name="cloud_filters">
-    <remap from="~input" to="/velodyne_points" />
+  <!-- ============= Self Filter ============= -->
+  <node pkg="nodelet" type="nodelet" name="cloud_to_cloud_filter_chain_nodelet"
+        args="load ais_laser_filters/cloud_to_cloud_filter_chain_nodelet velodyne_nodelet_manager" output="screen" >
+     <remap from="~input" to="/velodyne_points" />
     <remap from="~output" to="/velodyne_points_filtered" />
     <param name="tf_message_filter_target_frame" type="string" value="base_link"/>
-    <!--<rosparam command="load" file="$(find mrs_laser_mapping)/config/mario_velodyne_filter.yaml" />-->
-    <rosparam command="load" file="$(find mrs_laser_mapping)/config/dji_velodyne_filter.yaml" />
+    <rosparam command="load" file="$(find mrs_laser_mapping)/config/mario_velodyne_filter.yaml" />
   </node>
   
 
   <!-- ============= Object Detection =============  -->
-  <!--<include file="$(find velodyne_object_detector)/launch/wrench_detector_nodelet.launch"/>-->
-  <!--<include file="$(find velodyne_object_detector)/launch/panel_detector_nodelet.launch"/>-->
-  <include file="$(find velodyne_object_detector)/launch/toad_detector_nodelet.launch"/>
+  <!--<include file="$(find laser_object_detector)/launch/wrench_detector_nodelet.launch"/>-->
+  <include file="$(find laser_object_detector)/launch/panel_detector_nodelet.launch"/>
+  <!--<include file="$(find laser_object_detector)/launch/toad_detector_nodelet.launch"/>-->
 
 
   <group if="1">
   <!-- ============= Mapping =============  -->
   <include file="$(find mrs_laser_mapping)/launch/velodyne_mapping.launch">
     <arg name="build_alloc_map" value="false"/>
-    <arg name="scan_assembler_frame_id" value="odom"/>
-    <arg name="input_topic" value="/velodyne_detector_objects"/>
+    <arg name="scan_assembler_frame_id" value="odom"/> 
+    <arg name="input_topic" value="/laser_detector_objects"/>
     <arg name="sensor_frame_id" value="velodyne"/>
-
-    <!--<arg name="map_size" value="128" />
-    <arg name="map_resolution" value="10.0" />
-    <arg name="map_levels" value="3" />
-    <arg name="map_cell_capacity" value="5000" />-->
+<!--    <arg name="map_size" value="128" /> 
+    <arg name="map_resolution" value="20.0" /> 
+    <arg name="map_levels" value="6" /> 
+    <arg name="map_cell_capacity" value="5000" /> 
+    
+    <arg name="map_downsampled_size" value="128" /> 
+    <arg name="map_downsampled_resolution" value="20.0" /> 
+    <arg name="map_downsampled_levels" value="6" /> 
+    <arg name="map_downsampled_cell_capacity" value="100" /> -->
   </include>
 
 

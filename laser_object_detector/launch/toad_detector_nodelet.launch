@@ -1,13 +1,14 @@
 <!-- -*- mode: XML -*- -->
-<!-- run velodyne_object_detector/VelodyneObjectDetectorNodelet in a nodelet manager -->
+<!-- run laser_object_detector/LaserObjectDetectorNodelet in a nodelet manager -->
 
 <launch>
 
-    <include file="$(find velodyne_object_detector)/launch/object_detector_nodelet.launch">
+    <include file="$(find laser_object_detector)/launch/object_detector_nodelet.launch">
         <arg name="start_as_nodelet" value="true"/>
 
         <arg name="manager" value="velodyne_nodelet_manager" />
-        <arg name="points_topic" value="/velodyne_points_filtered" />
+        <arg name="input_topic" value="/velodyne_points_filtered" />
+        <arg name="input_is_velodyne" value="true" />
         <arg name="circular_buffer_capacity" value="6000" />
         <arg name="angle_between_scanpoints" value="0.2" />
 

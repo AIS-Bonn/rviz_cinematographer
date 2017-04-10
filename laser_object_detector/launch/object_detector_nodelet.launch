@@ -1,11 +1,12 @@
 <!-- -*- mode: XML -*- -->
-<!-- run velodyne_object_detector/VelodyneObjectDetectorNodelet in a nodelet manager -->
+<!-- run laser_object_detector/LaserObjectDetectorNodelet in a nodelet manager -->
 
 <launch>
     <arg name="start_as_nodelet" default="true" />
 
     <arg name="manager" default="velodyne_nodelet_manager" />
-    <arg name="points_topic" default="/velodyne_points" />
+    <arg name="input_topic" default="/velodyne_points" />
+    <arg name="input_is_velodyne" default="true" />
     <arg name="circular_buffer_capacity" default="6000" />
     <arg name="angle_between_scanpoints" default="0.2" />
 
@@ -24,11 +25,12 @@
     <arg name="max_dist_for_median_computation" default="0.0" />
     <arg name="max_kernel_size" default="100" />
     <arg name="publish_debug_cloud" default="false" />
-    <arg name="output_topic" default="/velodyne_detector_objects" />
+    <arg name="output_topic" default="/laser_detector_objects" />
 
-    <node unless="$(arg start_as_nodelet)" launch-prefix="" pkg="velodyne_object_detector" type="velodyne_object_detector_node" name="velodyne_object_detector"
+    <node unless="$(arg start_as_nodelet)" launch-prefix="" pkg="laser_object_detector" type="laser_object_detector_node" name="laser_object_detector"
           output="screen" >
-        <param name="points_topic" value="$(arg points_topic)"/>
+        <param name="input_topic" value="$(arg input_topic)"/>
+        <param name="input_is_velodyne" value="$(arg input_is_velodyne)"/>
         <param name="angle_between_scanpoints" value="$(arg angle_between_scanpoints)"/>
         <param name="circular_buffer_capacity" value="$(arg circular_buffer_capacity)"/>
 
@@ -48,12 +50,13 @@
         <param name="max_kernel_size" value="$(arg max_kernel_size)"/>
         <param name="publish_debug_cloud" value="$(arg publish_debug_cloud)"/>
 
-	<remap from="/velodyne_detector_objects" to="$(arg output_topic)" />
+	    <remap from="/laser_detector_objects" to="$(arg output_topic)" />
     </node>
 
-    <node if="$(arg start_as_nodelet)" pkg="nodelet" type="nodelet" name="velodyne_object_detector_nodelet"
-          args="load velodyne_object_detector/velodyne_object_detector_nodelet $(arg manager)" output="screen" >
-        <param name="points_topic" value="$(arg points_topic)"/>
+    <node if="$(arg start_as_nodelet)" pkg="nodelet" type="nodelet" name="laser_object_detector_nodelet"
+          args="load laser_object_detector/laser_object_detector_nodelet $(arg manager)" output="screen" >
+        <param name="input_topic" value="$(arg input_topic)"/>
+        <param name="input_is_velodyne" value="$(arg input_is_velodyne)"/>
         <param name="angle_between_scanpoints" value="$(arg angle_between_scanpoints)"/>
         <param name="circular_buffer_capacity" value="$(arg circular_buffer_capacity)"/>
 
@@ -73,7 +76,7 @@
         <param name="max_kernel_size" value="$(arg max_kernel_size)"/>
         <param name="publish_debug_cloud" value="$(arg publish_debug_cloud)"/>
 
-	<remap from="/velodyne_detector_objects" to="$(arg output_topic)" />
+	    <remap from="/laser_detector_objects" to="$(arg output_topic)" />
     </node>
 
 </launch>

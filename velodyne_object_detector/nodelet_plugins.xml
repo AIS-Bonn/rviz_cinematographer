@@ -1,7 +1,0 @@
-<library path="lib/libvelodyne_object_detector_nodelet">
-  <class name="velodyne_object_detector/velodyne_object_detector_nodelet" type="velodyne_object_detector::VelodyneObjectDetectorNodelet" base_class_type="nodelet::Nodelet">
-  <description>
-    Detect small objects in velodyne data for the MBZIRC challenge
-  </description>
-  </class>
-</library>
