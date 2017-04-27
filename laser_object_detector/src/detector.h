@@ -143,7 +143,7 @@ private:
    float m_intensity_weight_launch;
    float m_object_size_launch;
    float m_distance_to_comparison_points_launch;
-   int m_kernel_size_diff_factor_launch;
+   float m_kernel_size_diff_factor_launch;
    float m_median_min_dist_launch;
    float m_median_thresh1_dist_launch;
    float m_median_thresh2_dist_launch;
@@ -161,7 +161,7 @@ private:
 
    config_server::Parameter<float> m_object_size;
    config_server::Parameter<float> m_distance_to_comparison_points;
-   config_server::Parameter<int> m_kernel_size_diff_factor;
+   config_server::Parameter<float> m_kernel_size_diff_factor;
 
    config_server::Parameter<float> m_median_min_dist;
    config_server::Parameter<float> m_median_thresh1_dist;

@@ -23,7 +23,7 @@
         <arg name="median_thresh2_dist" value="200.0" />
         <arg name="median_max_dist" value="200.0" />
 
-        <arg name="kernel_size_diff_factor" value="5" />
+        <arg name="kernel_size_diff_factor" value="5.0" />
         <arg name="max_dist_for_median_computation" value="0.0" />
         <arg name="max_kernel_size" value="1000" />
         <arg name="publish_debug_cloud" value="false" />

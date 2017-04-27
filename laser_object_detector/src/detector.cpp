@@ -20,7 +20,7 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
  , m_intensity_weight_launch(0.25)
  , m_object_size_launch(1.2f)
  , m_distance_to_comparison_points_launch(2.f)
- , m_kernel_size_diff_factor_launch(5)
+ , m_kernel_size_diff_factor_launch(5.0)
  , m_median_min_dist_launch(2.5)
  , m_median_thresh1_dist_launch(5.0)
  , m_median_thresh2_dist_launch(200.0)
@@ -35,7 +35,7 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
  , m_weight_for_small_intensities("laser_object_detector/weight_for_small_intensities", 1.f, 1.f, 30.f, 10.f)
  , m_object_size("laser_object_detector/object_size_in_m", 0.005, 0.005, 5.0, m_object_size_launch)
  , m_distance_to_comparison_points("laser_object_detector/distance_to_comparison_points", 0.0, 0.01, 10.0, 0.38f)
- , m_kernel_size_diff_factor("laser_object_detector/kernel_size_diff_factor", 1, 1, 20, m_kernel_size_diff_factor_launch)
+ , m_kernel_size_diff_factor("laser_object_detector/kernel_size_diff_factor", 1.0, 0.1, 5.0, m_kernel_size_diff_factor_launch)
  , m_median_min_dist("laser_object_detector/median_min_dist", 0.0, 0.01, 5.0, m_median_min_dist_launch)
  , m_median_thresh1_dist("laser_object_detector/median_thresh1_dist", 0.0001, 0.05, 12.5, m_median_thresh1_dist_launch)
  , m_median_thresh2_dist("laser_object_detector/median_thresh2_dist", 0.0, 0.1, 200.0, m_median_thresh2_dist_launch)
@@ -384,17 +384,25 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered>
 {
    while (!buffer_median_filtered->empty() && iter != buffer_median_filtered->end())
    {
-      float alpha = static_cast<float>(std::atan((m_object_size()/2.f)/(*iter).point.distance) * 180.f / M_PI);
-      int kernel_size = (int)std::ceil(alpha / m_angle_between_scanpoints_launch) + 1;
+      // compute the kernel size in number of points corresponding to the desired object size
+      // in other words, compute how many points are approximately on the object itself
+      float alpha = static_cast<float>(std::atan((m_object_size()/2.f)/(*iter).point.distance) * (180.0 / M_PI));
+      int kernel_size = (int)std::floor(alpha * 2.f / m_angle_between_scanpoints_launch);
+      // the point where the desired object gets filtered out is when there are all points on the object in the kernel
+      // and slightly more points that are >not< on the object. Therefore we multiply by two to be roughly at that border.
+      kernel_size *= 2;
+
+      if(kernel_size < 0)
+         ROS_ERROR("laser_object_detector: filterRing: kernel size negative");
 
       kernel_size = std::max(kernel_size, 1);
       kernel_size = std::min(kernel_size, m_max_kernel_size);
 
-      int big_kernel_size = kernel_size * m_kernel_size_diff_factor();
+      int big_kernel_size = (int)std::ceil(kernel_size * m_kernel_size_diff_factor());
       big_kernel_size = std::max(big_kernel_size, 2);
 
       const int big_kernel_size_half = big_kernel_size / 2;
-      
+
       if(std::distance(buffer_median_filtered->begin(), iter) >= big_kernel_size_half && std::distance(iter, buffer_median_filtered->end()) > big_kernel_size_half)
       {
          if(m_dist_weight() != 0.f)
@@ -480,7 +488,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
    if(std::distance( buffer_median_filtered->begin(), end_of_values) <= 2*dist_to_comparsion_point_bounded+1 ||
        std::distance( median_it, end_of_values) <= dist_to_comparsion_point_bounded + 1)
    {
-      ROS_WARN("not enough medians in buffer");
+      ROS_WARN("laser_object_detector: detectObstacles: not enough medians in buffer");
       return;
    }
    
@@ -491,7 +499,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
       dist_to_comparsion_point = (int)std::round(alpha / m_angle_between_scanpoints_launch);
 
       dist_to_comparsion_point = std::max(dist_to_comparsion_point, 0);
-      dist_to_comparsion_point = std::min(dist_to_comparsion_point, m_max_kernel_size);
+      dist_to_comparsion_point = std::min(dist_to_comparsion_point, m_max_kernel_size / 2);
 
       dist_to_comparsion_point_bounded = dist_to_comparsion_point;
 

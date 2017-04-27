@@ -4,7 +4,7 @@
   <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster1" args="0 0 0 0 0 0 1 /laser_scanner_link /velodyne 100" />
 
   <!-- ========= Bagplayer ========== -->
-  <arg name="use_bag" default="true"/>
+  <arg name="use_bag" default="false"/>
   <!--<arg name="bagname" default="/home/razlaw/bags/obstacle_detection_dji/autonomous_approach/approach_with_gps_2017-02-27-15-19-21.bag"/>-->
   <arg name="bagname" default="/home/razlaw/bags/rehearsal/robot_2017-03-13-10-07-58.bag"/>
   <arg name="rate" default="1"/>
@@ -18,14 +18,15 @@
   <param if="$(arg use_bag)" name="/use_sim_time" value="true" />
 
   <node unless="$(arg use_bag)" name="pcd_publisher" pkg="pcd_publisher" type="pcd_publisher" output="screen">
-    <param name="path_to_file" value="/home/razlaw/clouds/5hz/map6.pcd"/>
+    <!--<param name="path_to_file" value="/home/razlaw/clouds/5hz/map6.pcd"/>
     <param name="output_topic" value="/pointcloud" />
-    <param name="output_frame_id" value="/world_corrected"/>
-    <!--<param name="path_to_file" value="/home/razlaw/clouds/5hz/near_and_far_object.pcd"/>
+    <param name="output_frame_id" value="/world_corrected"/>-->
+    <param name="path_to_file" value="/home/razlaw/clouds/mbzirc/this.pcd"/>
     <param name="output_topic" value="/velodyne_points_filtered" />
-    <param name="output_frame_id" value="/velodyne"/>-->
+    <param name="output_frame_id" value="/velodyne"/>
     <param name="publishing_rate" value="2"/>
   </node>
+  <node unless="$(arg use_bag)" pkg="tf" type="static_transform_publisher" name="link1_broadcaster2" args="0 0 0 0 0 0 1 /velodyne /world 100" />
 
 
   <!-- ============= Rviz / rqt =============  -->
@@ -89,10 +90,10 @@
 
   <!-- ============= Object Detection =============  -->
   <!--<include file="$(find laser_object_detector)/launch/wrench_detector_nodelet.launch"/>-->
-  <include file="$(find laser_object_detector)/launch/panel_detector_nodelet.launch"/>
-  <!--<include file="$(find laser_object_detector)/launch/toad_detector_nodelet.launch"/>-->
+  <!--<include file="$(find laser_object_detector)/launch/panel_detector_nodelet.launch"/>-->
+  <include file="$(find laser_object_detector)/launch/toad_detector_nodelet.launch"/>
 
-
+  <group if="0">
   <node name="detection_mask_server" pkg="map_server" type="map_server" args="$(find mario_launch)/maps/panel_detection_map.yaml">
     <param name="frame_id" value="world" />
 
@@ -110,7 +111,7 @@
   </node>
 
 
-  <group if="1">
+
   <!-- ============= Object Clustering =============  -->
   <include file="$(find object_clustering)/launch/object_clustering.launch">
     <arg name="start_as_nodelet" value="true"/>
