@@ -38,4 +38,4 @@ namespace laser_segmentation
 //
 // parameters: package, class name, class type, base class type
 PLUGINLIB_DECLARE_CLASS(laser_segmentation, LaserSegmenterNodelet,
-                        laser_segmentation::LaserSegmenterNodelet, nodelet::Nodelet)LaserSegmenterNodelet;
+                        laser_segmentation::LaserSegmenterNodelet, nodelet::Nodelet);

@@ -6,8 +6,8 @@
   <!-- ========= Bagplayer ========== -->
   <arg name="use_bag" default="true"/>
   <arg name="bagname" default="/home/razlaw/bags/static_objects_m600/combined.bag"/>
-  <arg name="rate" default="1"/>
-  <arg name="start" default="0"/>
+  <arg name="rate" default="0.3"/>
+  <arg name="start" default="28"/>
 
   <node if="$(arg use_bag)" pkg="rosbag" type="play" name="play" args="--clock -r $(arg rate) -s $(arg start) $(arg bagname)" output="screen" respawn="false" >
     <!--<remap from="/velodyne_points" to="/velodyne_points_frombag" />-->
@@ -61,10 +61,9 @@
   </node>
 
 
-  <!-- ============= Object Detection =============  -->
-  <!--<include file="$(find laser_segmentation)/launch/wrench_detector_nodelet.launch"/>-->
+  <!-- ============= Object Segmentation =============  -->
   <!--<include file="$(find laser_segmentation)/launch/panel_detector_nodelet.launch"/>-->
-  <include file="$(find laser_segmentation)/launch/object_detector_nodelet.launch">
+  <include file="$(find laser_segmentation)/launch/segmentation.launch">
     <arg name="start_as_nodelet" value="true"/>
 
     <arg name="manager" value="velodyne_nodelet_manager" />
@@ -76,27 +75,28 @@
     <arg name="certainty_threshold" value="0.0" />
     <arg name="dist_weight" value="1" />
     <arg name="intensity_weight" value="1" />
-    <arg name="object_size_in_m" value="0.1" />
+    <arg name="object_size_in_m" value="0.05" />
     <arg name="distance_to_comparison_points" value="0.0" />
 
     <arg name="median_min_dist" value="0.15" />
     <arg name="median_thresh1_dist" value="0.45" />
-    <arg name="median_thresh2_dist" value="90.5" />
-    <arg name="median_max_dist" value="100.0" />
+    <arg name="median_thresh2_dist" value="10.5" />
+    <arg name="median_max_dist" value="15.0" />
 
-    <arg name="kernel_size_diff_factor" value="5.0" />
+    <arg name="kernel_size_diff_factor" value="4.0" />
     <arg name="max_dist_for_median_computation" value="0.0" />
     <arg name="max_kernel_size" value="1000" />
     <arg name="publish_debug_cloud" value="false" />
   </include>
 
-  <group if="1">
+
+  <group if="0">
 
     <!-- ============= Mapping =============  -->
     <include file="$(find mrs_laser_mapping)/launch/velodyne_mapping.launch">
       <arg name="build_alloc_map" value="false"/>
-      <arg name="odom_frame_id" value="odom"/>
-      <arg name="input_topic" value="/laser_detector_objects"/>
+      <arg name="scan_assembler_frame_id" value="odom"/>
+      <arg name="input_topic" value="/velodyne_points"/>
       <arg name="sensor_frame_id" value="velodyne"/>
 
       <!--<arg name="map_size" value="128" />
@@ -105,10 +105,10 @@
       <arg name="map_cell_capacity" value="5000" />-->
     </include>
 
-    <!-- ============= Object Segmenter============= -->
-    <include file="$(find object_clustering)/launch/object_clustering.launch">
+    <!-- ============= Object Clustering =============  -->
+    <include if="0" file="$(find object_clustering)/launch/object_clustering.launch">
       <arg name="start_as_nodelet" value="true"/>
-      <arg name="input_topic" value="/laser_detector_objects"/>
+      <arg name="input_topic" value="/laser_segmenter_objects"/>
       <arg name="fixed_frame" value="world"/>
       <arg name="max_object_height" value="2.0" />
       <arg name="max_object_width" value="1.8" />

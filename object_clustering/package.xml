@@ -7,7 +7,7 @@
 	<maintainer email="s6jarazl@uni-bonn.de">Jan Razlaw</maintainer>
 
 	<buildtool_depend>catkin</buildtool_depend>
-	<depend>laser_object_detector</depend>
+	<depend>laser_segmentation</depend>
 	<depend>pcl_ros</depend>
 	<depend>nodelet</depend>
 	<depend>config_server</depend>

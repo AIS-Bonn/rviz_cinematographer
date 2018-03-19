@@ -4,7 +4,7 @@
 #ifndef PANEL_FILTER_H
 #define PANEL_FILTER_H
 
-#include <laser_object_detector/point_type.h>
+#include <laser_segmentation/point_type.h>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -22,8 +22,8 @@ namespace object_clustering
 class Clusterer
 {
 public:
-	typedef velodyne_pointcloud::PointXYZDetection PointWithDetection;
-	typedef PointWithDetection InputPoint;
+	typedef velodyne_pointcloud::PointXYZSegmentation PointWithSegmentation;
+	typedef PointWithSegmentation InputPoint;
 	typedef pcl::PointCloud<InputPoint> InputPointCloud;
 
 	Clusterer(ros::NodeHandle node, ros::NodeHandle private_nh);
@@ -58,7 +58,7 @@ private:
   std::string m_fixed_frame;
   std::string m_input_topic;
 
-	void handleCloud(const InputPointCloud::ConstPtr& detection);
+	void handleCloud(const InputPointCloud::ConstPtr& segmentation);
 };
 
 }

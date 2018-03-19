@@ -36,7 +36,7 @@ Clusterer::Clusterer(ros::NodeHandle node, ros::NodeHandle private_nh)
    , m_apply_radius_filter("/object_clustering/apply_radius_filter", true)
    , m_filter_radius("/object_clustering/filter_radius", 0.0, 0.5, 200.0, 30.0)
    , m_fixed_frame("world")
-   , m_input_topic("/laser_detector_objects")
+   , m_input_topic("/laser_segmenter_objects")
 {
 	ROS_INFO("init object clusterer...");
 
@@ -110,7 +110,7 @@ Clusterer::~Clusterer()
 }
 
 
-void Clusterer::handleCloud(const InputPointCloud::ConstPtr& detection)
+void Clusterer::handleCloud(const InputPointCloud::ConstPtr& segmentation)
 {
   if(m_pub_filtered_cloud.getNumSubscribers() == 0 &&
      m_pub_pose.getNumSubscribers() == 0 &&
@@ -120,18 +120,18 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& detection)
     return;
   }
   
-  if(detection->size() == 0)
+  if(segmentation->size() == 0)
       return;
 
   pcl::StopWatch timer;
 
   InputPointCloud::Ptr positives(new InputPointCloud);
-  positives->header = detection->header;
+  positives->header = segmentation->header;
   
-  for(const auto& point : *detection)
+  for(const auto& point : *segmentation)
   {
-    // Detection filter
-    if(point.detection < m_min_certainty_thresh())
+    // Segmentation filter
+    if(point.segmentation < m_min_certainty_thresh())
       continue;
 
     positives->push_back(point);
@@ -140,16 +140,16 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& detection)
 
   if(positives->size() == 0)
   {
-    ROS_DEBUG("Object_clusterer: no positive detection points left for clustering");
+    ROS_DEBUG("Object_clusterer: no positive segmentation points left for clustering");
     return;
   }
   
   
-  ros::Time stamp = pcl_conversions::fromPCL(detection->header.stamp);
+  ros::Time stamp = pcl_conversions::fromPCL(segmentation->header.stamp);
   
 	Eigen::Affine3f transform;
 	{
-		if(!m_tf.waitForTransform(m_fixed_frame, detection->header.frame_id, stamp, ros::Duration(0.5)))
+		if(!m_tf.waitForTransform(m_fixed_frame, segmentation->header.frame_id, stamp, ros::Duration(0.5)))
 		{
 			ROS_ERROR_STREAM("Could not wait for transform to frame " << m_fixed_frame);
 			return;
@@ -158,7 +158,7 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& detection)
 		tf::StampedTransform transformTF;
 		try
 		{
-			m_tf.lookupTransform(m_fixed_frame, detection->header.frame_id, stamp, transformTF);
+			m_tf.lookupTransform(m_fixed_frame, segmentation->header.frame_id, stamp, transformTF);
 		}
 		catch(tf::TransformException& e)
 		{
@@ -173,11 +173,11 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& detection)
 
 	InputPointCloud::Ptr positives_transformed(new InputPointCloud);
 	pcl::transformPointCloud(*positives, *positives_transformed, transform);
-  positives_transformed->header = detection->header;
+  positives_transformed->header = segmentation->header;
   positives_transformed->header.frame_id = m_fixed_frame;
 
   InputPointCloud::Ptr filtered(new InputPointCloud);
-  filtered->header = detection->header;
+  filtered->header = segmentation->header;
   filtered->header.frame_id = m_fixed_frame;
 
   if(m_apply_geofencing())
@@ -222,7 +222,7 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& detection)
     }
 
     InputPointCloud::Ptr radius_filtered(new InputPointCloud);
-    radius_filtered->header = detection->header;
+    radius_filtered->header = segmentation->header;
     radius_filtered->header.frame_id = m_fixed_frame;
 
     for(const auto& point : *positives_transformed)
@@ -244,7 +244,7 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& detection)
 
   if(positives_transformed->size() == 0)
   {
-    ROS_DEBUG("Object_clusterer: no positive detection points left for clustering after filtering");
+    ROS_DEBUG("Object_clusterer: no positive segmentation points left for clustering after filtering");
     return;
   }
 

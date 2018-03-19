@@ -27,7 +27,7 @@
     <arg name="publish_debug_cloud" default="false" />
     <arg name="output_topic" default="/laser_detector_objects" />
 
-    <node unless="$(arg start_as_nodelet)" launch-prefix="" pkg="laser_segmentation" type="laser_object_detector_node" name="laser_segmentation"
+    <node unless="$(arg start_as_nodelet)" launch-prefix="" pkg="laser_segmentation" type="laser_segmentation_node" name="laser_segmentation"
           output="screen" >
         <param name="input_topic" value="$(arg input_topic)"/>
         <param name="input_is_velodyne" value="$(arg input_is_velodyne)"/>
@@ -53,8 +53,8 @@
 	    <remap from="/laser_detector_objects" to="$(arg output_topic)" />
     </node>
 
-    <node if="$(arg start_as_nodelet)" pkg="nodelet" type="nodelet" name="laser_object_detector_nodelet"
-          args="load laser_segmentation/laser_object_detector_nodelet $(arg manager)" output="screen" >
+    <node if="$(arg start_as_nodelet)" pkg="nodelet" type="nodelet" name="laser_segmentation_nodelet"
+          args="load laser_segmentation/laser_segmentation_nodelet $(arg manager)" output="screen" >
         <param name="input_topic" value="$(arg input_topic)"/>
         <param name="input_is_velodyne" value="$(arg input_is_velodyne)"/>
         <param name="angle_between_scanpoints" value="$(arg angle_between_scanpoints)"/>
