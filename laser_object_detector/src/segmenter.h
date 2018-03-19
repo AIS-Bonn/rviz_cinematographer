@@ -1,12 +1,12 @@
 /* -*- mode: C++ -*- */
 /** @file
 
-    This class detects objects of a specific size in laser point clouds
+    This class segments objects of a specified width in laser point clouds
 
 */
 
-#ifndef _DETECTOR_H_
-#define _DETECTOR_H_ 1
+#ifndef _SEGMENTER_H_
+#define _SEGMENTER_H_ 1
 
 #include <functional>
 
@@ -16,7 +16,7 @@
 #include <tf/transform_listener.h>
 #include <tf_conversions/tf_eigen.h>
 
-#include <laser_object_detector/point_type.h>
+#include <laser_segmentation/point_type.h>
 
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
@@ -39,9 +39,9 @@
 #include <config_server/parameter.h>
 
 
-namespace laser_object_detector
+namespace laser_segmentation
 {
-class Detector
+class Segmenter
 {
 public:
   
@@ -50,13 +50,13 @@ public:
    typedef pcl::PointCloud<pcl::PointXYZI> PointCloudIntensity;
 
    typedef velodyne_pointcloud::PointXYZIDR           PointVelodyneWithDist;
-   typedef velodyne_pointcloud::PointXYZIRDetection   PointVelodyneWithDetection;
-   typedef velodyne_pointcloud::PointXYZDetection     PointWithDetection;
+   typedef velodyne_pointcloud::PointXYZIRSegmentation   PointVelodyneWithSegmentation;
+   typedef velodyne_pointcloud::PointXYZSegmentation     PointWithSegmentation;
 
 
    typedef PointVelodyneWithDist                      InputPoint;
-   typedef PointVelodyneWithDetection                 DebugOutputPoint;
-   typedef PointWithDetection                         OutputPoint;
+   typedef PointVelodyneWithSegmentation                 DebugOutputPoint;
+   typedef PointWithSegmentation                         OutputPoint;
 
    typedef pcl::PointCloud<InputPoint>                InputPointCloud;
    typedef pcl::PointCloud<DebugOutputPoint>          DebugOutputPointCloud;
@@ -84,8 +84,8 @@ public:
    typedef typename BufferMedians::const_iterator median_const_iterator;
  
 
-   Detector(ros::NodeHandle node, ros::NodeHandle private_nh);
-   ~Detector(){};
+   Segmenter(ros::NodeHandle node, ros::NodeHandle private_nh);
+   ~Segmenter(){};
 
    void changeParameterSavely();
    void resizeBuffers();
@@ -99,7 +99,7 @@ public:
 
    float computeCertainty(float difference_distances, float difference_intensities);
 
-   void detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
+   void segmentObstacles(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
 			                  median_iterator& median_it,
 												median_iterator& end,
 												OutputPointCloud::Ptr obstacle_cloud,
@@ -117,7 +117,7 @@ public:
                              const int big_kernel_size,
 			                       const BufferMediansPtr& buffer,
                              const median_const_iterator& current_element,
-                             std::function<float(Detector::InputPoint)> f,
+                             std::function<float(Segmenter::InputPoint)> f,
                              float max_dist_for_median_computation,
                              float& small_kernel_val, float& big_kernel_val) const;
 private:
@@ -178,7 +178,7 @@ private:
    std::vector<BufferMediansPtr> m_median_filtered_circ_buffer_vector;
 
 	 std::vector<boost::optional<median_iterator>> m_median_iters_by_ring;
-   std::vector<boost::optional<median_iterator>> m_detection_iters_by_ring;
+   std::vector<boost::optional<median_iterator>> m_segmentation_iters_by_ring;
 
    std::vector<float> m_filtering_factors;
 
@@ -186,6 +186,6 @@ private:
    laser_geometry::LaserProjection m_scan_projector;
 };
 
-} // namespace laser_object_detector
+} // namespace laser_segmentation
 
-#endif // _DETECTOR_H_
+#endif // _SEGMENTER_H_

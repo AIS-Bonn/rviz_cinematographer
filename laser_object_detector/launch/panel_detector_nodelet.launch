@@ -1,9 +1,9 @@
 <!-- -*- mode: XML -*- -->
-<!-- run laser_object_detector/LaserObjectDetectorNodelet in a nodelet manager -->
+<!-- run laser_segmentation/LaserSegmenterNodelet in a nodelet manager -->
 
 <launch>
 
-    <include file="$(find laser_object_detector)/launch/object_detector_nodelet.launch">
+    <include file="$(find laser_segmentation)/launch/object_detector_nodelet.launch">
         <arg name="start_as_nodelet" value="true"/>
 
         <arg name="manager" value="velodyne_nodelet_manager" />

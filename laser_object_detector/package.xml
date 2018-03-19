@@ -1,6 +1,6 @@
 <package format="2">
-  <name>laser_object_detector</name>
-  <description>Detect small objects in laser data for the MBZIRC challenge</description>
+  <name>laser_segmentation</name>
+  <description>Segment objects by width in laser range data</description>
   <version>0.0.1</version>
   <license>BSD</license>
   <maintainer email="jan.razlaw@gmx.de">Jan</maintainer>

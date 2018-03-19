@@ -1,15 +1,15 @@
 /** @file
 
-    This class detects objects of a specific size in laser point clouds
+    This class segments objects of a specified width in laser point clouds
 
 */
 
-#include "detector.h"
+#include "segmenter.h"
 
-namespace laser_object_detector
+namespace laser_segmentation
 {
 /** @brief Constructor. */
-Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
+Segmenter::Segmenter(ros::NodeHandle node, ros::NodeHandle private_nh)
 : PUCK_NUM_RINGS(16)
  , HOKUYO_NUM_RINGS(1)  
  , m_input_is_velodyne(true)       
@@ -29,46 +29,46 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
  , m_max_kernel_size(100)
  , m_max_prob_by_distance(1.f)
  , m_max_intensity_range(100.f)
- , m_certainty_threshold("laser_object_detector/certainty_threshold", 0.0, 0.01, 1.0, m_certainty_threshold_launch)
- , m_dist_weight("laser_object_detector/dist_weight", 0.0, 0.1, 10.0, m_dist_weight_launch)
- , m_intensity_weight("laser_object_detector/intensity_weight", 0.0, 0.01, 10.0, m_intensity_weight_launch)
- , m_weight_for_small_intensities("laser_object_detector/weight_for_small_intensities", 1.f, 1.f, 30.f, 10.f)
- , m_object_size("laser_object_detector/object_size_in_m", 0.005, 0.005, 5.0, m_object_size_launch)
- , m_distance_to_comparison_points("laser_object_detector/distance_to_comparison_points", 0.0, 0.01, 10.0, 0.38f)
- , m_kernel_size_diff_factor("laser_object_detector/kernel_size_diff_factor", 1.0, 0.1, 5.0, m_kernel_size_diff_factor_launch)
- , m_median_min_dist("laser_object_detector/median_min_dist", 0.0, 0.01, 5.0, m_median_min_dist_launch)
- , m_median_thresh1_dist("laser_object_detector/median_thresh1_dist", 0.0001, 0.05, 12.5, m_median_thresh1_dist_launch)
- , m_median_thresh2_dist("laser_object_detector/median_thresh2_dist", 0.0, 0.1, 200.0, m_median_thresh2_dist_launch)
- , m_median_max_dist("laser_object_detector/median_max_dist", 0.0, 0.5, 200.0, m_median_max_dist_launch)
- , m_max_dist_for_median_computation("laser_object_detector/max_dist_for_median_computation", 0.0, 0.25, 10.0, 6.0)
+ , m_certainty_threshold("laser_segmentation/certainty_threshold", 0.0, 0.01, 1.0, m_certainty_threshold_launch)
+ , m_dist_weight("laser_segmentation/dist_weight", 0.0, 0.1, 10.0, m_dist_weight_launch)
+ , m_intensity_weight("laser_segmentation/intensity_weight", 0.0, 0.01, 10.0, m_intensity_weight_launch)
+ , m_weight_for_small_intensities("laser_segmentation/weight_for_small_intensities", 1.f, 1.f, 30.f, 10.f)
+ , m_object_size("laser_segmentation/object_size_in_m", 0.005, 0.005, 5.0, m_object_size_launch)
+ , m_distance_to_comparison_points("laser_segmentation/distance_to_comparison_points", 0.0, 0.01, 10.0, 0.38f)
+ , m_kernel_size_diff_factor("laser_segmentation/kernel_size_diff_factor", 1.0, 0.1, 5.0, m_kernel_size_diff_factor_launch)
+ , m_median_min_dist("laser_segmentation/median_min_dist", 0.0, 0.01, 5.0, m_median_min_dist_launch)
+ , m_median_thresh1_dist("laser_segmentation/median_thresh1_dist", 0.0001, 0.05, 12.5, m_median_thresh1_dist_launch)
+ , m_median_thresh2_dist("laser_segmentation/median_thresh2_dist", 0.0, 0.1, 200.0, m_median_thresh2_dist_launch)
+ , m_median_max_dist("laser_segmentation/median_max_dist", 0.0, 0.5, 200.0, m_median_max_dist_launch)
+ , m_max_dist_for_median_computation("laser_segmentation/max_dist_for_median_computation", 0.0, 0.25, 10.0, 6.0)
  , m_input_topic("/velodyne_points")
  , m_publish_debug_clouds(false)
  , m_buffer_initialized(false)
 {
-   ROS_INFO("init laser object detector...");
+   ROS_INFO("init laser object segmenter...");
 
    private_nh.getParam("input_topic", m_input_topic);
    private_nh.getParam("input_is_velodyne", m_input_is_velodyne);
    if(m_input_is_velodyne)
-     m_velodyne_sub = node.subscribe(m_input_topic, 1, &Detector::velodyneCallback, this);
+     m_velodyne_sub = node.subscribe(m_input_topic, 1, &Segmenter::velodyneCallback, this);
    else
-     m_hokuyo_sub = node.subscribe(m_input_topic, 1, &Detector::hokuyoCallback, this);
+     m_hokuyo_sub = node.subscribe(m_input_topic, 1, &Segmenter::hokuyoCallback, this);
   
    private_nh.getParam("publish_debug_cloud", m_publish_debug_clouds);
 
    if(m_publish_debug_clouds)
    {
-      m_plotter = new pcl::visualization::PCLPlotter ("Detection Plotter");
+      m_plotter = new pcl::visualization::PCLPlotter ("Segmentation Plotter");
       m_plotter->setShowLegend (true);
       m_plotter->setXTitle("distance difference in meters");
       m_plotter->setYTitle("object certainty");
       plot();
 
-      m_pub_debug_obstacle_cloud = node.advertise<DebugOutputPointCloud >("/laser_detector_debug_objects", 1);
-      m_pub_filtered_cloud = node.advertise<DebugOutputPointCloud >("/laser_detector_filtered", 1);
+      m_pub_debug_obstacle_cloud = node.advertise<DebugOutputPointCloud >("/laser_segmenter_debug_objects", 1);
+      m_pub_filtered_cloud = node.advertise<DebugOutputPointCloud >("/laser_segmenter_filtered", 1);
    }
 
-   m_pub_obstacle_cloud = node.advertise<OutputPointCloud >("/laser_detector_objects", 1);
+   m_pub_obstacle_cloud = node.advertise<OutputPointCloud >("/laser_segmenter_objects", 1);
 
    if(private_nh.getParam("certainty_threshold", m_certainty_threshold_launch))
       m_certainty_threshold.set(m_certainty_threshold_launch);
@@ -107,23 +107,23 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
    private_nh.getParam("max_kernel_size", m_max_kernel_size);
    private_nh.getParam("angle_between_scanpoints", m_angle_between_scanpoints_launch);
 
-   m_certainty_threshold.setCallback(boost::bind(&Detector::changeParameterSavely, this));
-   m_dist_weight.setCallback(boost::bind(&Detector::changeParameterSavely, this));
-   m_intensity_weight.setCallback(boost::bind(&Detector::changeParameterSavely, this));
-   m_weight_for_small_intensities.setCallback(boost::bind(&Detector::changeParameterSavely, this));
+   m_certainty_threshold.setCallback(boost::bind(&Segmenter::changeParameterSavely, this));
+   m_dist_weight.setCallback(boost::bind(&Segmenter::changeParameterSavely, this));
+   m_intensity_weight.setCallback(boost::bind(&Segmenter::changeParameterSavely, this));
+   m_weight_for_small_intensities.setCallback(boost::bind(&Segmenter::changeParameterSavely, this));
 
-   m_object_size.setCallback(boost::bind(&Detector::changeParameterSavely, this));
-   m_distance_to_comparison_points.setCallback(boost::bind(&Detector::changeParameterSavely, this));
+   m_object_size.setCallback(boost::bind(&Segmenter::changeParameterSavely, this));
+   m_distance_to_comparison_points.setCallback(boost::bind(&Segmenter::changeParameterSavely, this));
 
-   m_median_min_dist.setCallback(boost::bind(&Detector::changeParameterSavely, this));
-   m_median_thresh1_dist.setCallback(boost::bind(&Detector::changeParameterSavely, this));
-   m_median_thresh2_dist.setCallback(boost::bind(&Detector::changeParameterSavely, this));
-   m_median_max_dist.setCallback(boost::bind(&Detector::changeParameterSavely, this));
+   m_median_min_dist.setCallback(boost::bind(&Segmenter::changeParameterSavely, this));
+   m_median_thresh1_dist.setCallback(boost::bind(&Segmenter::changeParameterSavely, this));
+   m_median_thresh2_dist.setCallback(boost::bind(&Segmenter::changeParameterSavely, this));
+   m_median_max_dist.setCallback(boost::bind(&Segmenter::changeParameterSavely, this));
 
-   m_max_dist_for_median_computation.setCallback(boost::bind(&Detector::changeParameterSavely, this));
+   m_max_dist_for_median_computation.setCallback(boost::bind(&Segmenter::changeParameterSavely, this));
 }
 
-void Detector::changeParameterSavely()
+void Segmenter::changeParameterSavely()
 {
    boost::mutex::scoped_lock lock(m_parameter_change_lock);
    ROS_DEBUG("New parameter");
@@ -131,7 +131,7 @@ void Detector::changeParameterSavely()
       plot();
 }
 
-void Detector::initBuffer(int number_of_rings)
+void Segmenter::initBuffer(int number_of_rings)
 {
   for(int i = 0; i < number_of_rings; i++)
   {
@@ -140,28 +140,28 @@ void Detector::initBuffer(int number_of_rings)
   }
 
   m_median_iters_by_ring.resize(number_of_rings);
-  m_detection_iters_by_ring.resize(number_of_rings);
+  m_segmentation_iters_by_ring.resize(number_of_rings);
 
   m_buffer_initialized = true;
 }
 
-void Detector::resetBuffer()
+void Segmenter::resetBuffer()
 {
   for(int ring = 0; ring < (int)m_median_filtered_circ_buffer_vector.size(); ring++)
   {
     m_median_filtered_circ_buffer_vector.at(ring)->clear();
     m_median_iters_by_ring.at(ring).reset();
-    m_detection_iters_by_ring.at(ring).reset();
+    m_segmentation_iters_by_ring.at(ring).reset();
   }
 }
 
-void Detector::hokuyoCallback(const sensor_msgs::LaserScanConstPtr& input_scan)
+void Segmenter::hokuyoCallback(const sensor_msgs::LaserScanConstPtr& input_scan)
 {
   if(m_pub_obstacle_cloud.getNumSubscribers() == 0 &&
      m_pub_debug_obstacle_cloud.getNumSubscribers() == 0 &&
      m_pub_filtered_cloud.getNumSubscribers() == 0)
   {
-    ROS_DEBUG_STREAM("hokuyoCallback: no subscriber to laser_object_detector. resetting buffer");
+    ROS_DEBUG_STREAM("hokuyoCallback: no subscriber to laser_segmentation. resetting buffer");
     resetBuffer();
     return;
   }
@@ -224,13 +224,13 @@ void Detector::hokuyoCallback(const sensor_msgs::LaserScanConstPtr& input_scan)
   processScan(pcl_conversions::toPCL(cloud.header));
 }
 
-void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
+void Segmenter::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
 {
   if(m_pub_obstacle_cloud.getNumSubscribers() == 0 &&
      m_pub_debug_obstacle_cloud.getNumSubscribers() == 0 &&
      m_pub_filtered_cloud.getNumSubscribers() == 0)
   {
-    ROS_DEBUG_STREAM("velodyneCallback: no subscriber to laser_object_detector. resetting buffer");
+    ROS_DEBUG_STREAM("velodyneCallback: no subscriber to laser_segmentation. resetting buffer");
     resetBuffer();
     return;
   }
@@ -248,7 +248,7 @@ void Detector::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
   processScan(input_cloud->header);
 }
 
-void Detector::processScan(pcl::PCLHeader header)
+void Segmenter::processScan(pcl::PCLHeader header)
 {
    pcl::StopWatch timer;
 
@@ -269,9 +269,9 @@ void Detector::processScan(pcl::PCLHeader header)
        m_median_iters_by_ring[ring] = m_median_filtered_circ_buffer_vector.at(ring)->begin();
      }
 
-     if (!m_median_filtered_circ_buffer_vector.at(ring)->empty() && !m_detection_iters_by_ring[ring])
+     if (!m_median_filtered_circ_buffer_vector.at(ring)->empty() && !m_segmentation_iters_by_ring[ring])
      {
-       m_detection_iters_by_ring[ring] = m_median_filtered_circ_buffer_vector.at(ring)->begin();
+       m_segmentation_iters_by_ring[ring] = m_median_filtered_circ_buffer_vector.at(ring)->begin();
      }
      
      if (m_median_iters_by_ring[ring])
@@ -279,10 +279,10 @@ void Detector::processScan(pcl::PCLHeader header)
          filterRing(m_median_filtered_circ_buffer_vector.at(ring), *m_median_iters_by_ring.at(ring));
      }
 
-     if (m_detection_iters_by_ring[ring])
+     if (m_segmentation_iters_by_ring[ring])
      {
-	      detectObstacles(m_median_filtered_circ_buffer_vector.at(ring),
-                        *m_detection_iters_by_ring.at(ring),
+	      segmentObstacles(m_median_filtered_circ_buffer_vector.at(ring),
+                        *m_segmentation_iters_by_ring.at(ring),
                         *m_median_iters_by_ring.at(ring),
                         obstacle_cloud,
                         debug_obstacle_cloud);
@@ -302,11 +302,11 @@ void Detector::processScan(pcl::PCLHeader header)
    m_pub_obstacle_cloud.publish(obstacle_cloud);
 }
 
-void Detector::calcMedianFromBuffer(const int kernel_size,
+void Segmenter::calcMedianFromBuffer(const int kernel_size,
                                     const int big_kernel_size,
                                     const BufferMediansPtr& buffer,
                                     const median_const_iterator& current_element,
-                                    std::function<float(Detector::InputPoint)> f,
+                                    std::function<float(Segmenter::InputPoint)> f,
                                     float max_dist_for_median_computation,
                                     float& small_kernel_val, float& big_kernel_val) const
 {
@@ -379,7 +379,7 @@ void Detector::calcMedianFromBuffer(const int kernel_size,
   big_kernel_val = neighborhood_values[neighborhood_values.size() / 2];
 }
 
-void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
+void Segmenter::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
                           median_iterator& iter)
 {
    while (!buffer_median_filtered->empty() && iter != buffer_median_filtered->end())
@@ -393,7 +393,7 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered>
       kernel_size *= 2;
 
       if(kernel_size < 0)
-         ROS_ERROR("laser_object_detector: filterRing: kernel size negative");
+         ROS_ERROR("laser_segmentation: filterRing: kernel size negative");
 
       kernel_size = std::max(kernel_size, 1);
       kernel_size = std::min(kernel_size, m_max_kernel_size);
@@ -428,7 +428,7 @@ void Detector::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered>
 
 }
 
-float Detector::computeCertainty(float difference_distances, float difference_intensities)
+float Segmenter::computeCertainty(float difference_distances, float difference_intensities)
 {
    float certainty_value = 0.f;
    // cap absolute difference to 0 - m_max_intensity_range
@@ -466,7 +466,7 @@ float Detector::computeCertainty(float difference_distances, float difference_in
    return certainty_value;
 }
 
-void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
+void Segmenter::segmentObstacles(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
                                median_iterator& median_it,
                                median_iterator& end,
                                OutputPointCloud::Ptr obstacle_cloud,
@@ -488,7 +488,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
    if(std::distance( buffer_median_filtered->begin(), end_of_values) <= 2*dist_to_comparsion_point_bounded+1 ||
        std::distance( median_it, end_of_values) <= dist_to_comparsion_point_bounded + 1)
    {
-      ROS_WARN("laser_object_detector: detectObstacles: not enough medians in buffer");
+      ROS_WARN("laser_segmentation: segmentObstacles: not enough medians in buffer");
       return;
    }
    
@@ -551,7 +551,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
          output_point.y = current_point.y;
          output_point.z = current_point.z;
          output_point.ring = current_point.ring;
-         output_point.detection = certainty_value;
+         output_point.segmentation = certainty_value;
          obstacle_cloud->push_back(output_point);
 
          if(m_publish_debug_clouds)
@@ -564,9 +564,9 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
             debug_output_point.intensity = current_point.intensity;
             debug_output_point.ring = current_point.ring;
             
-            debug_output_point.detection_distance = difference_distances;
-            debug_output_point.detection_intensity = difference_intensities;
-            debug_output_point.detection = certainty_value;
+            debug_output_point.segmentation_distance = difference_distances;
+            debug_output_point.segmentation_intensity = difference_intensities;
+            debug_output_point.segmentation = certainty_value;
             
             debug_obstacle_cloud->push_back(debug_output_point);
             
@@ -581,7 +581,7 @@ void Detector::detectObstacles(std::shared_ptr<boost::circular_buffer<MedianFilt
    }
 }
 
-void Detector::fillFilteredCloud(const DebugOutputPointCloud::ConstPtr &cloud,
+void Segmenter::fillFilteredCloud(const DebugOutputPointCloud::ConstPtr &cloud,
                                  DebugOutputPointCloud::Ptr filtered_cloud)
 {
    if(cloud->size() != m_filtering_factors.size())
@@ -624,7 +624,7 @@ void Detector::fillFilteredCloud(const DebugOutputPointCloud::ConstPtr &cloud,
          output_point.x = cloud_transformed->points[point_index].x * m_filtering_factors[point_index];
          output_point.y = cloud_transformed->points[point_index].y * m_filtering_factors[point_index];
          output_point.z = cloud_transformed->points[point_index].z * m_filtering_factors[point_index];
-         output_point.detection = cloud_transformed->points[point_index].detection;
+         output_point.segmentation = cloud_transformed->points[point_index].segmentation;
          output_point.ring = cloud_transformed->points[point_index].ring;
 
          filtered_cloud->push_back(output_point);
@@ -633,7 +633,7 @@ void Detector::fillFilteredCloud(const DebugOutputPointCloud::ConstPtr &cloud,
    m_filtering_factors.clear();
 }
 
-void Detector::plot()
+void Segmenter::plot()
 {
    // set up x-axis
    double epsilon = 0.00000001;
@@ -686,4 +686,4 @@ void Detector::plot()
    m_plotter->spinOnce(0);
 }
 
-} // namespace laser_object_detector
+} // namespace laser_segmentation

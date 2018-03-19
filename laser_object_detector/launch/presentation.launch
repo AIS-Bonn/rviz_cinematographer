@@ -89,9 +89,9 @@
 
 
   <!-- ============= Object Detection =============  -->
-  <!--<include file="$(find laser_object_detector)/launch/wrench_detector_nodelet.launch"/>-->
-  <!--<include file="$(find laser_object_detector)/launch/panel_detector_nodelet.launch"/>-->
-  <include file="$(find laser_object_detector)/launch/object_detector_nodelet.launch">
+  <!--<include file="$(find laser_segmentation)/launch/wrench_detector_nodelet.launch"/>-->
+  <!--<include file="$(find laser_segmentation)/launch/panel_detector_nodelet.launch"/>-->
+  <include file="$(find laser_segmentation)/launch/object_detector_nodelet.launch">
     <arg name="start_as_nodelet" value="true"/>
 
     <arg name="manager" value="velodyne_nodelet_manager" />

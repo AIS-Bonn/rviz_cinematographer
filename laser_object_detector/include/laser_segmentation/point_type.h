@@ -38,15 +38,15 @@
 
 namespace velodyne_pointcloud
 {
-   /** Euclidean Velodyne coordinate, including intensity, ring number and detection features. */
-   struct PointXYZIRDetection
+   /** Euclidean Velodyne coordinate, including intensity, ring number and segmentation features. */
+   struct PointXYZIRSegmentation
    {
       PCL_ADD_POINT4D;                    // quad-word XYZ
       float    intensity;                 // laser intensity reading
       uint16_t ring;                      // laser ring number
-      float detection;                    // detection probability
-      float detection_distance; 		      // debug info distance
-      float detection_intensity;          // debug info intensity
+      float segmentation;                 // segmentation probability
+      float segmentation_distance; 		    // debug info distance
+      float segmentation_intensity;       // debug info intensity
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
    } EIGEN_ALIGN16;
 
@@ -60,25 +60,25 @@ namespace velodyne_pointcloud
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
    } EIGEN_ALIGN16;
 
-   /** Euclidean Velodyne coordinate + object detection value. */
-   struct PointXYZDetection
+   /** Euclidean Velodyne coordinate + object segmentation value. */
+   struct PointXYZSegmentation
    {
       PCL_ADD_POINT4D;                    // quad-word XYZ
-      float detection;                    // detection probability
+      float segmentation;                 // segmentation probability
       uint16_t ring;                      ///< laser ring number
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
    } EIGEN_ALIGN16;
 }; // namespace velodyne_pointcloud
 
-POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZIRDetection,
+POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZIRSegmentation,
                                   (float, x, x)
                                   (float, y, y)
                                   (float, z, z)
                                   (float, intensity, intensity)
                                   (uint16_t, ring, ring)
-                                  (float, detection, detection)
-                                  (float, detection_distance, detection_distance)
-                                  (float, detection_intensity, detection_intensity)
+                                  (float, segmentation, segmentation)
+                                  (float, segmentation_distance, segmentation_distance)
+                                  (float, segmentation_intensity, segmentation_intensity)
 )
 
 POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZIDR,
@@ -90,11 +90,11 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZIDR,
                                   (uint16_t, ring, ring)
 )
 
-POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZDetection,
+POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZSegmentation,
                                   (float, x, x)
                                   (float, y, y)
                                   (float, z, z)
-                                  (float, detection, detection)
+                                  (float, segmentation, segmentation)
                                   (uint16_t, ring, ring)
 )
 

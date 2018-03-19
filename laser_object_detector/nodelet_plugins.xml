@@ -1,7 +1,7 @@
-<library path="lib/liblaser_object_detector_nodelet">
-  <class name="laser_object_detector/laser_object_detector_nodelet" type="laser_object_detector::LaserObjectDetectorNodelet" base_class_type="nodelet::Nodelet">
+<library path="lib/liblaser_segmentation_nodelet">
+  <class name="laser_segmentation/laser_segmentation_nodelet" type="laser_segmentation::LaserSegmenterNodelet" base_class_type="nodelet::Nodelet">
   <description>
-    Detect small objects in laser data for the MBZIRC challenge
+    Segment objects by width in laser range data
   </description>
   </class>
 </library>
