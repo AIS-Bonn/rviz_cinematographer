@@ -104,7 +104,7 @@
       <arg name="map_cell_capacity" value="5000" />-->
     </include>
 
-    <!-- ============= Object Segmenter============= -->
+    <!-- ============= Object Segmentation =============
     <include file="$(find object_clustering)/launch/object_clustering.launch">
       <arg name="start_as_nodelet" value="true"/>
       <arg name="input_topic" value="/laser_segmenter_objects"/>
@@ -120,7 +120,7 @@
       <arg name="geofencing_max_x" value="200.0" />
       <arg name="geofencing_min_y" value="-200.0" />
       <arg name="geofencing_max_y" value="200.0" />
-    </include>
+    </include>-->
 
   </group>
 </launch>

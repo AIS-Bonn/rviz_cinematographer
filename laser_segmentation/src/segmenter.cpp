@@ -542,42 +542,40 @@ void Segmenter::segmentObstacles(std::shared_ptr<boost::circular_buffer<MedianFi
 
       float certainty_value = computeCertainty(-difference_distances, difference_intensities);
 
-      if(certainty_value >= m_certainty_threshold())
+      const auto& current_point = (*median_it).point;
+
+      OutputPoint output_point;
+      output_point.x = current_point.x;
+      output_point.y = current_point.y;
+      output_point.z = current_point.z;
+      output_point.ring = current_point.ring;
+      output_point.segmentation = (certainty_value <= m_certainty_threshold()) ? 0 : 1;
+      obstacle_cloud->push_back(output_point);
+
+      if(m_publish_debug_clouds)
       {
-         const auto& current_point = (*median_it).point;
+        DebugOutputPoint debug_output_point;
 
-         OutputPoint output_point;
-         output_point.x = current_point.x;
-         output_point.y = current_point.y;
-         output_point.z = current_point.z;
-         output_point.ring = current_point.ring;
-         output_point.segmentation = certainty_value;
-         obstacle_cloud->push_back(output_point);
+        debug_output_point.x = current_point.x;
+        debug_output_point.y = current_point.y;
+        debug_output_point.z = current_point.z;
+        debug_output_point.intensity = current_point.intensity;
+        debug_output_point.ring = current_point.ring;
 
-         if(m_publish_debug_clouds)
-         {
-            DebugOutputPoint debug_output_point;
-            
-            debug_output_point.x = current_point.x;
-            debug_output_point.y = current_point.y;
-            debug_output_point.z = current_point.z;
-            debug_output_point.intensity = current_point.intensity;
-            debug_output_point.ring = current_point.ring;
-            
-            debug_output_point.segmentation_distance = difference_distances;
-            debug_output_point.segmentation_intensity = difference_intensities;
-            debug_output_point.segmentation = certainty_value;
-            
-            debug_obstacle_cloud->push_back(debug_output_point);
-            
-            // save factors for median filtered cloud 
-            float factor = 1.f;
-            if(!std::isnan((*median_it).dist_small_kernel) && !std::isnan(current_point.distance))
-               factor = (*median_it).dist_small_kernel / current_point.distance;
+        debug_output_point.segmentation_distance = difference_distances;
+        debug_output_point.segmentation_intensity = difference_intensities;
+        debug_output_point.segmentation = certainty_value;
 
-            m_filtering_factors.push_back(factor);
-         }
+        debug_obstacle_cloud->push_back(debug_output_point);
+
+        // save factors for median filtered cloud
+        float factor = 1.f;
+        if(!std::isnan((*median_it).dist_small_kernel) && !std::isnan(current_point.distance))
+           factor = (*median_it).dist_small_kernel / current_point.distance;
+
+        m_filtering_factors.push_back(factor);
       }
+
    }
 }
 

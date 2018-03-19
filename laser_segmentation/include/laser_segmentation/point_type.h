@@ -60,11 +60,11 @@ namespace velodyne_pointcloud
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
    } EIGEN_ALIGN16;
 
-   /** Euclidean Velodyne coordinate + object segmentation value. */
+   /** Euclidean Velodyne coordinate + object segmentation flag. */
    struct PointXYZSegmentation
    {
       PCL_ADD_POINT4D;                    // quad-word XYZ
-      float segmentation;                 // segmentation probability
+      uint8_t segmentation;               // segmentation flag
       uint16_t ring;                      ///< laser ring number
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
    } EIGEN_ALIGN16;
@@ -94,7 +94,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZSegmentation,
                                   (float, x, x)
                                   (float, y, y)
                                   (float, z, z)
-                                  (float, segmentation, segmentation)
+                                  (uint8_t, segmentation, segmentation)
                                   (uint16_t, ring, ring)
 )
 
