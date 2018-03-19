@@ -1,7 +1,0 @@
-<library path="lib/libdetection_height_mapper_nodelet">
-  <class name="detection_height_mapper/detection_height_mapper_nodelet" type="detection_height_mapper::DetectionHeightMapperNodelet" base_class_type="nodelet::Nodelet">
-  <description>
-    Create a 2D map with height encoded in green and detections encoded in red
-  </description>
-  </class>
-</library>

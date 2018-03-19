@@ -1,0 +1,8 @@
+*/cmake-build-debug/
+cmake-build-debug/
+.idea
+*/.idea/
+*~
+*.directory
+*.kdev4
+*.orig

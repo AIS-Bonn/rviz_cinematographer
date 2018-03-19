@@ -1,3 +1,0 @@
-uint32 id
-float32 detection_certainty
-geometry_msgs/PointStamped position
