@@ -50,6 +50,12 @@ private:
   std::string m_fixed_frame;
   std::string m_input_topic;
 
+	bool transformCloud(InputPointCloud::Ptr& cloud, std::string target_frame);
+	bool euclideanClustering(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+													 std::vector<pcl::PointIndices>& cluster_indices,
+													 float cluster_tolerance,
+													 int min_cluster_size,
+													 int max_cluster_size);
 	void handleCloud(const InputPointCloud::ConstPtr& segmentation);
 };
 

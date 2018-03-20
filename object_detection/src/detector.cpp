@@ -73,6 +73,72 @@ Detector::~Detector()
 {
 }
 
+bool Detector::transformCloud(InputPointCloud::Ptr& cloud, std::string target_frame)
+{
+  ros::Time stamp = pcl_conversions::fromPCL(cloud->header.stamp);
+
+  Eigen::Affine3f transform;
+  {
+    if(!m_tf.waitForTransform(target_frame, cloud->header.frame_id, stamp, ros::Duration(0.5)))
+    {
+      ROS_ERROR_STREAM("Object_detection: Could not wait for transform from cloud frame to frame " << target_frame);
+      return false;
+    }
+
+    tf::StampedTransform transformTF;
+    try
+    {
+      m_tf.lookupTransform(target_frame, cloud->header.frame_id, stamp, transformTF);
+    }
+    catch(tf::TransformException& e)
+    {
+      ROS_ERROR("Object_detection: Could not lookup transform to frame: '%s'", e.what());
+      return false;
+    }
+
+    Eigen::Affine3d transform_double;
+    tf::transformTFToEigen(transformTF, transform_double);
+    transform = transform_double.cast<float>();
+  }
+
+  InputPointCloud::Ptr cloud_transformed(new InputPointCloud);
+  pcl::transformPointCloud(*cloud, *cloud_transformed, transform);
+  cloud_transformed->header = cloud->header;
+  cloud_transformed->header.frame_id = target_frame;
+
+  cloud.swap(cloud_transformed);
+
+  return true;
+}
+
+bool Detector::euclideanClustering(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+                                   std::vector<pcl::PointIndices>& cluster_indices,
+                                   float cluster_tolerance,
+                                   int min_cluster_size,
+                                   int max_cluster_size)
+{
+  try
+  {
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+    tree->setInputCloud(cloud);
+
+    pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+    ec.setClusterTolerance(cluster_tolerance); // in m
+    ec.setMinClusterSize(min_cluster_size);
+    ec.setMaxClusterSize(max_cluster_size);
+    ec.setSearchMethod(tree);
+    ec.setInputCloud(cloud);
+    ec.extract(cluster_indices);
+  }
+  catch(...)
+  {
+    ROS_ERROR("Object_detection: Clustering failed.");
+    return false;
+  }
+
+  ROS_DEBUG_STREAM("Object_detector: Number of found clusters is " << cluster_indices.size() << ". ");
+  return true;
+}
 
 void Detector::handleCloud(const InputPointCloud::ConstPtr& input_cloud)
 {
@@ -107,78 +173,33 @@ void Detector::handleCloud(const InputPointCloud::ConstPtr& input_cloud)
     ROS_DEBUG("Object_detection: No positive segmentation points left for detection");
     return;
   }
-  
-  // TODO: extract to own function "transformCloud(cloud_ptr, target_frame)"
-  ros::Time stamp = pcl_conversions::fromPCL(segments_cloud->header.stamp);
-  
-	Eigen::Affine3f transform;
-	{
-		if(!m_tf.waitForTransform(m_fixed_frame, segments_cloud->header.frame_id, stamp, ros::Duration(0.5)))
-		{
-			ROS_ERROR_STREAM("Object_detection: Could not wait for transform from cloud frame to frame " << m_fixed_frame);
-			return;
-		}
 
-		tf::StampedTransform transformTF;
-		try
-		{
-			m_tf.lookupTransform(m_fixed_frame, segments_cloud->header.frame_id, stamp, transformTF);
-		}
-		catch(tf::TransformException& e)
-		{
-			ROS_ERROR("Object_detection: Could not lookup transform to frame: '%s'", e.what());
-			return;
-		}
-
-		Eigen::Affine3d transform_double;
-		tf::transformTFToEigen(transformTF, transform_double);
-		transform = transform_double.cast<float>();
-	}
-
-	InputPointCloud::Ptr segments_cloud_transformed(new InputPointCloud);
-	pcl::transformPointCloud(*segments_cloud, *segments_cloud_transformed, transform);
-  segments_cloud_transformed->header = segments_cloud->header;
-  segments_cloud_transformed->header.frame_id = m_fixed_frame;
-
+  // transform cloud to fixed frame
+  if(!transformCloud(segments_cloud, m_fixed_frame))
+    return;
 
   // workaround for usage with nodelet
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  pcl::copyPointCloud(*segments_cloud_transformed, *cloud_xyz);
+  pcl::copyPointCloud(*segments_cloud, *cloud_xyz);
   
-  if(segments_cloud_transformed->size() != cloud_xyz->size())
+  if(segments_cloud->size() != cloud_xyz->size())
     ROS_WARN_STREAM("Object_detection: cloud sizes do not match after copy.");
 
   // Cluster segments by distance
   std::vector<pcl::PointIndices> cluster_indices;
-  try{
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
-    tree->setInputCloud(cloud_xyz);
-  
-    pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-    ec.setClusterTolerance(m_cluster_tolerance()); // in m
-    ec.setMinClusterSize(m_min_cluster_size());
-    ec.setMaxClusterSize(m_max_cluster_size());
-    ec.setSearchMethod(tree);
-    ec.setInputCloud(cloud_xyz);
-    ec.extract(cluster_indices);
-  }
-  catch(...)
-  {
-    ROS_ERROR("Object_detection: Clustering failed.");
+  if(!euclideanClustering(cloud_xyz, cluster_indices, m_cluster_tolerance(), m_min_cluster_size(), m_max_cluster_size()))
     return;
-  }
-  
-  ROS_DEBUG_STREAM("Object_detector: Number of found clusters is " << cluster_indices.size() << ". ");
-  
+
   visualization_msgs::MarkerArray marker_array;
-  
+
   geometry_msgs::PoseArray pose_msgs;
-  pose_msgs.header.frame_id = segments_cloud_transformed->header.frame_id;
-  pose_msgs.header.stamp = stamp;
+  pose_msgs.header.frame_id = segments_cloud->header.frame_id;
+  pose_msgs.header.stamp = pcl_conversions::fromPCL(segments_cloud->header.stamp);
 
   // filter clusters and publish as marker array
   for(std::size_t i = 0; i < cluster_indices.size(); ++i)
 	{
+    // TODO:: extract to own function getClusterProperties or size or so 
 		Eigen::Vector3f mean = Eigen::Vector3f::Zero();
 		Eigen::Array3f min = Eigen::Array3f::Constant(std::numeric_limits<float>::max());
 		Eigen::Array3f max = Eigen::Array3f::Constant(-std::numeric_limits<float>::max());
@@ -210,8 +231,8 @@ void Detector::handleCloud(const InputPointCloud::ConstPtr& input_cloud)
 		mean /= cluster_indices[i].indices.size();
 
     visualization_msgs::Marker marker;
-    marker.header.frame_id = segments_cloud_transformed->header.frame_id;
-    marker.header.stamp = stamp;
+    marker.header.frame_id = segments_cloud->header.frame_id;
+    marker.header.stamp = pcl_conversions::fromPCL(segments_cloud->header.stamp);
     marker.ns = "object_detector_namespace";
     marker.id = i;
     marker.type = visualization_msgs::Marker::CYLINDER;

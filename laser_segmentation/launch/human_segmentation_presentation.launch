@@ -106,7 +106,7 @@
 
     <!-- ============= Object Segmentation ============= -->
     <include file="$(find object_detection)/launch/object_detection.launch">
-      <arg name="start_as_nodelet" value="true"/>
+      <arg name="start_as_nodelet" value="false"/>
       <arg name="input_topic" value="/laser_segmenter_objects"/>
       <arg name="fixed_frame" value="world"/>
 
