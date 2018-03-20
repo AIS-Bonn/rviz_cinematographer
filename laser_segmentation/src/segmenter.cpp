@@ -548,8 +548,7 @@ void Segmenter::segmentObstacles(std::shared_ptr<boost::circular_buffer<MedianFi
       output_point.x = current_point.x;
       output_point.y = current_point.y;
       output_point.z = current_point.z;
-      output_point.ring = current_point.ring;
-      output_point.segmentation = (certainty_value <= m_certainty_threshold()) ? 0 : 1;
+      output_point.segment = (certainty_value < m_certainty_threshold()) ? 0 : 1;
       obstacle_cloud->push_back(output_point);
 
       if(m_publish_debug_clouds)

@@ -54,8 +54,8 @@ namespace velodyne_pointcloud
    struct PointXYZIDR
    {
       PCL_ADD_POINT4D;                    // quad-word XYZ
-      float    intensity;                 ///< laser intensity reading
-      float    distance;                  ///< distance of point to sensor
+      float intensity;                    ///< laser intensity reading
+      float distance;                     ///< distance of point to sensor
       uint16_t ring;                      ///< laser ring number
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
    } EIGEN_ALIGN16;
@@ -68,6 +68,17 @@ namespace velodyne_pointcloud
       uint16_t ring;                      ///< laser ring number
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
    } EIGEN_ALIGN16;
+
+   /** Euclidean Velodyne coordinate + scan_line_id and scan_id for mrs_mapping + segment flag. */
+   struct PointXYZIdsSegment
+   {
+      PCL_ADD_POINT4D;
+      uint32_t scan_line_id;
+      uint16_t scan_id;
+      uint8_t segment;
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+   } EIGEN_ALIGN16;
+
 }; // namespace velodyne_pointcloud
 
 POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZIRSegmentation,
@@ -96,6 +107,15 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZSegmentation,
                                   (float, z, z)
                                   (uint8_t, segmentation, segmentation)
                                   (uint16_t, ring, ring)
+)
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_pointcloud::PointXYZIdsSegment,
+                                 (float, x, x)
+                                 (float, y, y)
+                                 (float, z, z)
+                                 (uint32_t, scan_line_id, scan_line_id)
+                                 (uint16_t, scan_id, scan_id)
+                                 (uint8_t, segment, segment)
 )
 
 #endif // __VELODYNE_POINTCLOUD_POINT_TYPES_H

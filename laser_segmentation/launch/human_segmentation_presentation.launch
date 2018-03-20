@@ -72,7 +72,7 @@
     <arg name="circular_buffer_capacity" value="6000" />
     <arg name="angle_between_scanpoints" value="0.2" />
 
-    <arg name="certainty_threshold" value="0.0" />
+    <arg name="certainty_threshold" value="0.8" />
     <arg name="dist_weight" value="1" />
     <arg name="intensity_weight" value="1" />
     <arg name="object_size_in_m" value="0.1" />

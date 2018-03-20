@@ -49,14 +49,15 @@ public:
    typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudRGB;
    typedef pcl::PointCloud<pcl::PointXYZI> PointCloudIntensity;
 
-   typedef velodyne_pointcloud::PointXYZIDR           PointVelodyneWithDist;
+   typedef velodyne_pointcloud::PointXYZIDR              PointVelodyneWithDist;
    typedef velodyne_pointcloud::PointXYZIRSegmentation   PointVelodyneWithSegmentation;
    typedef velodyne_pointcloud::PointXYZSegmentation     PointWithSegmentation;
+   typedef velodyne_pointcloud::PointXYZIdsSegment       PointWithSegmentAndIds;
 
 
    typedef PointVelodyneWithDist                      InputPoint;
-   typedef PointVelodyneWithSegmentation                 DebugOutputPoint;
-   typedef PointWithSegmentation                         OutputPoint;
+   typedef PointVelodyneWithSegmentation              DebugOutputPoint;
+   typedef PointWithSegmentAndIds                     OutputPoint;
 
    typedef pcl::PointCloud<InputPoint>                InputPointCloud;
    typedef pcl::PointCloud<DebugOutputPoint>          DebugOutputPointCloud;
