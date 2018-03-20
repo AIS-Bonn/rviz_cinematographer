@@ -22,7 +22,7 @@ namespace object_detection
 class Detector
 {
 public:
-	typedef velodyne_pointcloud::PointXYZSegmentation PointWithSegmentation;
+	typedef velodyne_pointcloud::PointXYZIdsSegment PointWithSegmentation;
 
 	typedef PointWithSegmentation 				InputPoint;
 	typedef pcl::PointCloud<InputPoint> 	InputPointCloud;

@@ -95,7 +95,7 @@ void Detector::handleCloud(const InputPointCloud::ConstPtr& input_cloud)
   
   for(const auto& point : *input_cloud)
   {
-    if(point.segmentation < m_min_certainty_thresh())
+    if(point.segment < m_min_certainty_thresh())
       continue;
 
     segments_cloud->push_back(point);
