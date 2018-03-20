@@ -1,7 +1,7 @@
-// Cluster potential objects in point clouds
+// Detect potential objects in point clouds
 // Author: Jan Razlaw <s6jarazl@uni-bonn.de>
 
-#include "clusterer.h"
+#include "detector.h"
 
 #include <pcl_conversions/pcl_conversions.h>
 
@@ -17,28 +17,28 @@
 
 #include <pcl_ros/point_cloud.h>
 
-namespace object_clustering
+namespace object_detection
 {
 
-Clusterer::Clusterer(ros::NodeHandle node, ros::NodeHandle private_nh)
- : m_max_object_height("/object_clustering/max_object_height", 0.01, 0.01, 4.0, 1.8)
-   , m_max_object_width("/object_clustering/max_object_width", 0.01, 0.01, 4.0, 2.0)
-   , m_max_object_altitude("/object_clustering/max_object_altitude", 0.01, 0.01, 4.0, 2.0)
-   , m_min_certainty_thresh("/object_clustering/certainty_thresh", 0.0, 0.01, 1.0, 0.5)
-   , m_cluster_tolerance("/object_clustering/cluster_tolerance_in_m", 0.0, 0.01, 2.0, 1.0)
-   , m_min_cluster_size("/object_clustering/min_cluster_size", 0, 1, 50, 4)
-   , m_max_cluster_size("/object_clustering/max_cluster_size", 0, 1, 50000, 25000)
-   , m_apply_geofencing("/object_clustering/apply_geofencing", false)
-   , m_geofencing_min_x("/object_clustering/geofencing_min_x", -200.0, 0.5, 200.0, -200.0)
-   , m_geofencing_max_x("/object_clustering/geofencing_max_x", -200.0, 0.5, 200.0, 200.0)
-   , m_geofencing_min_y("/object_clustering/geofencing_min_y", -200.0, 0.5, 200.0, -200.0)
-   , m_geofencing_max_y("/object_clustering/geofencing_max_y", -200.0, 0.5, 200.0, 200.0)
-   , m_apply_radius_filter("/object_clustering/apply_radius_filter", true)
-   , m_filter_radius("/object_clustering/filter_radius", 0.0, 0.5, 200.0, 30.0)
+Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
+ : m_max_object_height("/object_detection/max_object_height", 0.01, 0.01, 4.0, 1.8)
+   , m_max_object_width("/object_detection/max_object_width", 0.01, 0.01, 4.0, 2.0)
+   , m_max_object_altitude("/object_detection/max_object_altitude", 0.01, 0.01, 4.0, 2.0)
+   , m_min_certainty_thresh("/object_detection/certainty_thresh", 0.0, 0.01, 1.0, 0.5)
+   , m_cluster_tolerance("/object_detection/cluster_tolerance_in_m", 0.0, 0.01, 2.0, 1.0)
+   , m_min_cluster_size("/object_detection/min_cluster_size", 0, 1, 50, 4)
+   , m_max_cluster_size("/object_detection/max_cluster_size", 0, 1, 50000, 25000)
+   , m_apply_geofencing("/object_detection/apply_geofencing", false)
+   , m_geofencing_min_x("/object_detection/geofencing_min_x", -200.0, 0.5, 200.0, -200.0)
+   , m_geofencing_max_x("/object_detection/geofencing_max_x", -200.0, 0.5, 200.0, 200.0)
+   , m_geofencing_min_y("/object_detection/geofencing_min_y", -200.0, 0.5, 200.0, -200.0)
+   , m_geofencing_max_y("/object_detection/geofencing_max_y", -200.0, 0.5, 200.0, 200.0)
+   , m_apply_radius_filter("/object_detection/apply_radius_filter", true)
+   , m_filter_radius("/object_detection/filter_radius", 0.0, 0.5, 200.0, 30.0)
    , m_fixed_frame("world")
    , m_input_topic("/laser_segmenter_objects")
 {
-	ROS_INFO("init object clusterer...");
+	ROS_INFO("Init object detector...");
 
   float max_object_height;
   if(private_nh.getParam("max_object_height", max_object_height))
@@ -99,24 +99,24 @@ Clusterer::Clusterer(ros::NodeHandle node, ros::NodeHandle private_nh)
   private_nh.getParam("fixed_frame", m_fixed_frame);
   private_nh.getParam("input_topic", m_input_topic);
 
-	m_sub_cloud = node.subscribe(m_input_topic, 1, &Clusterer::handleCloud, this);
+	m_sub_cloud = node.subscribe(m_input_topic, 1, &Detector::handleCloud, this);
   m_pub_filtered_cloud = node.advertise<InputPointCloud>("filtered_cloud", 1);
-	m_pub_pose = node.advertise<geometry_msgs::PoseArray>("object_poses", 1);
-  m_pub_vis_marker = node.advertise<visualization_msgs::MarkerArray>("object_cluster_markers", 1 );
+	m_pub_pose = node.advertise<geometry_msgs::PoseArray>("object_detection_poses", 1);
+  m_pub_vis_marker = node.advertise<visualization_msgs::MarkerArray>("object_detection_markers", 1);
 }
 
-Clusterer::~Clusterer()
+Detector::~Detector()
 {
 }
 
 
-void Clusterer::handleCloud(const InputPointCloud::ConstPtr& segmentation)
+void Detector::handleCloud(const InputPointCloud::ConstPtr& segmentation)
 {
   if(m_pub_filtered_cloud.getNumSubscribers() == 0 &&
      m_pub_pose.getNumSubscribers() == 0 &&
      m_pub_vis_marker.getNumSubscribers() == 0)
   {
-    ROS_DEBUG_STREAM("no subscriber to object_clusterer.");
+    ROS_DEBUG_STREAM("No subscriber to object_detector.");
     return;
   }
   
@@ -140,7 +140,7 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& segmentation)
 
   if(positives->size() == 0)
   {
-    ROS_DEBUG("Object_clusterer: no positive segmentation points left for clustering");
+    ROS_DEBUG("Object_detection: No positive segmentation points left for detection");
     return;
   }
   
@@ -244,7 +244,7 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& segmentation)
 
   if(positives_transformed->size() == 0)
   {
-    ROS_DEBUG("Object_clusterer: no positive segmentation points left for clustering after filtering");
+    ROS_DEBUG("Object_detection: No positive segmentation points left for detection after filtering");
     return;
   }
 
@@ -253,7 +253,7 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& segmentation)
   pcl::copyPointCloud(*positives_transformed, *cloud_xyz);
   
   if(positives_transformed->size() != cloud_xyz->size())
-    ROS_WARN_STREAM("Object clustering: cloud sizes do not match after copy.");
+    ROS_WARN_STREAM("Object_detection: cloud sizes do not match after copy.");
   
   std::vector<pcl::PointIndices> cluster_indices;
   try{
@@ -317,7 +317,7 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& segmentation)
     visualization_msgs::Marker marker;
     marker.header.frame_id = positives_transformed->header.frame_id;
     marker.header.stamp = stamp;
-    marker.ns = "object_clusterer_namespace";
+    marker.ns = "object_detector_namespace";
     marker.id = i;
     marker.type = visualization_msgs::Marker::CYLINDER;
     marker.action = visualization_msgs::Marker::ADD;
@@ -352,7 +352,7 @@ void Clusterer::handleCloud(const InputPointCloud::ConstPtr& segmentation)
   m_pub_vis_marker.publish(marker_array);
   m_pub_pose.publish(pose_msgs);
 
-  ROS_DEBUG_STREAM("Object_clusterer: time for one cloud in ms : " << timer.getTime() );
+  ROS_DEBUG_STREAM("Object_detector: time for one cloud in ms : " << timer.getTime() );
 
 }
 

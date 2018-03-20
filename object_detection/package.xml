@@ -1,6 +1,6 @@
 <package format="2">
-	<name>object_clustering</name>
-	<description>Cluster potential objects in point clouds</description>
+	<name>object_detection</name>
+	<description>Detect potential objects in point clouds</description>
 	<version>0.0.1</version>
 	<license>BSD</license>
 

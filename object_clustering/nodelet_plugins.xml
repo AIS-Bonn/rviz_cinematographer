@@ -1,8 +1,0 @@
-<library path="lib/libobject_clustering_nodelet">
-  <class name="object_clustering/object_clustering_nodelet" type="object_clustering::ObjectClusteringNodelet" base_class_type="nodelet::Nodelet">
-  <description>
-    Cluster potential objects in point clouds
-  </description>
-  </class>
-</library>
-

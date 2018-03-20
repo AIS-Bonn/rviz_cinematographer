@@ -1,4 +1,4 @@
-// Cluster potential objects in point clouds
+// Detect potential objects in point clouds
 // Author: Jan Razlaw <s6jarazl@uni-bonn.de>
 
 #ifndef PANEL_FILTER_H
@@ -16,18 +16,18 @@
 #include <geometry_msgs/PoseArray.h>
 #include <visualization_msgs/MarkerArray.h>
 
-namespace object_clustering
+namespace object_detection
 {
 
-class Clusterer
+class Detector
 {
 public:
 	typedef velodyne_pointcloud::PointXYZSegmentation PointWithSegmentation;
 	typedef PointWithSegmentation InputPoint;
 	typedef pcl::PointCloud<InputPoint> InputPointCloud;
 
-	Clusterer(ros::NodeHandle node, ros::NodeHandle private_nh);
-	virtual ~Clusterer();
+	Detector(ros::NodeHandle node, ros::NodeHandle private_nh);
+	virtual ~Detector();
 
 private:
 	tf::TransformListener m_tf;

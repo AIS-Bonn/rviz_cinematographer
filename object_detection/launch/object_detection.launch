@@ -1,5 +1,5 @@
 <!-- -*- mode: XML -*- -->
-<!-- run object_clustering/ObjectClusteringNodelet in a nodelet manager -->
+<!-- run object_detection/ObjectDetectionNodelet in a nodelet manager -->
 
 <launch>
     <arg name="start_as_nodelet" default="true" />
@@ -26,7 +26,7 @@
     <arg name="apply_radius_filter" default="true" />
     <arg name="filter_radius" default="30.0" />
 
-    <node unless="$(arg start_as_nodelet)" launch-prefix="" pkg="object_clustering" type="object_clustering_node" name="object_clustering"
+    <node unless="$(arg start_as_nodelet)" launch-prefix="" pkg="object_detection" type="object_detection_node" name="object_detection"
           output="screen" >
         <param name="input_topic" value="$(arg input_topic)"/>
         <param name="fixed_frame" value="$(arg fixed_frame)"/>
@@ -50,8 +50,8 @@
         <param name="filter_radius" value="$(arg filter_radius)"/>
     </node>
 
-    <node if="$(arg start_as_nodelet)" pkg="nodelet" type="nodelet" name="object_clustering_nodelet"
-          args="load object_clustering/object_clustering_nodelet $(arg manager)" output="screen" >
+    <node if="$(arg start_as_nodelet)" pkg="nodelet" type="nodelet" name="object_detection_nodelet"
+          args="load object_detection/object_detection_nodelet $(arg manager)" output="screen" >
         <param name="input_topic" value="$(arg input_topic)"/>
         <param name="fixed_frame" value="$(arg fixed_frame)"/>
 

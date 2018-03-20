@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(object_clustering)
+project(object_detection)
 
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
@@ -25,41 +25,41 @@ add_definitions(-DPCL_NO_PRECOMPILE=1)
 
 
 ## Declare a C++ executable
-add_executable(object_clustering_node
-        src/object_clustering_node.cpp
-        src/clusterer.cpp
+add_executable(object_detection_node
+        src/object_detection_node.cpp
+		src/detector.cpp
 )
 
 ## Add cmake target dependencies of the executable
-add_dependencies(object_clustering_node
+add_dependencies(object_detection_node
         ${${PROJECT_NAME}_EXPORTED_TARGETS}
         ${catkin_EXPORTED_TARGETS}
 )
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(object_clustering_node
+target_link_libraries(object_detection_node
         ${catkin_LIBRARIES}
 )
 
-install(TARGETS object_clustering_node
+install(TARGETS object_detection_node
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 ## Declare a C++ library
-add_library(object_clustering_nodelet
-        src/object_clustering_nodelet.cpp
-        src/clusterer.cpp
+add_library(object_detection_nodelet
+        src/object_detection_nodelet.cpp
+		src/detector.cpp
 )
 
-add_dependencies(object_clustering_nodelet
+add_dependencies(object_detection_nodelet
         ${${PROJECT_NAME}_EXPORTED_TARGETS}
         ${catkin_EXPORTED_TARGETS}
 )
 
-target_link_libraries(object_clustering_nodelet
+target_link_libraries(object_detection_nodelet
         ${catkin_LIBRARIES}
 )
 
-install(TARGETS object_clustering_nodelet
+install(TARGETS object_detection_nodelet
         RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
