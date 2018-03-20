@@ -104,23 +104,22 @@
       <arg name="map_cell_capacity" value="5000" />-->
     </include>
 
-    <!-- ============= Object Segmentation =============
+    <!-- ============= Object Segmentation ============= -->
     <include file="$(find object_detection)/launch/object_detection.launch">
       <arg name="start_as_nodelet" value="true"/>
       <arg name="input_topic" value="/laser_segmenter_objects"/>
       <arg name="fixed_frame" value="world"/>
-      <arg name="max_object_height" value="2.0" />
-      <arg name="max_object_width" value="1.8" />
-      <arg name="max_object_altitude" value="0.3" />
-      <arg name="certainty_thresh" value="0.66" />
+
+      <arg name="certainty_thresh" value="0.5" />
+
       <arg name="cluster_tolerance" value="1.5" />
       <arg name="min_cluster_size" value="5" />
       <arg name="max_cluster_size" value="25000" />
-      <arg name="geofencing_min_x" value="-200.0" />
-      <arg name="geofencing_max_x" value="200.0" />
-      <arg name="geofencing_min_y" value="-200.0" />
-      <arg name="geofencing_max_y" value="200.0" />
-    </include>-->
+
+      <arg name="max_object_height" value="2.0" />
+      <arg name="max_object_width" value="1.8" />
+      <arg name="max_object_altitude" value="0.3" />
+    </include>
 
   </group>
 </launch>

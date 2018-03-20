@@ -21,36 +21,17 @@ namespace object_detection
 {
 
 Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
- : m_max_object_height("/object_detection/max_object_height", 0.01, 0.01, 4.0, 1.8)
-   , m_max_object_width("/object_detection/max_object_width", 0.01, 0.01, 4.0, 2.0)
-   , m_max_object_altitude("/object_detection/max_object_altitude", 0.01, 0.01, 4.0, 2.0)
-   , m_min_certainty_thresh("/object_detection/certainty_thresh", 0.0, 0.01, 1.0, 0.5)
+ : m_min_certainty_thresh("/object_detection/certainty_thresh", 0.0, 0.01, 1.0, 0.5)
    , m_cluster_tolerance("/object_detection/cluster_tolerance_in_m", 0.0, 0.01, 2.0, 1.0)
    , m_min_cluster_size("/object_detection/min_cluster_size", 0, 1, 50, 4)
    , m_max_cluster_size("/object_detection/max_cluster_size", 0, 1, 50000, 25000)
-   , m_apply_geofencing("/object_detection/apply_geofencing", false)
-   , m_geofencing_min_x("/object_detection/geofencing_min_x", -200.0, 0.5, 200.0, -200.0)
-   , m_geofencing_max_x("/object_detection/geofencing_max_x", -200.0, 0.5, 200.0, 200.0)
-   , m_geofencing_min_y("/object_detection/geofencing_min_y", -200.0, 0.5, 200.0, -200.0)
-   , m_geofencing_max_y("/object_detection/geofencing_max_y", -200.0, 0.5, 200.0, 200.0)
-   , m_apply_radius_filter("/object_detection/apply_radius_filter", true)
-   , m_filter_radius("/object_detection/filter_radius", 0.0, 0.5, 200.0, 30.0)
+   , m_max_object_height("/object_detection/max_object_height", 0.01, 0.01, 4.0, 1.8)
+   , m_max_object_width("/object_detection/max_object_width", 0.01, 0.01, 4.0, 2.0)
+   , m_max_object_altitude("/object_detection/max_object_altitude", 0.01, 0.01, 4.0, 2.0)
    , m_fixed_frame("world")
    , m_input_topic("/laser_segmenter_objects")
 {
-	ROS_INFO("Init object detector...");
-
-  float max_object_height;
-  if(private_nh.getParam("max_object_height", max_object_height))
-    m_max_object_height.set(max_object_height);
-  
-  float max_object_width;
-  if(private_nh.getParam("max_object_width", max_object_width))
-    m_max_object_width.set(max_object_width);
-  
-  float max_object_altitude;
-  if(private_nh.getParam("max_object_altitude", max_object_altitude))
-    m_max_object_altitude.set(max_object_altitude);
+	ROS_INFO("Object_detector: Init...");
   
   float certainty_thresh;
   if(private_nh.getParam("certainty_thresh", certainty_thresh))
@@ -68,39 +49,22 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
   if(private_nh.getParam("max_cluster_size", max_cluster_size))
     m_max_cluster_size.set(max_cluster_size);
 
-  bool apply_geofencing;
-  if(private_nh.getParam("apply_geofencing", apply_geofencing))
-    m_apply_geofencing.set(apply_geofencing);
-  
-  float geofencing_min_x;
-  if(private_nh.getParam("geofencing_min_x", geofencing_min_x))
-    m_geofencing_min_x.set(geofencing_min_x);
+  float max_object_height;
+  if(private_nh.getParam("max_object_height", max_object_height))
+    m_max_object_height.set(max_object_height);
 
-  float geofencing_max_x;
-   if(private_nh.getParam("geofencing_max_x", geofencing_max_x))
-      m_geofencing_max_x.set(geofencing_max_x);
+  float max_object_width;
+  if(private_nh.getParam("max_object_width", max_object_width))
+    m_max_object_width.set(max_object_width);
 
-  float geofencing_min_y;
-  if(private_nh.getParam("geofencing_min_y", geofencing_min_y))
-    m_geofencing_min_y.set(geofencing_min_y);
-  
-  float geofencing_max_y;
-  if(private_nh.getParam("geofencing_max_y", geofencing_max_y))
-    m_geofencing_max_y.set(geofencing_max_y);
-
-  bool apply_radius_filter;
-  if(private_nh.getParam("apply_radius_filter", apply_radius_filter))
-    m_apply_radius_filter.set(apply_radius_filter);
-
-  float filter_radius;
-  if(private_nh.getParam("filter_radius", filter_radius))
-    m_filter_radius.set(filter_radius);
+  float max_object_altitude;
+  if(private_nh.getParam("max_object_altitude", max_object_altitude))
+    m_max_object_altitude.set(max_object_altitude);
 
   private_nh.getParam("fixed_frame", m_fixed_frame);
   private_nh.getParam("input_topic", m_input_topic);
 
 	m_sub_cloud = node.subscribe(m_input_topic, 1, &Detector::handleCloud, this);
-  m_pub_filtered_cloud = node.advertise<InputPointCloud>("filtered_cloud", 1);
 	m_pub_pose = node.advertise<geometry_msgs::PoseArray>("object_detection_poses", 1);
   m_pub_vis_marker = node.advertise<visualization_msgs::MarkerArray>("object_detection_markers", 1);
 }
@@ -110,59 +74,59 @@ Detector::~Detector()
 }
 
 
-void Detector::handleCloud(const InputPointCloud::ConstPtr& segmentation)
+void Detector::handleCloud(const InputPointCloud::ConstPtr& input_cloud)
 {
-  if(m_pub_filtered_cloud.getNumSubscribers() == 0 &&
-     m_pub_pose.getNumSubscribers() == 0 &&
+  // start when subscribers are available
+  if(m_pub_pose.getNumSubscribers() == 0 &&
      m_pub_vis_marker.getNumSubscribers() == 0)
   {
-    ROS_DEBUG_STREAM("No subscriber to object_detector.");
+    ROS_DEBUG_STREAM("Object_detector: No subscriber.");
     return;
   }
   
-  if(segmentation->size() == 0)
-      return;
+  if(input_cloud->size() == 0)
+    return;
 
   pcl::StopWatch timer;
 
-  InputPointCloud::Ptr positives(new InputPointCloud);
-  positives->header = segmentation->header;
+  // filter out background points
+  InputPointCloud::Ptr segments_cloud(new InputPointCloud);
+  segments_cloud->header = input_cloud->header;
   
-  for(const auto& point : *segmentation)
+  for(const auto& point : *input_cloud)
   {
-    // Segmentation filter
     if(point.segmentation < m_min_certainty_thresh())
       continue;
 
-    positives->push_back(point);
+    segments_cloud->push_back(point);
   }
-  ROS_DEBUG("positives: %lu ", positives->size());
+  ROS_DEBUG("Object_detector: segments_cloud size is %lu ", segments_cloud->size());
 
-  if(positives->size() == 0)
+  if(segments_cloud->size() == 0)
   {
     ROS_DEBUG("Object_detection: No positive segmentation points left for detection");
     return;
   }
   
-  
-  ros::Time stamp = pcl_conversions::fromPCL(segmentation->header.stamp);
+  // TODO: extract to own function "transformCloud(cloud_ptr, target_frame)"
+  ros::Time stamp = pcl_conversions::fromPCL(segments_cloud->header.stamp);
   
 	Eigen::Affine3f transform;
 	{
-		if(!m_tf.waitForTransform(m_fixed_frame, segmentation->header.frame_id, stamp, ros::Duration(0.5)))
+		if(!m_tf.waitForTransform(m_fixed_frame, segments_cloud->header.frame_id, stamp, ros::Duration(0.5)))
 		{
-			ROS_ERROR_STREAM("Could not wait for transform to frame " << m_fixed_frame);
+			ROS_ERROR_STREAM("Object_detection: Could not wait for transform from cloud frame to frame " << m_fixed_frame);
 			return;
 		}
 
 		tf::StampedTransform transformTF;
 		try
 		{
-			m_tf.lookupTransform(m_fixed_frame, segmentation->header.frame_id, stamp, transformTF);
+			m_tf.lookupTransform(m_fixed_frame, segments_cloud->header.frame_id, stamp, transformTF);
 		}
 		catch(tf::TransformException& e)
 		{
-			ROS_ERROR("Could not lookup transform to frame: '%s'", e.what());
+			ROS_ERROR("Object_detection: Could not lookup transform to frame: '%s'", e.what());
 			return;
 		}
 
@@ -171,118 +135,48 @@ void Detector::handleCloud(const InputPointCloud::ConstPtr& segmentation)
 		transform = transform_double.cast<float>();
 	}
 
-	InputPointCloud::Ptr positives_transformed(new InputPointCloud);
-	pcl::transformPointCloud(*positives, *positives_transformed, transform);
-  positives_transformed->header = segmentation->header;
-  positives_transformed->header.frame_id = m_fixed_frame;
+	InputPointCloud::Ptr segments_cloud_transformed(new InputPointCloud);
+	pcl::transformPointCloud(*segments_cloud, *segments_cloud_transformed, transform);
+  segments_cloud_transformed->header = segments_cloud->header;
+  segments_cloud_transformed->header.frame_id = m_fixed_frame;
 
-  InputPointCloud::Ptr filtered(new InputPointCloud);
-  filtered->header = segmentation->header;
-  filtered->header.frame_id = m_fixed_frame;
-
-  if(m_apply_geofencing())
-  {
-    for(const auto& point : *positives_transformed)
-    {
-      // Field filter
-      if(point.x > m_geofencing_max_x() || point.x < m_geofencing_min_x() ||
-         point.y > m_geofencing_max_y() || point.y < m_geofencing_min_y())
-        continue;
-
-      filtered->push_back(point);
-    }
-
-    filtered.swap(positives_transformed);
-  }
-
-  if(m_apply_radius_filter())
-  {
-    Eigen::Vector3f base_link_transform;
-    {
-      if(!m_tf.waitForTransform(m_fixed_frame, "base_link", stamp, ros::Duration(0.5)))
-      {
-        ROS_ERROR_STREAM("Could not wait for transform to base_link");
-        return;
-      }
-
-      tf::StampedTransform transformTF;
-      try
-      {
-        m_tf.lookupTransform(m_fixed_frame, "base_link", stamp, transformTF);
-      }
-      catch(tf::TransformException& e)
-      {
-        ROS_ERROR("Could not lookup transform to frame: '%s'", e.what());
-        return;
-      }
-
-      Eigen::Vector3d transform_double;
-      tf::vectorTFToEigen(transformTF.getOrigin(), transform_double );
-      base_link_transform = transform_double.cast<float>();
-    }
-
-    InputPointCloud::Ptr radius_filtered(new InputPointCloud);
-    radius_filtered->header = segmentation->header;
-    radius_filtered->header.frame_id = m_fixed_frame;
-
-    for(const auto& point : *positives_transformed)
-    {
-      Eigen::Vector3f point_vec = point.getVector3fMap();
-      double dist = (base_link_transform - point_vec).norm();
-
-      if( dist > m_filter_radius() ){
-        continue;
-      }
-
-      radius_filtered->push_back(point);
-    }
-
-    radius_filtered.swap(positives_transformed);
-  }
-
-  m_pub_filtered_cloud.publish(positives_transformed);
-
-  if(positives_transformed->size() == 0)
-  {
-    ROS_DEBUG("Object_detection: No positive segmentation points left for detection after filtering");
-    return;
-  }
 
   // workaround for usage with nodelet
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  pcl::copyPointCloud(*positives_transformed, *cloud_xyz);
+  pcl::copyPointCloud(*segments_cloud_transformed, *cloud_xyz);
   
-  if(positives_transformed->size() != cloud_xyz->size())
+  if(segments_cloud_transformed->size() != cloud_xyz->size())
     ROS_WARN_STREAM("Object_detection: cloud sizes do not match after copy.");
-  
+
+  // Cluster segments by distance
   std::vector<pcl::PointIndices> cluster_indices;
   try{
-    // Creating the KdTree object for the search method of the extraction
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
     tree->setInputCloud(cloud_xyz);
   
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-    ec.setClusterTolerance (m_cluster_tolerance()); // in m
-    ec.setMinClusterSize (m_min_cluster_size());
-    ec.setMaxClusterSize (m_max_cluster_size());
-    ec.setSearchMethod (tree);
+    ec.setClusterTolerance(m_cluster_tolerance()); // in m
+    ec.setMinClusterSize(m_min_cluster_size());
+    ec.setMaxClusterSize(m_max_cluster_size());
+    ec.setSearchMethod(tree);
     ec.setInputCloud(cloud_xyz);
     ec.extract(cluster_indices);
   }
   catch(...)
   {
-    ROS_ERROR(" extraction failed ");
+    ROS_ERROR("Object_detection: Clustering failed.");
     return;
   }
   
-  ROS_DEBUG_STREAM("Number of found clusters is " << cluster_indices.size() << ". ");
+  ROS_DEBUG_STREAM("Object_detector: Number of found clusters is " << cluster_indices.size() << ". ");
   
   visualization_msgs::MarkerArray marker_array;
   
   geometry_msgs::PoseArray pose_msgs;
-  pose_msgs.header.frame_id = positives_transformed->header.frame_id;
+  pose_msgs.header.frame_id = segments_cloud_transformed->header.frame_id;
   pose_msgs.header.stamp = stamp;
-  
+
+  // filter clusters and publish as marker array
   for(std::size_t i = 0; i < cluster_indices.size(); ++i)
 	{
 		Eigen::Vector3f mean = Eigen::Vector3f::Zero();
@@ -304,8 +198,9 @@ void Detector::handleCloud(const InputPointCloud::ConstPtr& segmentation)
 		Eigen::Vector3f size = max.matrix() - min.matrix();
 
     if(min.z() > m_max_object_altitude())
-       continue;
+      continue;
 
+    // TODO: add min object height
 		if(size.z() > m_max_object_height())
 			continue;
 
@@ -315,7 +210,7 @@ void Detector::handleCloud(const InputPointCloud::ConstPtr& segmentation)
 		mean /= cluster_indices[i].indices.size();
 
     visualization_msgs::Marker marker;
-    marker.header.frame_id = positives_transformed->header.frame_id;
+    marker.header.frame_id = segments_cloud_transformed->header.frame_id;
     marker.header.stamp = stamp;
     marker.ns = "object_detector_namespace";
     marker.id = i;
@@ -347,13 +242,12 @@ void Detector::handleCloud(const InputPointCloud::ConstPtr& segmentation)
     pose_msgs.poses.push_back(pose_msg);
 	}
   
-  ROS_DEBUG_STREAM("Number of found clusters after filtering " << marker_array.markers.size() << ". ");
+  ROS_DEBUG_STREAM("Object_detector: Number of detections after filtering " << marker_array.markers.size() << ". ");
   
   m_pub_vis_marker.publish(marker_array);
   m_pub_pose.publish(pose_msgs);
 
-  ROS_DEBUG_STREAM("Object_detector: time for one cloud in ms : " << timer.getTime() );
-
+  ROS_DEBUG_STREAM("Object_detector: time for one cloud in ms : " << timer.getTime());
 }
 
 }

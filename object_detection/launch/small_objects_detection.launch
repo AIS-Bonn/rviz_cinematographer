@@ -5,19 +5,19 @@
 
     <include file="$(find object_detection)/launch/object_detection.launch">
         <arg name="start_as_nodelet" value="true"/>
+
         <arg name="input_topic" value="/laser_segmenter_objects"/>
         <arg name="fixed_frame" value="world"/>
-        <arg name="max_object_height" value="0.33" />
-        <arg name="max_object_width" value="0.36" />
-        <arg name="max_object_altitude" value="0.45" />
-        <arg name="certainty_thresh" value="0.1" />
+
+        <arg name="certainty_thresh" value="0.5" />
+
         <arg name="cluster_tolerance" value="1.0" />
         <arg name="min_cluster_size" value="2" />
         <arg name="max_cluster_size" value="25000" />
-        <arg name="geofencing_min_x" value="6.0" />
-        <arg name="geofencing_max_x" value="53.0" />
-        <arg name="geofencing_min_y" value="-37.0" />
-        <arg name="geofencing_max_y" value="6.0" />
+
+        <arg name="max_object_height" value="0.33" />
+        <arg name="max_object_width" value="0.36" />
+        <arg name="max_object_altitude" value="0.45" />
     </include>
 
 </launch>

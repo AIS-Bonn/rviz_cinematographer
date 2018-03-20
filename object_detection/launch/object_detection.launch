@@ -2,29 +2,21 @@
 <!-- run object_detection/ObjectDetectionNodelet in a nodelet manager -->
 
 <launch>
+    <arg name="manager" default="velodyne_nodelet_manager" />
     <arg name="start_as_nodelet" default="true" />
 
-    <arg name="manager" default="velodyne_nodelet_manager" />
     <arg name="input_topic" default="/laser_segmenter_objects" />
     <arg name="fixed_frame" default="world" />
 
-    <arg name="max_object_height" default="0.33" />
-    <arg name="max_object_width" default="0.36" />
-    <arg name="max_object_altitude" default="0.45" />
-    <arg name="certainty_thresh" default="0.1" />
+    <arg name="certainty_thresh" default="0.5" />
 
     <arg name="cluster_tolerance" default="1.0" />
     <arg name="min_cluster_size" default="2" />
     <arg name="max_cluster_size" default="25000" />
 
-    <arg name="apply_geofencing" default="false" />
-    <arg name="geofencing_min_x" default="-200.0" />
-    <arg name="geofencing_max_x" default="200.0" />
-    <arg name="geofencing_min_y" default="-200.0" />
-    <arg name="geofencing_max_y" default="200.0" />
-
-    <arg name="apply_radius_filter" default="true" />
-    <arg name="filter_radius" default="30.0" />
+    <arg name="max_object_height" default="0.33" />
+    <arg name="max_object_width" default="0.36" />
+    <arg name="max_object_altitude" default="0.45" />
 
     <node unless="$(arg start_as_nodelet)" launch-prefix="" pkg="object_detection" type="object_detection_node" name="object_detection"
           output="screen" >
@@ -32,22 +24,14 @@
         <param name="fixed_frame" value="$(arg fixed_frame)"/>
 
         <param name="certainty_thresh" value="$(arg certainty_thresh)"/>
-        <param name="max_object_height" value="$(arg max_object_height)"/>
-        <param name="max_object_width" value="$(arg max_object_width)"/>
-        <param name="max_object_altitude" value="$(arg max_object_altitude)"/>
 
         <param name="cluster_tolerance" value="$(arg cluster_tolerance)"/>
         <param name="min_cluster_size" value="$(arg min_cluster_size)"/>
         <param name="max_cluster_size" value="$(arg max_cluster_size)"/>
 
-        <param name="apply_geofencing" value="$(arg apply_geofencing)"/>
-        <param name="geofencing_min_x" value="$(arg geofencing_min_x)"/>
-        <param name="geofencing_max_x" value="$(arg geofencing_max_x)"/>
-        <param name="geofencing_min_y" value="$(arg geofencing_min_y)"/>
-        <param name="geofencing_max_y" value="$(arg geofencing_max_y)"/>
-
-        <param name="apply_radius_filter" value="$(arg apply_radius_filter)"/>
-        <param name="filter_radius" value="$(arg filter_radius)"/>
+        <param name="max_object_height" value="$(arg max_object_height)"/>
+        <param name="max_object_width" value="$(arg max_object_width)"/>
+        <param name="max_object_altitude" value="$(arg max_object_altitude)"/>
     </node>
 
     <node if="$(arg start_as_nodelet)" pkg="nodelet" type="nodelet" name="object_detection_nodelet"
@@ -56,22 +40,14 @@
         <param name="fixed_frame" value="$(arg fixed_frame)"/>
 
         <param name="certainty_thresh" value="$(arg certainty_thresh)"/>
-        <param name="max_object_height" value="$(arg max_object_height)"/>
-        <param name="max_object_width" value="$(arg max_object_width)"/>
-        <param name="max_object_altitude" value="$(arg max_object_altitude)"/>
 
         <param name="cluster_tolerance" value="$(arg cluster_tolerance)"/>
         <param name="min_cluster_size" value="$(arg min_cluster_size)"/>
         <param name="max_cluster_size" value="$(arg max_cluster_size)"/>
 
-        <param name="apply_geofencing" value="$(arg apply_geofencing)"/>
-        <param name="geofencing_min_x" value="$(arg geofencing_min_x)"/>
-        <param name="geofencing_max_x" value="$(arg geofencing_max_x)"/>
-        <param name="geofencing_min_y" value="$(arg geofencing_min_y)"/>
-        <param name="geofencing_max_y" value="$(arg geofencing_max_y)"/>
-
-        <param name="apply_radius_filter" value="$(arg apply_radius_filter)"/>
-        <param name="filter_radius" value="$(arg filter_radius)"/>
+        <param name="max_object_height" value="$(arg max_object_height)"/>
+        <param name="max_object_width" value="$(arg max_object_width)"/>
+        <param name="max_object_altitude" value="$(arg max_object_altitude)"/>
     </node>
 
 </launch>
