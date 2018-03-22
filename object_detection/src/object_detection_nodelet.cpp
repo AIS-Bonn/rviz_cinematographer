@@ -1,17 +1,25 @@
 /** @file
-
-    This ROS nodelet detects potential objects in point clouds
-
-*/
+ *
+ * This ROS nodelet detects potential objects in point clouds
+ *
+ * @author Jan Razlaw
+ */
 
 #include <ros/ros.h>
 #include <pluginlib/class_list_macros.h>
 #include <nodelet/nodelet.h>
 
-#include "detector.h"
+#include <object_detection/detector.h>
 
 namespace object_detection
 {
+  /**
+   * @brief Detector in a nodelet.
+   *
+   * Start the detector in a nodelet.
+   *
+   * @see Detector
+   */
   class ObjectDetectionNodelet: public nodelet::Nodelet
   {
   public:
@@ -25,7 +33,9 @@ namespace object_detection
     boost::shared_ptr<Detector> detector_;
   };
 
-  /** @brief Nodelet initialization. */
+  /**
+   * @brief Nodelet initialization.
+   */
   void ObjectDetectionNodelet::onInit()
   {
     detector_.reset(new Detector(getNodeHandle(), getPrivateNodeHandle()));

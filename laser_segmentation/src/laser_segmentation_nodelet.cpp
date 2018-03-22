@@ -1,17 +1,25 @@
 /** @file
-
-    This ROS node segments objects of a specified width in laser point clouds
-
-*/
+ *
+ * This ROS node segments objects of a specified width in laser point clouds
+ *
+ * @author Jan Razlaw
+ */
 
 #include <ros/ros.h>
 #include <pluginlib/class_list_macros.h>
 #include <nodelet/nodelet.h>
 
-#include "segmenter.h"
+#include <laser_segmentation/segmenter.h>
 
 namespace laser_segmentation
 {
+  /**
+   * @brief Laser segmentation in a nodelet.
+   *
+   * Start the laser segmentation in a nodelet.
+   *
+   * @see Segmenter
+   */
   class LaserSegmenterNodelet: public nodelet::Nodelet
   {
   public:
@@ -25,7 +33,9 @@ namespace laser_segmentation
     boost::shared_ptr<Segmenter> segmenter_;
   };
 
-  /** @brief Nodelet initialization. */
+  /**
+   * @brief Nodelet initialization.
+   */
   void LaserSegmenterNodelet::onInit()
   {
     segmenter_.reset(new Segmenter(getNodeHandle(), getPrivateNodeHandle()));

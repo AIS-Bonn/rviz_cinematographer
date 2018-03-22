@@ -1,13 +1,16 @@
-/** \file
-
-    This ROS node detects potential objects in point clouds
-
-*/
+/** @file
+ *
+ * This ROS node detects potential objects in point clouds
+ *
+ * @author Jan Razlaw
+ */
 
 #include <ros/ros.h>
-#include "detector.h"
+#include <object_detection/detector.h>
 
-/** Main node entry point. */
+/**
+ * Main node entry point.
+ */
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "object_detection_node");

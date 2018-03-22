@@ -1,14 +1,12 @@
 /** @file
+ *
+ * This class segments objects of a specified width in laser point clouds
+ */
 
-    This class segments objects of a specified width in laser point clouds
-
-*/
-
-#include "segmenter.h"
+#include <laser_segmentation/segmenter.h>
 
 namespace laser_segmentation
 {
-/** @brief Constructor. */
 Segmenter::Segmenter(ros::NodeHandle node, ros::NodeHandle private_nh)
 : PUCK_NUM_RINGS(16)
  , HOKUYO_NUM_RINGS(1)  
@@ -45,7 +43,7 @@ Segmenter::Segmenter(ros::NodeHandle node, ros::NodeHandle private_nh)
  , m_publish_debug_clouds(false)
  , m_buffer_initialized(false)
 {
-   ROS_INFO("init laser object segmenter...");
+   ROS_INFO("laser_segmentation::Segmenter: Init...");
 
    private_nh.getParam("input_topic", m_input_topic);
    private_nh.getParam("input_is_velodyne", m_input_is_velodyne);
@@ -126,7 +124,7 @@ Segmenter::Segmenter(ros::NodeHandle node, ros::NodeHandle private_nh)
 void Segmenter::changeParameterSavely()
 {
    boost::mutex::scoped_lock lock(m_parameter_change_lock);
-   ROS_DEBUG("New parameter");
+   ROS_DEBUG("Segmenter: New parameter");
    if(m_publish_debug_clouds)
       plot();
 }
@@ -161,7 +159,7 @@ void Segmenter::hokuyoCallback(const sensor_msgs::LaserScanConstPtr& input_scan)
      m_pub_debug_obstacle_cloud.getNumSubscribers() == 0 &&
      m_pub_filtered_cloud.getNumSubscribers() == 0)
   {
-    ROS_DEBUG_STREAM("hokuyoCallback: no subscriber to laser_segmentation. resetting buffer");
+    ROS_DEBUG_STREAM("Segmenter::hokuyoCallback: No subscriber to laser_segmentation. Resetting buffer.");
     resetBuffer();
     return;
   }
@@ -178,7 +176,7 @@ void Segmenter::hokuyoCallback(const sensor_msgs::LaserScanConstPtr& input_scan)
 
   if (!m_tf_listener.waitForTransform(frame_id, input_scan->header.frame_id, input_scan->header.stamp + ros::Duration().fromSec((input_scan->ranges.size()) * input_scan->time_increment), ros::Duration(0.1)))
   {
-    ROS_ERROR_THROTTLE(10.0, "hokuyoCallback: could not wait for transform");
+    ROS_ERROR_THROTTLE(10.0, "Segmenter::hokuyoCallback: Could not wait for transform.");
     return;
   }
 
@@ -217,7 +215,7 @@ void Segmenter::hokuyoCallback(const sensor_msgs::LaserScanConstPtr& input_scan)
   }
   catch (tf::TransformException& exc)
   {
-    ROS_ERROR_THROTTLE(10.0, "hokuyoCallback: No transform found");
+    ROS_ERROR_THROTTLE(10.0, "Segmenter::hokuyoCallback: No transform found.");
     ROS_ERROR_THROTTLE(10.0, "message: '%s'", exc.what());
   }
 
@@ -230,7 +228,7 @@ void Segmenter::velodyneCallback(const InputPointCloud::ConstPtr &input_cloud)
      m_pub_debug_obstacle_cloud.getNumSubscribers() == 0 &&
      m_pub_filtered_cloud.getNumSubscribers() == 0)
   {
-    ROS_DEBUG_STREAM("velodyneCallback: no subscriber to laser_segmentation. resetting buffer");
+    ROS_DEBUG_STREAM("Segmenter::velodyneCallback: No subscriber to laser_segmentation. Resetting buffer");
     resetBuffer();
     return;
   }
@@ -261,27 +259,27 @@ void Segmenter::processScan(pcl::PCLHeader header)
    DebugOutputPointCloud::Ptr filtered_cloud (new DebugOutputPointCloud);
    filtered_cloud->header = header;
   
-   for (auto ring = 0; ring < (int)m_median_filtered_circ_buffer_vector.size(); ++ring)
+   for(auto ring = 0; ring < (int)m_median_filtered_circ_buffer_vector.size(); ++ring)
    {
      // initialize member iterators
-     if (!m_median_filtered_circ_buffer_vector.at(ring)->empty() && !m_median_iters_by_ring[ring])
+     if(!m_median_filtered_circ_buffer_vector.at(ring)->empty() && !m_median_iters_by_ring[ring])
      {
        m_median_iters_by_ring[ring] = m_median_filtered_circ_buffer_vector.at(ring)->begin();
      }
 
-     if (!m_median_filtered_circ_buffer_vector.at(ring)->empty() && !m_segmentation_iters_by_ring[ring])
+     if(!m_median_filtered_circ_buffer_vector.at(ring)->empty() && !m_segmentation_iters_by_ring[ring])
      {
        m_segmentation_iters_by_ring[ring] = m_median_filtered_circ_buffer_vector.at(ring)->begin();
      }
      
-     if (m_median_iters_by_ring[ring])
+     if(m_median_iters_by_ring[ring])
      {
-         filterRing(m_median_filtered_circ_buffer_vector.at(ring), *m_median_iters_by_ring.at(ring));
+       filterRing(m_median_filtered_circ_buffer_vector.at(ring), *m_median_iters_by_ring.at(ring));
      }
 
-     if (m_segmentation_iters_by_ring[ring])
+     if(m_segmentation_iters_by_ring[ring])
      {
-	      segmentObstacles(m_median_filtered_circ_buffer_vector.at(ring),
+	      segmentRing(m_median_filtered_circ_buffer_vector.at(ring),
                         *m_segmentation_iters_by_ring.at(ring),
                         *m_median_iters_by_ring.at(ring),
                         obstacle_cloud,
@@ -290,7 +288,7 @@ void Segmenter::processScan(pcl::PCLHeader header)
 //      ROS_INFO_STREAM("ring : " << ring << " " << m_median_filtered_circ_buffer_vector.at(ring)->size() << " points: " << obstacle_cloud->points.size());
    }
 
-   ROS_DEBUG_STREAM("time for one cloud in ms : " << timer.getTime() );
+   ROS_DEBUG_STREAM("Segmenter::processScan: Time needed to segment one cloud in ms : " << timer.getTime());
 
    if(m_publish_debug_clouds)
    {
@@ -302,38 +300,40 @@ void Segmenter::processScan(pcl::PCLHeader header)
    m_pub_obstacle_cloud.publish(obstacle_cloud);
 }
 
-void Segmenter::calcMedianFromBuffer(const int kernel_size,
-                                    const int big_kernel_size,
+void Segmenter::calcMedianFromBuffer(const int noise_filter_kernel_size,
+                                    const int object_filter_kernel_size,
                                     const BufferMediansPtr& buffer,
                                     const median_const_iterator& current_element,
                                     std::function<float(Segmenter::InputPoint)> f,
                                     float max_dist_for_median_computation,
-                                    float& small_kernel_val, float& big_kernel_val) const
+                                    float& noise_filter_result, 
+                                    float& object_filter_result) const
 {
-  assert(std::distance(buffer->begin(), buffer->end())>big_kernel_size);
+  assert(std::distance(buffer->begin(), buffer->end()) > object_filter_kernel_size);
 
-  const int kernel_size_half = kernel_size / 2;
-  const int big_kernel_size_half = big_kernel_size / 2;
+  const int noise_filter_kernel_size_half = noise_filter_kernel_size / 2;
+  const int object_filter_kernel_size_half = object_filter_kernel_size / 2;
 
-  median_const_iterator small_kernel_start = current_element - kernel_size_half;
-  median_const_iterator small_kernel_end = current_element + kernel_size_half;
-  median_const_iterator big_kernel_start = current_element - big_kernel_size_half;
-  median_const_iterator big_kernel_end = current_element + big_kernel_size_half;
-  long int small_kernel_start_offset = -1;
-  long int small_kernel_end_offset = -1;
+  median_const_iterator noise_kernel_start = current_element - noise_filter_kernel_size_half;
+  median_const_iterator noise_kernel_end = current_element + noise_filter_kernel_size_half;
+  median_const_iterator object_kernel_start = current_element - object_filter_kernel_size_half;
+  median_const_iterator object_kernel_end = current_element + object_filter_kernel_size_half;
+  long int noise_kernel_start_offset = -1;
+  long int noise_kernel_end_offset = -1;
 
   // get distances of neighbors
   std::vector<float> neighborhood_values;
-  neighborhood_values.reserve(big_kernel_size);
+  neighborhood_values.reserve(object_filter_kernel_size);
 
-  // filter if difference of distances of neighbor and the current point exceeds a threshold
+  // if max_dist_for_median_computation threshold is zero, take all neighbors within kernel bounds for filtering
+  // else use only those neighbors whose distance difference to the current point is below the threshold
   if(max_dist_for_median_computation == 0.f)
   {
-    median_const_iterator it_tmp = big_kernel_start;
-    small_kernel_start_offset = std::distance(big_kernel_start, small_kernel_start);
-    small_kernel_end_offset = std::distance(big_kernel_start, small_kernel_end);
+    median_const_iterator it_tmp = object_kernel_start;
+    noise_kernel_start_offset = std::distance(object_kernel_start, noise_kernel_start);
+    noise_kernel_end_offset = std::distance(object_kernel_start, noise_kernel_end);
     // use advance to cast const
-    while (it_tmp <= big_kernel_end)
+    while(it_tmp <= object_kernel_end)
       neighborhood_values.push_back(f((*it_tmp++).point));
   }
   else
@@ -341,23 +341,23 @@ void Segmenter::calcMedianFromBuffer(const int kernel_size,
     // save distance of midpoint in the buffer aka the current point we are looking at
     const float distance_of_current_point = f((*current_element).point);
 
-    // check for each point in the buffer if it exceeds the distance threshold to the current point
-    median_const_iterator it_tmp = big_kernel_start;
+    median_const_iterator it_tmp = object_kernel_start;
     int counter = 0;
-    while ( it_tmp <= big_kernel_end )
+    while(it_tmp <= object_kernel_end)
     {
       const float val_tmp = f((*it_tmp).point);
       const float abs_distance_difference_to_current_point = fabsf(distance_of_current_point - val_tmp);
 
+      // check for each point in the buffer if it exceeds the distance threshold to the current point
       if(abs_distance_difference_to_current_point < max_dist_for_median_computation)
       {
         neighborhood_values.push_back(val_tmp);
-        if(it_tmp >= small_kernel_start && it_tmp <= small_kernel_end)
+        if(it_tmp >= noise_kernel_start && it_tmp <= noise_kernel_end)
         {
-          if(small_kernel_start_offset < 0)
-            small_kernel_start_offset = counter;
+          if(noise_kernel_start_offset < 0)
+            noise_kernel_start_offset = counter;
 
-          small_kernel_end_offset = counter;
+          noise_kernel_end_offset = counter;
         }
       }
       counter++;
@@ -365,99 +365,107 @@ void Segmenter::calcMedianFromBuffer(const int kernel_size,
     }
   }
 
-  // get median of neighborhood distances with smaller kernel
-  long int small_kernel_middle_offset = (small_kernel_end_offset + small_kernel_start_offset) / 2;
-  std::nth_element(neighborhood_values.begin() + small_kernel_start_offset,
-                   neighborhood_values.begin() + small_kernel_middle_offset,
-                   neighborhood_values.begin() + small_kernel_end_offset + 1);
+  // get median of neighborhood distances within range of noise kernel
+  long int noise_kernel_middle_offset = (noise_kernel_end_offset + noise_kernel_start_offset) / 2;
+  std::nth_element(neighborhood_values.begin() + noise_kernel_start_offset,
+                   neighborhood_values.begin() + noise_kernel_middle_offset,
+                   neighborhood_values.begin() + noise_kernel_end_offset + 1);
 
-  small_kernel_val = neighborhood_values[small_kernel_middle_offset];
+  noise_filter_result = neighborhood_values[noise_kernel_middle_offset];
 
-  // get median of neighborhood distances with bigger kernel
+  // get median of neighborhood distances within range of object kernel
   std::nth_element(neighborhood_values.begin(), neighborhood_values.begin() + neighborhood_values.size() / 2, neighborhood_values.end());
 
-  big_kernel_val = neighborhood_values[neighborhood_values.size() / 2];
+  object_filter_result = neighborhood_values[neighborhood_values.size() / 2];
 }
 
 void Segmenter::filterRing(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
                           median_iterator& iter)
 {
-   while (!buffer_median_filtered->empty() && iter != buffer_median_filtered->end())
+   while(!buffer_median_filtered->empty() && iter != buffer_median_filtered->end())
    {
       // compute the kernel size in number of points corresponding to the desired object size
       // in other words, compute how many points are approximately on the object itself
       float alpha = static_cast<float>(std::atan((m_object_size()/2.f)/(*iter).point.distance) * (180.0 / M_PI));
-      int kernel_size = (int)std::floor(alpha * 2.f / m_angle_between_scanpoints_launch);
-      // the point where the desired object gets filtered out is when there are all points on the object in the kernel
-      // and slightly more points that are >not< on the object. Therefore we multiply by two to be roughly at that border.
-      kernel_size *= 2;
+      int object_size_in_points = (int)std::floor(alpha * 2.f / m_angle_between_scanpoints_launch);
+      // the kernel size at which the target object gets filtered out is when there are more 
+      // non-object points than object points in the median filter kernel. To stay slightly below
+      // this border we floor in the computation above and double the result. This way only noise 
+      // and objects smaller than the target objects get filtered out.
+      int noise_filter_kernel_size = object_size_in_points * 2;
 
-      if(kernel_size < 0)
-         ROS_ERROR("laser_segmentation: filterRing: kernel size negative");
+      if(noise_filter_kernel_size < 0)
+         ROS_ERROR("Segmenter::filterRing: Kernel size negative.");
 
-      kernel_size = std::max(kernel_size, 1);
-      kernel_size = std::min(kernel_size, m_max_kernel_size);
+      noise_filter_kernel_size = std::max(noise_filter_kernel_size, 1);
+      noise_filter_kernel_size = std::min(noise_filter_kernel_size, m_max_kernel_size);
 
-      int big_kernel_size = (int)std::ceil(kernel_size * m_kernel_size_diff_factor());
-      big_kernel_size = std::max(big_kernel_size, 2);
+      int object_filter_kernel_size = (int)std::ceil(noise_filter_kernel_size * m_kernel_size_diff_factor());
+      object_filter_kernel_size = std::max(object_filter_kernel_size, 2);
 
-      const int big_kernel_size_half = big_kernel_size / 2;
+      const int object_filter_kernel_size_half = object_filter_kernel_size / 2;
 
-      if(std::distance(buffer_median_filtered->begin(), iter) >= big_kernel_size_half && std::distance(iter, buffer_median_filtered->end()) > big_kernel_size_half)
+      if(std::distance(buffer_median_filtered->begin(), iter) >= object_filter_kernel_size_half && std::distance(iter, buffer_median_filtered->end()) > object_filter_kernel_size_half)
       {
          if(m_dist_weight() != 0.f)
-            calcMedianFromBuffer(kernel_size, big_kernel_size, buffer_median_filtered, median_const_iterator(iter),
-                             [&](const InputPoint &fn) -> float { return fn.distance; },
-                             m_max_dist_for_median_computation(),
-                             (*iter).dist_small_kernel, (*iter).dist_big_kernel);
+            calcMedianFromBuffer(noise_filter_kernel_size,
+                                 object_filter_kernel_size,
+                                 buffer_median_filtered,
+                                 median_const_iterator(iter),
+                                 [&](const InputPoint &fn) -> float { return fn.distance; },
+                                 m_max_dist_for_median_computation(),
+                                 (*iter).dist_noise_kernel,
+                                 (*iter).dist_object_kernel);
 
          if(m_intensity_weight() != 0.f)
-            calcMedianFromBuffer(kernel_size, big_kernel_size, buffer_median_filtered, median_const_iterator(iter),
-                             [&](const InputPoint &fn) -> float { return fn.intensity; },
-                             0.f, 
-			                       (*iter).intens_small_kernel, (*iter).intens_big_kernel);
+            calcMedianFromBuffer(noise_filter_kernel_size,
+                                 object_filter_kernel_size,
+                                 buffer_median_filtered,
+                                 median_const_iterator(iter),
+                                 [&](const InputPoint &fn) -> float { return fn.intensity; },
+                                 0.f,
+                                 (*iter).intens_noise_kernel,
+                                 (*iter).intens_object_kernel);
       }
 
-      if(std::distance(iter, buffer_median_filtered->end()) <= big_kernel_size_half)
-      {
+      // if there are not enough neighboring points left in the circular to filter -> break  
+      if(std::distance(iter, buffer_median_filtered->end()) <= object_filter_kernel_size_half)
          break;
-      }
 
       ++iter;
    }
-
 }
 
-float Segmenter::computeCertainty(float difference_distances, float difference_intensities)
+float Segmenter::computeSegmentationProbability(float distance_delta, float intensity_delta)
 {
    float certainty_value = 0.f;
    // cap absolute difference to 0 - m_max_intensity_range
    // and do some kind of weighting, bigger weight -> bigger weight for smaller intensity differences
-   difference_intensities = std::max(0.f, difference_intensities);
-   difference_intensities = std::min(difference_intensities, m_max_intensity_range/m_weight_for_small_intensities());
-   difference_intensities *= m_weight_for_small_intensities();
+   intensity_delta = std::max(0.f, intensity_delta);
+   intensity_delta = std::min(intensity_delta, m_max_intensity_range/m_weight_for_small_intensities());
+   intensity_delta *= m_weight_for_small_intensities();
 
-//   ROS_INFO_STREAM("difference_intensities inner " << (difference_intensities * m_intensity_weight()));
+//   ROS_INFO_STREAM("intensity_delta inner " << (intensity_delta * m_intensity_weight()));
 
 
-   if(difference_distances < m_median_min_dist() || difference_distances > m_median_max_dist())
+   if(distance_delta < m_median_min_dist() || distance_delta > m_median_max_dist())
    {
       return 0.f;
    }
    else
    {
       // TODO: adapt the term in the first if statement to the one that was intended in the first place
-      if(difference_distances >= m_median_min_dist() && difference_distances < m_median_thresh1_dist())
+      if(distance_delta >= m_median_min_dist() && distance_delta < m_median_thresh1_dist())
       {
-         certainty_value = difference_distances * m_dist_weight() * (m_max_prob_by_distance/m_median_thresh1_dist()) + difference_intensities * (m_intensity_weight()/m_max_intensity_range);
+         certainty_value = distance_delta * m_dist_weight() * (m_max_prob_by_distance/m_median_thresh1_dist()) + intensity_delta * (m_intensity_weight()/m_max_intensity_range);
       }
-      if(difference_distances >= m_median_thresh1_dist() && difference_distances < m_median_thresh2_dist())
+      if(distance_delta >= m_median_thresh1_dist() && distance_delta < m_median_thresh2_dist())
       {
-         certainty_value = m_dist_weight() * m_max_prob_by_distance + difference_intensities * (m_intensity_weight()/m_max_intensity_range);
+         certainty_value = m_dist_weight() * m_max_prob_by_distance + intensity_delta * (m_intensity_weight()/m_max_intensity_range);
       }
-      if(difference_distances >= m_median_thresh2_dist() && difference_distances < m_median_max_dist())
+      if(distance_delta >= m_median_thresh2_dist() && distance_delta < m_median_max_dist())
       {
-         certainty_value = (m_max_prob_by_distance / (m_median_max_dist() - m_median_thresh2_dist())) * ((m_median_max_dist() - difference_distances) * m_dist_weight()) + difference_intensities * (m_intensity_weight()/m_max_intensity_range);
+         certainty_value = (m_max_prob_by_distance / (m_median_max_dist() - m_median_thresh2_dist())) * ((m_median_max_dist() - distance_delta) * m_dist_weight()) + intensity_delta * (m_intensity_weight()/m_max_intensity_range);
       }
    }
    certainty_value = std::min(certainty_value, 1.0f);
@@ -466,7 +474,7 @@ float Segmenter::computeCertainty(float difference_distances, float difference_i
    return certainty_value;
 }
 
-void Segmenter::segmentObstacles(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
+void Segmenter::segmentRing(std::shared_ptr<boost::circular_buffer<MedianFiltered> > buffer_median_filtered,
                                median_iterator& median_it,
                                median_iterator& end,
                                OutputPointCloud::Ptr obstacle_cloud,
@@ -477,7 +485,7 @@ void Segmenter::segmentObstacles(std::shared_ptr<boost::circular_buffer<MedianFi
    // so to say the .end() of median values in the buffer
    median_iterator end_of_values = end + 1;
 
-   float alpha = static_cast<float>(std::atan(m_distance_to_comparison_points()/(*median_it).dist_small_kernel) * 180.f / M_PI);
+   float alpha = static_cast<float>(std::atan(m_distance_to_comparison_points()/(*median_it).dist_noise_kernel) * 180.f / M_PI);
    int dist_to_comparsion_point = (int)std::round(alpha / m_angle_between_scanpoints_launch);
 
    dist_to_comparsion_point = std::max(dist_to_comparsion_point, 0);
@@ -488,14 +496,14 @@ void Segmenter::segmentObstacles(std::shared_ptr<boost::circular_buffer<MedianFi
    if(std::distance( buffer_median_filtered->begin(), end_of_values) <= 2*dist_to_comparsion_point_bounded+1 ||
        std::distance( median_it, end_of_values) <= dist_to_comparsion_point_bounded + 1)
    {
-      ROS_WARN("laser_segmentation: segmentObstacles: not enough medians in buffer");
+      ROS_WARN("Segmenter::segmentRing: Not enough medians in buffer.");
       return;
    }
    
    for(; median_it != end_of_values; ++median_it)
    {
       // compute index of neighbors to compare to
-      alpha = static_cast<float>(std::atan(m_distance_to_comparison_points()/(*median_it).dist_small_kernel) * 180.f / M_PI);
+      alpha = static_cast<float>(std::atan(m_distance_to_comparison_points()/(*median_it).dist_noise_kernel) * 180.f / M_PI);
       dist_to_comparsion_point = (int)std::round(alpha / m_angle_between_scanpoints_launch);
 
       dist_to_comparsion_point = std::max(dist_to_comparsion_point, 0);
@@ -515,32 +523,33 @@ void Segmenter::segmentObstacles(std::shared_ptr<boost::circular_buffer<MedianFi
 
       auto window_end = median_it + dist_to_comparsion_point_bounded;
 
+      // TODO: check sum and max terms if necessary
       // compute differences and resulting certainty value
-      float difference_distances = 0.f;
+      float distance_delta = 0.f;
       if(m_dist_weight() != 0.f)
       {
-         float difference_distance_start = (*median_it).dist_small_kernel - (*window_start).dist_big_kernel;
-         float difference_distance_end = (*median_it).dist_small_kernel - (*window_end).dist_big_kernel;
+         float difference_distance_start = (*median_it).dist_noise_kernel - (*window_start).dist_object_kernel;
+         float difference_distance_end = (*median_it).dist_noise_kernel - (*window_end).dist_object_kernel;
 
          float difference_distance_sum = difference_distance_start + difference_distance_end;
          float difference_distance_max = std::max(difference_distance_start, difference_distance_end);
-         difference_distances = std::max(difference_distance_sum, difference_distance_max);
+         distance_delta = std::max(difference_distance_sum, difference_distance_max);
       }
 
 
-      float difference_intensities = 0.f;
+      float intensity_delta = 0.f;
       if(m_intensity_weight() != 0.f)
       {
-         float difference_intensities_start = (*median_it).intens_small_kernel - (*window_start).intens_big_kernel;
-         float difference_intensities_end = (*median_it).intens_small_kernel - (*window_end).intens_big_kernel;
+         float difference_intensities_start = (*median_it).intens_noise_kernel - (*window_start).intens_object_kernel;
+         float difference_intensities_end = (*median_it).intens_noise_kernel - (*window_end).intens_object_kernel;
 
          float difference_intensities_sum = difference_intensities_start + difference_intensities_end;
          float difference_intensities_min = std::min(difference_intensities_start, difference_intensities_end);
-         difference_intensities = std::min(difference_intensities_sum, difference_intensities_min);
+         intensity_delta = std::min(difference_intensities_sum, difference_intensities_min);
       }
 
-
-      float certainty_value = computeCertainty(-difference_distances, difference_intensities);
+      // TODO: change certainty computation to the terms from the expose
+      float certainty_value = computeSegmentationProbability(-distance_delta, intensity_delta);
 
       const auto& current_point = (*median_it).point;
 
@@ -561,16 +570,16 @@ void Segmenter::segmentObstacles(std::shared_ptr<boost::circular_buffer<MedianFi
         debug_output_point.intensity = current_point.intensity;
         debug_output_point.ring = current_point.ring;
 
-        debug_output_point.segmentation_distance = difference_distances;
-        debug_output_point.segmentation_intensity = difference_intensities;
+        debug_output_point.segmentation_distance = distance_delta;
+        debug_output_point.segmentation_intensity = intensity_delta;
         debug_output_point.segmentation = certainty_value;
 
         debug_obstacle_cloud->push_back(debug_output_point);
 
         // save factors for median filtered cloud
         float factor = 1.f;
-        if(!std::isnan((*median_it).dist_small_kernel) && !std::isnan(current_point.distance))
-           factor = (*median_it).dist_small_kernel / current_point.distance;
+        if(!std::isnan((*median_it).dist_noise_kernel) && !std::isnan(current_point.distance))
+           factor = (*median_it).dist_noise_kernel / current_point.distance;
 
         m_filtering_factors.push_back(factor);
       }
@@ -584,7 +593,7 @@ void Segmenter::fillFilteredCloud(const DebugOutputPointCloud::ConstPtr &cloud,
    if(cloud->size() != m_filtering_factors.size())
    {
       m_filtering_factors.clear();
-      ROS_ERROR("fillFilteredCloud: cloud and factors have different sizes");
+      ROS_ERROR("Segmenter::fillFilteredCloud: Cloud and factors have different sizes.");
       return;
    }
 
@@ -600,7 +609,7 @@ void Segmenter::fillFilteredCloud(const DebugOutputPointCloud::ConstPtr &cloud,
    }
    catch(tf::TransformException& ex)
    {
-      ROS_ERROR("Transform unavailable %s", ex.what());
+      ROS_ERROR("Segmenter::fillFilteredCloud: Transform unavailable %s", ex.what());
       transform_found = false;
    }
 

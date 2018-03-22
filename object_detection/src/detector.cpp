@@ -1,7 +1,11 @@
-// Detect potential objects in point clouds
-// Author: Jan Razlaw <s6jarazl@uni-bonn.de>
+/** @file
+ *
+ * This class detects potential objects in point clouds
+ *
+ * @author Jan Razlaw
+ */
 
-#include "detector.h"
+#include <object_detection/detector.h>
 
 #include <pcl_conversions/pcl_conversions.h>
 

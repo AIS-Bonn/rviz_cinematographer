@@ -1,5 +1,7 @@
 */cmake-build-debug/
 cmake-build-debug/
+html/
+latex/
 .idea
 */.idea/
 *~

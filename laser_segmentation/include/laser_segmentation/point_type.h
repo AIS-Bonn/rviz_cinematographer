@@ -24,13 +24,11 @@
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/kdtree/impl/kdtree_flann.hpp>
 
-
 #include <pcl/search/kdtree.h>
 #include <pcl/search/impl/kdtree.hpp>
 
 #include <pcl/search/flann_search.h>
 #include <pcl/search/impl/flann_search.hpp>
-
 
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/segmentation/impl/extract_clusters.hpp>
@@ -41,42 +39,42 @@ namespace velodyne_pointcloud
    /** Euclidean Velodyne coordinate, including intensity, ring number and segmentation features. */
    struct PointXYZIRSegmentation
    {
-      PCL_ADD_POINT4D;                    // quad-word XYZ
-      float    intensity;                 // laser intensity reading
-      uint16_t ring;                      // laser ring number
-      float segmentation;                 // segmentation probability
-      float segmentation_distance; 		    // debug info distance
-      float segmentation_intensity;       // debug info intensity
+      PCL_ADD_POINT4D;                    ///< quad-word XYZ
+      float intensity;                    ///< laser intensity reading
+      uint16_t ring;                      ///< laser ring number
+      float segmentation;                 ///< segmentation probability
+      float segmentation_distance; 		    ///< debug info - distance delta
+      float segmentation_intensity;       ///< debug info - intensity delta
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
    } EIGEN_ALIGN16;
 
    /** Euclidean Velodyne coordinate, including intensity, distance and ring number. */
    struct PointXYZIDR
    {
-      PCL_ADD_POINT4D;                    // quad-word XYZ
+      PCL_ADD_POINT4D;                    ///< quad-word XYZ
       float intensity;                    ///< laser intensity reading
       float distance;                     ///< distance of point to sensor
       uint16_t ring;                      ///< laser ring number
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
    } EIGEN_ALIGN16;
 
-   /** Euclidean Velodyne coordinate + object segmentation flag. */
+   /** Euclidean Velodyne coordinate, including object segmentation flag and ring number. */
    struct PointXYZSegmentation
    {
-      PCL_ADD_POINT4D;                    // quad-word XYZ
-      uint8_t segmentation;               // segmentation flag
+      PCL_ADD_POINT4D;                    ///< quad-word XYZ
+      uint8_t segmentation;               ///< segmentation flag
       uint16_t ring;                      ///< laser ring number
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
    } EIGEN_ALIGN16;
 
-   /** Euclidean Velodyne coordinate + scan_line_id and scan_id for mrs_mapping + segment flag. */
+   /** Euclidean Velodyne coordinate, including scan_line_id and scan_id for mrs_mapping and segmentation flag. */
    struct PointXYZIdsSegment
    {
-      PCL_ADD_POINT4D;
-      uint32_t scan_line_id;
-      uint16_t scan_id;
-      uint8_t segment;
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+      PCL_ADD_POINT4D;                    ///< quad-word XYZ
+      uint32_t scan_line_id;              ///< scan line id
+      uint16_t scan_id;                   ///< scan id
+      uint8_t segment;                    ///< segmentation flag
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW     // ensure proper alignment
    } EIGEN_ALIGN16;
 
 }; // namespace velodyne_pointcloud
