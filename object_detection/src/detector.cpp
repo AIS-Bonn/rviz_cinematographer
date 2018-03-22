@@ -25,6 +25,7 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
    , m_cluster_tolerance("/object_detection/cluster_tolerance_in_m", 0.0, 0.01, 2.0, 1.0)
    , m_min_cluster_size("/object_detection/min_cluster_size", 0, 1, 50, 4)
    , m_max_cluster_size("/object_detection/max_cluster_size", 0, 1, 50000, 25000)
+   , m_min_object_height("/object_detection/min_object_height", 0.01, 0.01, 4.0, 0.5)
    , m_max_object_height("/object_detection/max_object_height", 0.01, 0.01, 4.0, 1.8)
    , m_max_object_width("/object_detection/max_object_width", 0.01, 0.01, 4.0, 2.0)
    , m_max_object_altitude("/object_detection/max_object_altitude", 0.01, 0.01, 4.0, 2.0)
@@ -48,6 +49,10 @@ Detector::Detector(ros::NodeHandle node, ros::NodeHandle private_nh)
   float max_cluster_size;
   if(private_nh.getParam("max_cluster_size", max_cluster_size))
     m_max_cluster_size.set(max_cluster_size);
+
+  float min_object_height;
+  if(private_nh.getParam("min_object_height", min_object_height))
+    m_min_object_height.set(min_object_height);
 
   float max_object_height;
   if(private_nh.getParam("max_object_height", max_object_height))
@@ -233,11 +238,14 @@ void Detector::handleCloud(const InputPointCloud::ConstPtr& input_cloud)
     if(min.z() > m_max_object_altitude())
       continue;
 
-    // TODO: add min object height
-		if(size.z() > m_max_object_height())
+		if(size.z() < m_min_object_height())
 			continue;
 
-		if(size.x() > m_max_object_width() || size.y() > m_max_object_width())
+    if(size.z() > m_max_object_height())
+      continue;
+
+    float object_width = sqrt(pow(size.x(), 2) + pow(size.y(), 2));
+		if(object_width > m_max_object_width())
 			continue;
 
     visualization_msgs::Marker marker;
@@ -245,7 +253,7 @@ void Detector::handleCloud(const InputPointCloud::ConstPtr& input_cloud)
     marker.header.stamp = pcl_conversions::fromPCL(segments_cloud->header.stamp);
     marker.ns = "object_detector_namespace";
     marker.id = i;
-    marker.type = visualization_msgs::Marker::CYLINDER;
+    marker.type = visualization_msgs::Marker::SPHERE;
     marker.action = visualization_msgs::Marker::ADD;
     marker.pose.position.x = mean.x();
     marker.pose.position.y = mean.y();
@@ -256,7 +264,7 @@ void Detector::handleCloud(const InputPointCloud::ConstPtr& input_cloud)
     marker.pose.orientation.w = 1.0;
     marker.scale.x = std::max(static_cast<float>(size.x()), 0.2f);
     marker.scale.y = std::max(static_cast<float>(size.y()), 0.2f);
-    marker.scale.z = 20.0; //std::max(static_cast<float>(size.z()), 0.2f);
+    marker.scale.z = std::max(static_cast<float>(size.z()), 0.2f);
     marker.color.a = 0.8;
     marker.color.r = 1.0;
     marker.color.g = 0.5;

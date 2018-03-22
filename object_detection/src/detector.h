@@ -43,6 +43,7 @@ private:
   config_server::Parameter<int> m_min_cluster_size;
   config_server::Parameter<int> m_max_cluster_size;
 
+	config_server::Parameter<float> m_min_object_height;
 	config_server::Parameter<float> m_max_object_height;
 	config_server::Parameter<float> m_max_object_width;
 	config_server::Parameter<float> m_max_object_altitude;

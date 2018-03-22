@@ -116,9 +116,10 @@
       <arg name="min_cluster_size" value="5" />
       <arg name="max_cluster_size" value="25000" />
 
-      <arg name="max_object_height" value="2.0" />
-      <arg name="max_object_width" value="1.8" />
-      <arg name="max_object_altitude" value="0.3" />
+      <arg name="min_object_height" value="1.0" />
+      <arg name="max_object_height" value="2.5" />
+      <arg name="max_object_width" value="1.0" />
+      <arg name="max_object_altitude" value="9.9" />
     </include>
 
   </group>

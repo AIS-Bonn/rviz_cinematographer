@@ -14,6 +14,7 @@
     <arg name="min_cluster_size" default="2" />
     <arg name="max_cluster_size" default="25000" />
 
+    <arg name="min_object_height" default="0.01" />
     <arg name="max_object_height" default="0.33" />
     <arg name="max_object_width" default="0.36" />
     <arg name="max_object_altitude" default="0.45" />
