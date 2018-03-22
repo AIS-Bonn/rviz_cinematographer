@@ -140,6 +140,31 @@ bool Detector::euclideanClustering(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
   return true;
 }
 
+void Detector::getClusterProperties(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+                                    const pcl::PointIndices& point_indices,
+                                    Eigen::Vector3f& mean,
+                                    Eigen::Array3f& min,
+                                    Eigen::Array3f& max)
+{
+  mean = Eigen::Vector3f::Zero();
+  min = Eigen::Array3f::Constant(std::numeric_limits<float>::max());
+  max = Eigen::Array3f::Constant(-std::numeric_limits<float>::max());
+
+  for(auto idx : point_indices.indices)
+  {
+    auto pos = (*cloud)[idx].getVector3fMap();
+    mean += pos;
+
+    for(std::size_t i = 0; i < 3; ++i)
+    {
+      min[i] = std::min(min[i], pos[i]);
+      max[i] = std::max(max[i], pos[i]);
+    }
+  }
+
+  mean /= point_indices.indices.size();
+}
+
 void Detector::handleCloud(const InputPointCloud::ConstPtr& input_cloud)
 {
   // start when subscribers are available
@@ -199,22 +224,9 @@ void Detector::handleCloud(const InputPointCloud::ConstPtr& input_cloud)
   // filter clusters and publish as marker array
   for(std::size_t i = 0; i < cluster_indices.size(); ++i)
 	{
-    // TODO:: extract to own function getClusterProperties or size or so 
-		Eigen::Vector3f mean = Eigen::Vector3f::Zero();
-		Eigen::Array3f min = Eigen::Array3f::Constant(std::numeric_limits<float>::max());
-		Eigen::Array3f max = Eigen::Array3f::Constant(-std::numeric_limits<float>::max());
-
-		for(auto idx : cluster_indices[i].indices)
-		{
-			auto pos = (*cloud_xyz)[idx].getVector3fMap();
-			mean += pos;
-
-			for(std::size_t i = 0; i < 3; ++i)
-			{
-				min[i] = std::min(min[i], pos[i]);
-				max[i] = std::max(max[i], pos[i]);
-			}
-		}
+		Eigen::Vector3f mean;
+		Eigen::Array3f min, max;
+    getClusterProperties(cloud_xyz, cluster_indices[i], mean, min, max);
 
 		Eigen::Vector3f size = max.matrix() - min.matrix();
 
@@ -227,8 +239,6 @@ void Detector::handleCloud(const InputPointCloud::ConstPtr& input_cloud)
 
 		if(size.x() > m_max_object_width() || size.y() > m_max_object_width())
 			continue;
-
-		mean /= cluster_indices[i].indices.size();
 
     visualization_msgs::Marker marker;
     marker.header.frame_id = segments_cloud->header.frame_id;

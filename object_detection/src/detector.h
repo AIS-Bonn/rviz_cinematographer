@@ -56,6 +56,12 @@ private:
 													 float cluster_tolerance,
 													 int min_cluster_size,
 													 int max_cluster_size);
+	void getClusterProperties(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+														const pcl::PointIndices& point_indices,
+														Eigen::Vector3f& mean,
+														Eigen::Array3f& min,
+														Eigen::Array3f& max);
+
 	void handleCloud(const InputPointCloud::ConstPtr& segmentation);
 };
 
