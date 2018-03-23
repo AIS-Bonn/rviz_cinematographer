@@ -8,7 +8,7 @@ The goal of the thesis is to map the static part of the environment while detect
 
 **laser_segmentation** : segments each scan ring of a velodyne scan with respect to a specified width
 
-**map_handler** : stores a representation of the environment consisting of a static and a dynamic part
+**dynamics_mapping** : stores and maintain a representation of the dynamics in the environment
 
 **object_detector** : detects objects in the map
 
