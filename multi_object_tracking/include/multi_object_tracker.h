@@ -12,7 +12,7 @@
 #include <visualization_msgs/Marker.h>
 #include <std_srvs/Empty.h>
 #include <tf/transform_listener.h>
-#include <box_detection/BoxDetections.h>
+#include <object_detection/ObjectDetections.h>
 // #include "multi_object_tracking/TrackReset.h"
 #include <multi_object_tracking/DebugTracking.h>
 
@@ -46,14 +46,14 @@ namespace MultiObjectTracker {
 			void update();
 
 			// void detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg );
-			void boxDetectionCallback(const box_detection::BoxDetections::ConstPtr& msg);
+			void objectDetectionCallback(const object_detection::ObjectDetections::ConstPtr& msg);
 			void laserDetectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg);
-			void object_picked_callback(const box_detection::BoxDetections::ConstPtr& msg);
+			void object_picked_callback(const object_detection::ObjectDetections::ConstPtr& msg);
 
 
 			void publishHypotheses();
-			void publish_hypotheses_box_msg();
-			void publish_hypotheses_future_box_msg();
+			void publish_hypotheses_object_msg();
+			void publish_hypotheses_future_object_msg();
 			void publish_hypotheses_future();
 			void publish_hypothesis_covariance();
 			void publish_static_hypotheses();  //publishes a vertical line indicating which hypothesis are static (non-moveable)
@@ -90,14 +90,14 @@ namespace MultiObjectTracker {
 			ros::Publisher m_static_objectsPublisher;
 			ros::Publisher m_dynamic_objectsPublisher;
 			ros::Publisher m_picked_objectsPublisher;
-			ros::Publisher m_hypothesis_box_msg_publisher;
-			ros::Publisher m_hypothesis_future_box_msg_publisher;
+			ros::Publisher m_hypothesis_object_msg_publisher;
+			ros::Publisher m_hypothesis_future_object_msg_publisher;
 			ros::Publisher m_debug_publisher;
 			ros::Publisher m_hypotheses_future_publisher;
 
-			ros::Subscriber m_box_detection_1_subscriber;
-			ros::Subscriber m_box_detection_2_subscriber;
-			ros::Subscriber m_box_detection_3_subscriber;
+			ros::Subscriber m_object_detection_1_subscriber;
+			ros::Subscriber m_object_detection_2_subscriber;
+			ros::Subscriber m_object_detection_3_subscriber;
 			ros::Subscriber m_laser_detection_subscriber;
 			ros::ServiceServer m_tracking_reset;
 
@@ -120,7 +120,7 @@ namespace MultiObjectTracker {
 			void block_hypothesis_near_measurement(Measurement measurement);
 			bool tracking_reset(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 
-			std::vector <Measurement> box_detections2measurements (const box_detection::BoxDetections::ConstPtr& msg);
+			std::vector <Measurement> object_detections2measurements (const object_detection::ObjectDetections::ConstPtr& msg);
 			std::vector <Measurement> laser_detections2measurements(const geometry_msgs::PoseArray::ConstPtr& msg);
 
 

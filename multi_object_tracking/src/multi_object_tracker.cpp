@@ -13,14 +13,14 @@ namespace MultiObjectTracker {
     m_transformListener = new tf::TransformListener();
 
 
-    m_box_detection_1_subscriber = pub_n.subscribe< box_detection ::BoxDetections >("box_detections", 30, &Tracker  ::boxDetectionCallback, this);
-    m_box_detection_2_subscriber = n.subscribe< box_detection ::BoxDetections >("/box_detections2", 30, &Tracker ::boxDetectionCallback, this);
-    m_box_detection_3_subscriber = n.subscribe< box_detection ::BoxDetections >("/box_detections3", 30, &Tracker ::boxDetectionCallback, this);
+    m_object_detection_1_subscriber = pub_n.subscribe< object_detection ::ObjectDetections >("object_detections", 30, &Tracker  ::objectDetectionCallback, this);
+    m_object_detection_2_subscriber = n.subscribe< object_detection ::ObjectDetections >("/object_detections2", 30, &Tracker ::objectDetectionCallback, this);
+    m_object_detection_3_subscriber = n.subscribe< object_detection ::ObjectDetections >("/object_detections3", 30, &Tracker ::objectDetectionCallback, this);
     m_laser_detection_subscriber = n.subscribe< geometry_msgs ::PoseArray >("/object_poses", 30, &Tracker ::laserDetectionCallback, this);
-    m_picked_objectsSubcriber    = pub_n.subscribe< box_detection ::BoxDetections >("object_picked", 30, &Tracker   ::object_picked_callback, this);
+    m_picked_objectsSubcriber    = pub_n.subscribe< object_detection ::ObjectDetections >("object_picked", 30, &Tracker   ::object_picked_callback, this);
 
-    m_hypothesis_box_msg_publisher = pub_n.advertise< box_detection     ::BoxDetections >( "object_tracks_box_msg_tracked" , 1 );
-    m_hypothesis_future_box_msg_publisher = pub_n.advertise< box_detection     ::BoxDetections >( "object_tracks_box_msg" , 1 );
+    m_hypothesis_object_msg_publisher = pub_n.advertise< object_detection     ::ObjectDetections >( "object_tracks_object_msg_tracked" , 1 );
+    m_hypothesis_future_object_msg_publisher = pub_n.advertise< object_detection     ::ObjectDetections >( "object_tracks_object_msg" , 1 );
     m_measurementMarkerPublisher   = n.advertise< visualization_msgs::Marker >( n.getNamespace()+ "/measurements", 1 );
     m_hypothesesPublisher          = n.advertise< visualization_msgs::Marker >( n.getNamespace()+ "/object_tracks" , 1 );
     m_track_linePublisher          = n.advertise< visualization_msgs::Marker >( n.getNamespace()+ "/object_tracks_line" , 1 );
@@ -69,21 +69,21 @@ namespace MultiObjectTracker {
     m_algorithm->predictWithoutMeasurement();
   }
 
-  void Tracker::boxDetectionCallback(const box_detection::BoxDetections::ConstPtr& msg){
+  void Tracker::objectDetectionCallback(const object_detection::ObjectDetections::ConstPtr& msg){
 
-    // std::cout << std::endl << "received box detections: " <<  msg->box_detections.size() << '\n' ;
+    // std::cout << std::endl << "received object detections: " <<  msg->object_detections.size() << '\n' ;
 
-    std::vector <Measurement> measurements = box_detections2measurements(msg);
+    std::vector <Measurement> measurements = object_detections2measurements(msg);
 
     // double curr_time=MultiHypothesisTracker::get_time_high_res();
     // if (  int(curr_time-program_start_time) % 20 ==0 ){
     //   std::cout << "DID PICK------------------------------------------------------------------" << '\n';
-    //   for (size_t i = 0; i < msg->box_detections.size(); i++) {
+    //   for (size_t i = 0; i < msg->object_detections.size(); i++) {
     //     Measurement measurement;
     //     measurement.pos=vnl_vector<double>(3);
-    //     measurement.pos(0)=msg->box_detections[i].position.x;
-    //     measurement.pos(1)=msg->box_detections[i].position.y;
-    //     measurement.pos(2)=msg->box_detections[i].position.z;
+    //     measurement.pos(0)=msg->object_detections[i].position.x;
+    //     measurement.pos(1)=msg->object_detections[i].position.y;
+    //     measurement.pos(2)=msg->object_detections[i].position.z;
     //     std::cout << "postion of pick: "  << measurement.pos  << '\n';
     //   }
     //   std::cout << "-------------------------------------------------------------------------" << '\n';
@@ -108,16 +108,16 @@ namespace MultiObjectTracker {
 
 
 
-  std::vector <Measurement> Tracker::box_detections2measurements (const box_detection::BoxDetections::ConstPtr& msg){
+  std::vector <Measurement> Tracker::object_detections2measurements (const object_detection::ObjectDetections::ConstPtr& msg){
     Measurement measurement;
     std::vector <Measurement> measurements;
 
 
-    for (size_t i = 0; i < msg->box_detections.size(); i++) {
+    for (size_t i = 0; i < msg->object_detections.size(); i++) {
       measurement.pos=vnl_vector<double>(3);
-      measurement.pos(0)=msg->box_detections[i].position.x;
-      measurement.pos(1)=msg->box_detections[i].position.y;
-      measurement.pos(2)=msg->box_detections[i].position.z;
+      measurement.pos(0)=msg->object_detections[i].position.x;
+      measurement.pos(1)=msg->object_detections[i].position.y;
+      measurement.pos(2)=msg->object_detections[i].position.z;
 
       //TODO set covariance for the measurement to be dyamic depending on the altitude of the drone
       // vnl_matrix< double > measurementCovariance = vnl_matrix< double >( 3, 3 );
@@ -132,7 +132,7 @@ namespace MultiObjectTracker {
       //Setting covariance from the message
       vnl_matrix< double > measurementCovariance = vnl_matrix< double >( 3, 3 );
   		measurementCovariance.set_identity();
-  		double measurementStd = msg->box_detections[i].position_covariance_xy[0] * 1;   //Multiply it by a constant so that it is in the same range we chose earlier
+  		double measurementStd = msg->object_detections[i].position_covariance_xy[0] * 1;   //Multiply it by a constant so that it is in the same range we chose earlier
   		measurementCovariance( 0, 0 ) = measurementStd;
   		measurementCovariance( 1, 1 ) = measurementStd;
   		measurementCovariance( 2, 2 ) = measurementStd;
@@ -143,7 +143,7 @@ namespace MultiObjectTracker {
       // std::cout << "measurmnt covariance before increase with distance is" << measurement.cov<< '\n';
 
 
-      measurement.color=msg->box_detections[i].color;
+      measurement.color=msg->object_detections[i].color;
       // measurement.color='Y';
       measurement.frame=msg->header.frame_id;
       measurement.time=msg->header.stamp.toSec();
@@ -219,12 +219,12 @@ namespace MultiObjectTracker {
   }
 
 
-  void Tracker::object_picked_callback(const box_detection::BoxDetections::ConstPtr& msg){
+  void Tracker::object_picked_callback(const object_detection::ObjectDetections::ConstPtr& msg){
     //get the position that was picked
     //get the color that was picked
     ROS_DEBUG("Tracking received that an object was picked");
 
-    std::vector <Measurement> picked_measurements = box_detections2measurements(msg);
+    std::vector <Measurement> picked_measurements = object_detections2measurements(msg);
     bool ret=transform_to_frame(picked_measurements, m_world_frame);
     if (ret==false){
       std::cout << "couldn't invalidate the hypothesis for a picked object because it was not transformed into the correct frame" << '\n';
@@ -410,7 +410,7 @@ namespace MultiObjectTracker {
       mes_marker.points[i].x = measurements[i].pos(0);
       mes_marker.points[i].y = measurements[i].pos(1);
       mes_marker.points[i].z = measurements[i].pos(2);
-      // std::cout << "publish_mesurement_markers:: box "<< i << " is " <<  measurements[i].pos << '\n';
+      // std::cout << "publish_mesurement_markers:: object "<< i << " is " <<  measurements[i].pos << '\n';
     }
     m_measurementMarkerPublisher.publish(mes_marker);
 
@@ -526,13 +526,13 @@ namespace MultiObjectTracker {
 
   }
 
-  void Tracker::publish_hypotheses_box_msg(){
+  void Tracker::publish_hypotheses_object_msg(){
     std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
     double cur= MultiHypothesisTracker::get_time_high_res();
-    box_detection::BoxDetections box_detecions;
-    box_detection::BoxDetection box;
-    box_detecions.header.stamp=ros::Time::now();
-    box_detecions.header.frame_id=m_world_frame;
+    object_detection::ObjectDetections object_detecions;
+    object_detection::ObjectDetection object;
+    object_detecions.header.stamp=ros::Time::now();
+    object_detecions.header.frame_id=m_world_frame;
 
 
     // Publish tracks
@@ -541,26 +541,26 @@ namespace MultiObjectTracker {
       MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[i];
 
       const vnl_vector<double> &mean = hypothesis->getMean();
-      box.position.x=mean(0);
-      box.position.y=mean(1);
-      box.position.z=mean(2);
-      box.color=hypothesis->getColor();
+      object.position.x=mean(0);
+      object.position.y=mean(1);
+      object.position.z=mean(2);
+      object.color=hypothesis->getColor();
 
       if (!hypothesis->is_picked()   && (cur - hypothesis->get_born_time() > m_born_time_threshold )  ){
-        box_detecions.box_detections.push_back(box);
+        object_detecions.object_detections.push_back(object);
       }
     }
-    m_hypothesis_box_msg_publisher.publish (box_detecions);
+    m_hypothesis_object_msg_publisher.publish (object_detecions);
 
   }
 
-  void Tracker::publish_hypotheses_future_box_msg(){
+  void Tracker::publish_hypotheses_future_object_msg(){
     std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
     double cur= MultiHypothesisTracker::get_time_high_res();
-    box_detection::BoxDetections box_detecions;
-    box_detection::BoxDetection box;
-    box_detecions.header.stamp=ros::Time::now();
-    box_detecions.header.frame_id=m_world_frame;
+    object_detection::ObjectDetections object_detecions;
+    object_detection::ObjectDetection object;
+    object_detecions.header.stamp=ros::Time::now();
+    object_detecions.header.frame_id=m_world_frame;
 
 
     // Publish tracks
@@ -572,16 +572,16 @@ namespace MultiObjectTracker {
       //Predict a little bit into the future
       mean += hypothesis->get_velocity()* m_future_time;
 
-      box.position.x=mean(0);
-      box.position.y=mean(1);
-      box.position.z=mean(2);
-      box.color=hypothesis->getColor();
+      object.position.x=mean(0);
+      object.position.y=mean(1);
+      object.position.z=mean(2);
+      object.color=hypothesis->getColor();
 
       if (!hypothesis->is_picked()   && (cur - hypothesis->get_born_time() > m_born_time_threshold )  ){
-        box_detecions.box_detections.push_back(box);
+        object_detecions.object_detections.push_back(object);
       }
     }
-    m_hypothesis_future_box_msg_publisher.publish (box_detecions);
+    m_hypothesis_future_object_msg_publisher.publish (object_detecions);
 
   }
 
@@ -804,8 +804,8 @@ int main( int argc, char** argv ) {
     ros::spinOnce();
     tracker.publishHypotheses();
     tracker.publish_hypotheses_future();
-    tracker.publish_hypotheses_box_msg();
-    tracker.publish_hypotheses_future_box_msg();
+    tracker.publish_hypotheses_object_msg();
+    tracker.publish_hypotheses_future_object_msg();
     tracker.publish_hypothesis_covariance();
     tracker.publish_static_hypotheses();
     tracker.publish_dynamic_hypotheses();

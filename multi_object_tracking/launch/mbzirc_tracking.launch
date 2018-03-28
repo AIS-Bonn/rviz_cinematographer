@@ -1,6 +1,6 @@
 <launch>
-  <remap from="/box_detection_node/box_detections" to="/box_detections" />
-  <!-- <remap from="/box_detection/box_detections" to="/box_detections" /> -->
+  <remap from="/object_detection_node/object_detections" to="/object_detections" />
+  <!-- <remap from="/object_detection/object_detections" to="/object_detections" /> -->
 
 
   <node pkg="multi_object_tracking" type="multi_object_tracking" name="multi_object_tracking" output="screen">

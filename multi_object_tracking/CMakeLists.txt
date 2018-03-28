@@ -11,11 +11,11 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DAPC_CAPTURE_DEBUG=1")
 
 find_package(catkin REQUIRED)
 find_package(OpenCV REQUIRED)
-#find_package(VXL REQUIRED)
+find_package(VXL REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 
-#include(${VXL_CMAKE_DIR}/UseVXL.cmake)
+include(${VXL_CMAKE_DIR}/UseVXL.cmake)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
 
@@ -27,7 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
 	tf
 	message_generation
 	genmsg
-	box_detection
+	object_detection
 )
 
 add_definitions(-std=gnu++11 -fext-numeric-literals)
@@ -70,5 +70,5 @@ include_directories(
 )
 
 
-add_executable(multi_object_tracking src/mbzirc_tracker.cpp src/multihypothesistracker.cpp src/multiobjecttracker_algorithm.cpp src/hungarian.cpp)
+add_executable(multi_object_tracking src/multi_object_tracker.cpp src/multihypothesistracker.cpp src/multiobjecttracker_algorithm.cpp src/hungarian.cpp)
 target_link_libraries(multi_object_tracking ${catkin_LIBRARIES}  vnl vnl_algo netlib v3p_netlib vcl)
