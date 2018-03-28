@@ -1,0 +1,53 @@
+<launch>
+  <remap from="/box_detection_node/box_detections" to="/box_detections" />
+  <!-- <remap from="/box_detection/box_detections" to="/box_detections" /> -->
+
+
+  <node pkg="multi_object_tracking" type="multi_object_tracking" name="multi_object_tracking" output="screen">
+    <param name="m_radius_around_picked" value="10.0" />
+    <param name="m_merge_close_hypotheses_distance" value="0.60" />
+    <param name="m_max_mahalanobis_distance" value="10.0" />
+    <param name="m_world_frame" value="odom" />
+    <param name="m_born_time_threshold" value="0.65" />
+    <param name="m_future_time" value="0.05" />
+
+  </node>
+
+
+  <arg name="path" default="/media/alex/Data/Master/SHK/c_ws/src/multi_object_tracking/bag/" />
+  <arg name="file_1" default="challenge1_2017-02-24-17-28-34" />
+  <arg name="start_time" default="32" />
+  <!-- <arg name="start_time" default="74" /> -->
+
+
+  <!-- <arg name="file_1" default="mbzirc_simulation_red_orange" /> -->
+  <!-- <arg name="start_time" default="0" /> -->
+
+  <!-- <arg name="file_1" default="challenge1_2017-02-22-15-31-15" />
+  <arg name="start_time" default="0" /> -->
+
+  <!-- <arg name="file_1" default="challenge1_2017-02-22-15-45-29" /> -->
+  <!-- <arg name="start_time" default="30" /> -->
+
+
+  <!-- <arg name="file_1" default="moving_obstacles_2017-03-02-14-22-32" /> -->
+  <!-- <arg name="start_time" default="0" /> -->
+
+
+  <!-- static_object and drone tilting above it -->
+  <!-- <arg name="file_1" default="challenge1_2017-03-09-17-06-12_static" /> -->
+  <!-- <arg name="start_time" default="0" /> -->
+  <!-- stuff start happening -->
+  <!-- <arg name="start_time" default="22" /> -->
+  <!-- losses track for a while -->
+  <!-- <arg name="start_time" default="49" /> -->
+
+
+  <!-- first rehersal, when it crashed mbzirc3 -->
+  <node pkg="rosbag" type="play" name="player_color" output="screen" args="--clock  --pause --start=$(arg start_time) $(arg path)$(arg file_1).bag"/>
+
+
+
+
+
+</launch>

@@ -1,0 +1,36 @@
+<package>
+	<name>multi_object_tracking</name>
+	<version>0.0.0</version>
+	<description>
+		Provides generic nodes and libraries for object tracking
+	</description>
+
+	<author email="stueckler@ais.uni-bonn.de">Jörg Stückler</author>
+	<maintainer email="max.schwarz@uni-bonn.de">Max Schwarz</maintainer>
+
+	<license>BSD</license>
+
+	<buildtool_depend>catkin</buildtool_depend>
+
+	<build_depend>roscpp</build_depend>
+	<build_depend>tf</build_depend>
+	<build_depend>sensor_msgs</build_depend>
+	<build_depend>geometry_msgs</build_depend>
+	<build_depend>visualization_msgs</build_depend>
+	<build_depend>eigen</build_depend>
+	<build_depend>opencv2</build_depend>
+	<build_depend>message_generation</build_depend>
+	<build_depend>box_detection</build_depend>
+	<build_depend>std_srvs</build_depend>
+
+  <run_depend>message_runtime</run_depend>
+	<run_depend>roscpp</run_depend>
+	<run_depend>tf</run_depend>
+	<run_depend>std_msgs</run_depend>
+	<run_depend>tf</run_depend>
+  <run_depend>std_srvs</run_depend>
+
+
+
+
+</package>

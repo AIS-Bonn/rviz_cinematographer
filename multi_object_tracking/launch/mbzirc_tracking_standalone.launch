@@ -1,0 +1,15 @@
+<launch>
+  <node pkg="multi_object_tracking" type="multi_object_tracking" name="multi_object_tracking" output="screen">
+    <param name="m_radius_around_picked" value="3.5" />
+    <param name="m_merge_close_hypotheses_distance" value="0.60" />
+    <param name="m_max_mahalanobis_distance" value="10.0" />
+    <param name="m_world_frame" value="odom" />
+    <param name="m_born_time_threshold" value="0.65" />
+    <param name="m_future_time" value="0.05" />
+
+    <remap from="/box_detections" to="box_detection_node/box_detections" />
+    <remap from="/box_detections2" to="team/0/box_detections" />
+    <remap from="/box_detections3" to="team/1/box_detections" />
+    <remap from="/object_picked" to="challenge3_fsm/picked_objects" />
+  </node>
+</launch>
