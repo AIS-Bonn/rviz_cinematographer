@@ -11,6 +11,8 @@
 	<depend>pcl_ros</depend>
 	<depend>nodelet</depend>
 	<depend>config_server</depend>
+	<depend>message_generation</depend>
+	<depend>message_runtime</depend>
 
 	<export>
 		<nodelet plugin="${prefix}/nodelet_plugins.xml" />

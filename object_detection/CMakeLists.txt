@@ -13,10 +13,28 @@ find_package(catkin REQUIRED COMPONENTS
 	laser_segmentation
 	config_server
 	nodelet
+	std_msgs
+	geometry_msgs
+	message_generation
+)
+ 
+## Generate messages in the 'msg' folder
+add_message_files(
+		FILES
+		ObjectDetection.msg
+		ObjectDetections.msg
+)
+
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+		DEPENDENCIES
+		std_msgs
+		geometry_msgs
 )
 
 catkin_package(
 		INCLUDE_DIRS include
+		CATKIN_DEPENDS message_runtime
 )
 
 include_directories(
