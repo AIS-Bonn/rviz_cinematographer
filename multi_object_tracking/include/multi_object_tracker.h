@@ -23,7 +23,6 @@
 
 #include "multiobjecttracker_algorithm.h"
 #include <multihypothesistracker.h>
-#include <RosTools.h>
 
 
 namespace MultiObjectTracker

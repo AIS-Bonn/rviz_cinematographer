@@ -5,8 +5,8 @@ namespace MultiObjectTracker
 {
 
 Tracker::Tracker():
-  m_debug_counter(0)
-  {
+m_debug_counter(0)
+{
   ros::NodeHandle n("~");
   ros::NodeHandle pub_n;
 
@@ -27,14 +27,14 @@ Tracker::Tracker():
   m_debug_publisher              = n.advertise< multi_object_tracking::DebugTracking >( n.getNamespace()+ "/debug" , 1 );
   m_hypotheses_future_publisher  = n.advertise< visualization_msgs::Marker >( n.getNamespace()+ "/future_tracks" , 1 );
 
-  m_merge_close_hypotheses_distance = getParamElseDefault<double> ( n, "m_merge_close_hypotheses_distance", 0.1 );
-  m_max_mahalanobis_distance        = getParamElseDefault<double> ( n, "m_max_mahalanobis_distance", 3.75 );
-  m_world_frame                     = getParamElseDefault<std::string> ( n, "m_world_frame", "world" );
-  m_born_time_threshold             = getParamElseDefault<double> ( n, "m_born_time_threshold", 0.5 );
-  m_future_time                     = getParamElseDefault<double> ( n, "m_future_time", 0.0 );
-  // m_spurious_time                   = getParamElseDefault<double> ( n, "m_spurious_time", 4.0 );
-  // m_time_start_velocity_decay       = getParamElseDefault<double> ( n, "m_time_start_velocity_decay", 1.0 );
-  // m_time_finish_velocity_decay      = getParamElseDefault<double> ( n, "m_time_finish_velocity_decay", 4.0 );
+  n.param<double>("m_merge_close_hypotheses_distance", m_merge_close_hypotheses_distance, 0.1);
+  n.param<double>("m_max_mahalanobis_distance", m_max_mahalanobis_distance,3.75);
+  n.param<std::string>("m_world_frame", m_world_frame, "world");
+  n.param<double>("m_born_time_threshold", m_born_time_threshold, 0.5);
+  n.param<double>("m_future_time", m_future_time, 0.0);
+//  n.param<double>("m_spurious_time", m_spurious_time, 4.0);
+//  n.param<double>("m_time_start_velocity_decay", m_time_start_velocity_decay, 1.0);
+//  n.param<double>("m_time_finish_velocity_decay", m_time_finish_velocity_decay, 4.0);
 
 
   m_algorithm->set_merge_close_hypotheses_distance (m_merge_close_hypotheses_distance);
