@@ -2,14 +2,11 @@ cmake_minimum_required(VERSION 2.8)
 project(multi_object_tracking)
 
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
-#set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-#set(PROJECT_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)		# Header folder
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DAPC_CAPTURE_DEBUG=1")
 
 
 
-#find_package(catkin REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(VXL REQUIRED)
 find_package(Eigen3 REQUIRED)
