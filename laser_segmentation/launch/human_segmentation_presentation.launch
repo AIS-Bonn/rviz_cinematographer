@@ -126,7 +126,6 @@
           output="screen">
       <remap from="/object_poses" to="/object_detection_poses" />
 
-      <param name="m_radius_around_picked" value="10.0" />
       <param name="m_merge_close_hypotheses_distance" value="0.60" />
       <param name="m_max_mahalanobis_distance" value="10.0" />
       <param name="m_world_frame" value="odom" />
