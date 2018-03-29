@@ -86,10 +86,9 @@ private:
 
   ros::Subscriber m_laser_detection_subscriber;
 
-  // TODO: smart pointers
-  tf::TransformListener* m_transformListener;
+  std::shared_ptr<tf::TransformListener> m_transformListener;
 
-  MultiObjectTrackerAlgorithm* m_algorithm;
+  std::shared_ptr<MultiObjectTrackerAlgorithm> m_algorithm;
 
   visualization_msgs::Marker full_track;
 

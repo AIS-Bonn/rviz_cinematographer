@@ -10,8 +10,8 @@ m_debug_counter(0)
   ros::NodeHandle n("~");
   ros::NodeHandle pub_n;
 
-  m_algorithm = new MultiObjectTrackerAlgorithm();
-  m_transformListener = new tf::TransformListener();
+  m_algorithm = std::make_shared<MultiObjectTrackerAlgorithm>();
+  m_transformListener = std::make_shared<tf::TransformListener>();
 
   m_laser_detection_subscriber = n.subscribe<geometry_msgs::PoseArray>("/object_poses", 30, &Tracker::detectionCallback, this);
 
