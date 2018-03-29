@@ -39,9 +39,12 @@ public:
   /**
    * @brief Callback function for detections messages
    *
+   * Converts messages to measurements.
+   * Transforms measurements to #m_world_frame and passes those to the tracking algorithm.
+   *
    * @param [in] msg    poses of the detections.
    */
-  void laserDetectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg);
+  void detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg);
 
   void publish_hypotheses();
   void publish_hypotheses_object_msg();
@@ -103,13 +106,6 @@ private:
    * @return marker.
    */
   visualization_msgs::Marker createMarker(int x=0, int y=0, int z=0, float r=0.0, float g=1.0, float b=0.0);
-
-  /**
-   * @brief Transforms measurements to #m_world_frame and passes those to the tracking algorithm.
-   *
-   * @param[in] measurements   measurements.
-   */
-  void generic_detection_handler(std::vector<Measurement>& measurements);
 
   /**
    * @brief Transforms measurements to the target_frame.

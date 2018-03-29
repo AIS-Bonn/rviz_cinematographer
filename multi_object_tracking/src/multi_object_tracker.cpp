@@ -13,7 +13,7 @@ m_debug_counter(0)
   m_algorithm = new MultiObjectTrackerAlgorithm();
   m_transformListener = new tf::TransformListener();
 
-  m_laser_detection_subscriber = n.subscribe<geometry_msgs::PoseArray>("/object_poses", 30, &Tracker::laserDetectionCallback, this);
+  m_laser_detection_subscriber = n.subscribe<geometry_msgs::PoseArray>("/object_poses", 30, &Tracker::detectionCallback, this);
 
   m_hypothesis_object_msg_publisher = pub_n.advertise< object_detection     ::ObjectDetections >( "object_tracks_object_msg_tracked" , 1 );
   m_hypothesis_future_object_msg_publisher = pub_n.advertise< object_detection     ::ObjectDetections >( "object_tracks_object_msg" , 1 );
@@ -53,13 +53,36 @@ void Tracker::update() {
   m_algorithm->predictWithoutMeasurement();
 }
 
-void Tracker::laserDetectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
+void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
 {
   ROS_INFO_STREAM("laser callback");
 
   std::vector<Measurement> measurements = laser_detections2measurements(msg);
 
-  generic_detection_handler(measurements);
+  publish_debug();
+
+  if(!transform_to_frame(measurements, m_world_frame))
+    return;
+
+  publish_measurement_markers(measurements);
+  publish_measurement_covariance(measurements);
+
+  std::string source = "all";
+  m_algorithm->objectDetectionDataReceived(measurements, source);
+
+
+  // std::vector< unsigned int > assignments = m_algorithm->objectDetectionDataReceived( measurements, source);
+
+  //Full track for first hypothesis
+  // std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
+  // MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[0];
+  // const vnl_vector<double> &mean = hypothesis->getMean();
+  // geometry_msgs::Point p;
+  // p.x=mean(0);
+  // p.y=mean(1);
+  // p.z=mean(2);
+  // full_track.points.push_back(p);
+  // m_track_linePublisher.publish(full_track);
 }
 
 // TODO return measurements efficiently
@@ -94,35 +117,6 @@ std::vector<Measurement> Tracker::laser_detections2measurements(const geometry_m
   }
 
   return measurements;
-}
-
-void Tracker::generic_detection_handler(std::vector<Measurement>& measurements)
-{
-  publish_debug();
-
-  if(!transform_to_frame(measurements, m_world_frame))
-    return;
-
-  publish_measurement_markers(measurements);
-  publish_measurement_covariance(measurements);
-
-  std::string source = "all";
-  m_algorithm->objectDetectionDataReceived(measurements, source);
-
-
-  // std::vector< unsigned int > assignments = m_algorithm->objectDetectionDataReceived( measurements, source);
-
-  //Full track for first hypothesis
-  // std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
-  // MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[0];
-  // const vnl_vector<double> &mean = hypothesis->getMean();
-  // geometry_msgs::Point p;
-  // p.x=mean(0);
-  // p.y=mean(1);
-  // p.z=mean(2);
-  // full_track.points.push_back(p);
-  // m_track_linePublisher.publish(full_track);
-
 }
 
 bool Tracker::transform_to_frame(std::vector<Measurement>& measurements,
