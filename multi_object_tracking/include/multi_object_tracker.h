@@ -35,17 +35,7 @@ public:
   Tracker();
   ~Tracker();
 
-  // void objectDetectionDataReceived( const nimbro_perception_msgs::ObjectDetectionDataConstPtr& objectDetectionData );
-  // void odometryDataReceived( const nav_msgs::OdometryConstPtr& odometry );
-  // void localizationDataReceived( const geometry_msgs::PoseConstPtr& pose ) { m_globalPositionData = *pose; }
-  //
-  // bool resetRequestReceived( std_srvs::EmptyRequest& req, std_srvs::EmptyResponse& resp);
-  // bool selectSourcesRequestReceived( nimbro_perception_msgs::SelectSourcesRequest::Request& req, nimbro_perception_msgs::SelectSourcesRequest::Response& res );
-
   void update();
-
-  // void detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg );
-  void objectDetectionCallback(const object_detection::ObjectDetections::ConstPtr& msg);
 
   /**
    * @brief Callback function for detections messages
@@ -53,8 +43,6 @@ public:
    * @param [in] msg    poses of the detections.
    */
   void laserDetectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg);
-  void object_picked_callback(const object_detection::ObjectDetections::ConstPtr& msg);
-
 
   void publish_hypotheses();
   void publish_hypotheses_object_msg();
@@ -63,22 +51,15 @@ public:
   void publish_hypothesis_covariance();
   void publish_static_hypotheses();  //publishes a vertical line indicating which hypothesis are static (non-moveable)
   void publish_dynamic_hypotheses();
-  void publish_picked_objects();     //publishes only the objects that were picked, both static and dynamic hypotheses
 
   /** @brief Publish the data from the first hypothesis and it's latest measurement that it was corrected with. */
   void publish_debug();
-
-
-
-  double prev_time;
-  double time;
 
 private:
   std::vector<Measurement> m_picked_static_positions;
   int m_debug_counter;
 
   //Params
-  double m_radius_around_picked;
   double m_merge_close_hypotheses_distance;
   double m_max_mahalanobis_distance;
   std::string m_world_frame;
@@ -96,19 +77,14 @@ private:
   ros::Publisher m_track_linePublisher;
   ros::Publisher m_static_objectsPublisher;
   ros::Publisher m_dynamic_objectsPublisher;
-  ros::Publisher m_picked_objectsPublisher;
   ros::Publisher m_hypothesis_object_msg_publisher;
   ros::Publisher m_hypothesis_future_object_msg_publisher;
   ros::Publisher m_debug_publisher;
   ros::Publisher m_hypotheses_future_publisher;
 
-  ros::Subscriber m_object_detection_1_subscriber;
-  ros::Subscriber m_object_detection_2_subscriber;
-  ros::Subscriber m_object_detection_3_subscriber;
   ros::Subscriber m_laser_detection_subscriber;
-  ros::ServiceServer m_tracking_reset;
 
-  ros::Subscriber m_picked_objectsSubcriber;
+  // TODO: smart pointers
   tf::TransformListener* m_transformListener;
 
   MultiObjectTrackerAlgorithm* m_algorithm;
@@ -161,35 +137,12 @@ private:
    */
   void publish_measurement_covariance(std::vector<Measurement> measurements);
 
-
-  /**
-   * @brief Deletes measurements that are close to #m_picked_static_positions.
-   *
-   * TODO: adapt comment if necessary (at least grammar)
-   * Block the measurements at positions corresponding to objects that were
-   * already picked. We may still get measurements in the laser since the
-   * object leave behind a ground socket once they are picked.
-   *
-   * @param[in,out] measurements   detections - filtered after running function.
-   */
-  void block_picked_static_measurements(std::vector<Measurement>& measurements);
-  void block_hypothesis_near_measurement(Measurement measurement);
-  bool tracking_reset(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
-
-  std::vector <Measurement> object_detections2measurements (const object_detection::ObjectDetections::ConstPtr& msg);
-
   /**
    * @brief Converts the detections from the laser into the internal format
    *
    * @param[in] msg   poses of the detections.
    */
   std::vector<Measurement> laser_detections2measurements(const geometry_msgs::PoseArray::ConstPtr& msg);
-
-  //TODO: delete
-  //HACK needed to do fake picks of objects
-  double program_start_time;
-  bool did_fake_pick;
-
 
 };
 
