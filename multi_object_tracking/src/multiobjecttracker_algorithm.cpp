@@ -44,9 +44,9 @@ MultiObjectHypothesis::~MultiObjectHypothesis() {
 
 
 MultiObjectTrackerAlgorithm::MultiObjectTrackerAlgorithm()
-: m_multiHypothesisTracker( new MultiObjectTracker::MultiObjectHypothesisFactory() )
-, m_last_prediction_time (0) {
-}
+: m_multi_hypothesis_tracker(new MultiObjectTracker::MultiObjectHypothesisFactory())
+	, m_last_prediction_time(0)
+{}
 
 void MultiObjectTrackerAlgorithm::updateFilterWithPrediction( MultiHypothesisTracker::HypothesisFilter* filter ) {
 	updateFilter( 0, 0, 0, filter );
@@ -61,12 +61,12 @@ void MultiObjectTrackerAlgorithm::updateFilter( double x, double y, double a, Mu
 	double currentTime = MultiHypothesisTracker::get_time_high_res();
 
 	// if( m_lastMeasurementTime > 0 ) {
-	// 	m_multiHypothesisTracker.predict( currentTime - m_lastMeasurementTime, movement, filter );
+	// 	m_multi_hypothesis_tracker.predict( currentTime - m_lastMeasurementTime, movement, filter );
 	// }
 	// m_lastMeasurementTime = currentTime;
 
 	if( m_last_prediction_time > 0 ) {
-		m_multiHypothesisTracker.predict( currentTime - m_last_prediction_time, movement, filter );
+		m_multi_hypothesis_tracker.predict( currentTime - m_last_prediction_time, movement, filter );
 	}
 	m_last_prediction_time=currentTime;
 	// m_lastMeasurementTime = currentTime;
@@ -86,19 +86,21 @@ void MultiObjectTrackerAlgorithm::predictWithoutMeasurement(){
 	HypothesisFilterBySource hypothesesFilter( "all" );
 
 	if( m_last_prediction_time > 0 ) {
-		m_multiHypothesisTracker.predict( currentTime - m_last_prediction_time, movement, &hypothesesFilter );
+		m_multi_hypothesis_tracker.predict( currentTime - m_last_prediction_time, movement, &hypothesesFilter );
 	}
 	m_last_prediction_time=currentTime;
 
-	m_multiHypothesisTracker.deleteSpuriosHypotheses(  &hypothesesFilter );
+	m_multi_hypothesis_tracker.deleteSpuriosHypotheses(  &hypothesesFilter );
 
 
 }
 
-void MultiObjectTrackerAlgorithm::objectDetectionDataReceived( std::vector< Measurement >& measurements, const std::string& sourceName) {
+void MultiObjectTrackerAlgorithm::objectDetectionDataReceived(std::vector<Measurement>& measurements,
+																															const std::string& sourceName)
+{
 //	HypothesisFilterBySourceAndFrustum hypothesesFilter( sourceName, frustum );
 	HypothesisFilterBySource hypothesesFilter( sourceName );
-	std::vector< MultiHypothesisTracker::Hypothesis* > hypotheses = hypothesesFilter.filter( m_multiHypothesisTracker.getHypotheses() );
+	std::vector< MultiHypothesisTracker::Hypothesis* > hypotheses = hypothesesFilter.filter( m_multi_hypothesis_tracker.getHypotheses() );
 
 
 	//make mesurement in previos format
@@ -109,16 +111,16 @@ void MultiObjectTrackerAlgorithm::objectDetectionDataReceived( std::vector< Meas
 
 	predictWithoutMeasurement();
 
-	// return m_multiHypothesisTracker.correctAmbiguous( measurements_legacy, true, &hypothesesFilter );
-	// m_multiHypothesisTracker.correctAmbiguous_simplified( measurements, true, &hypothesesFilter );
-	m_multiHypothesisTracker.correct_hungarian_simplified( measurements, &hypothesesFilter );
-	m_multiHypothesisTracker.mergeCloseHypotheses( m_merge_close_hypotheses_distance );
+	// return m_multi_hypothesis_tracker.correctAmbiguous( measurements_legacy, true, &hypothesesFilter );
+	// m_multi_hypothesis_tracker.correctAmbiguous_simplified( measurements, true, &hypothesesFilter );
+	m_multi_hypothesis_tracker.correct_hungarian_simplified( measurements, &hypothesesFilter );
+	m_multi_hypothesis_tracker.mergeCloseHypotheses( m_merge_close_hypotheses_distance );
 }
 
 
 
 const std::vector< MultiHypothesisTracker::Hypothesis* >& MultiObjectTrackerAlgorithm::getHypotheses() {
-	return m_multiHypothesisTracker.getHypotheses();
+	return m_multi_hypothesis_tracker.getHypotheses();
 }
 
 

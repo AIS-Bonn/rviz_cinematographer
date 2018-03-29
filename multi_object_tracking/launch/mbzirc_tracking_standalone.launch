@@ -1,5 +1,6 @@
 <launch>
-  <node pkg="multi_object_tracking" type="multi_object_tracking" name="multi_object_tracking" output="screen">
+  <node pkg="multi_object_tracking" type="multi_object_tracking" name="multi_object_tracking"
+        output="screen">
     <param name="m_radius_around_picked" value="3.5" />
     <param name="m_merge_close_hypotheses_distance" value="0.60" />
     <param name="m_max_mahalanobis_distance" value="10.0" />

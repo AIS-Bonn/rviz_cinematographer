@@ -19,7 +19,7 @@
 
 struct Measurement{
   	vnl_vector<double> pos;
-		vnl_matrix< double >  cov;
+		vnl_matrix<double> cov;
 		uint8_t color;  // ascii code of the first letter of the color of the detected object ('r'ed, 'b'lue, 'g'reen, 'y'ellow, 'o'range, 'u'nknown)
     std::string frame;
     double time;  //time_stamp of the measurement
