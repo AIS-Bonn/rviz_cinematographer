@@ -104,7 +104,7 @@
       <arg name="map_cell_capacity" value="5000" />-->
     </include>
 
-    <!-- ============= Object Segmentation ============= -->
+    <!-- ============= Object Detection ============= -->
     <include file="$(find object_detection)/launch/object_detection.launch">
       <arg name="start_as_nodelet" value="false"/>
       <arg name="input_topic" value="/laser_segmenter_objects"/>
@@ -121,6 +121,18 @@
       <arg name="max_object_width" value="1.0" />
       <arg name="max_object_altitude" value="9.9" />
     </include>
+
+    <node pkg="multi_object_tracking" type="multi_object_tracking" name="multi_object_tracking"
+          output="screen">
+      <remap from="/object_poses" to="/object_detection_poses" />
+
+      <param name="m_radius_around_picked" value="10.0" />
+      <param name="m_merge_close_hypotheses_distance" value="0.60" />
+      <param name="m_max_mahalanobis_distance" value="10.0" />
+      <param name="m_world_frame" value="odom" />
+      <param name="m_born_time_threshold" value="0.65" />
+      <param name="m_future_time" value="0.05" />
+    </node>
 
   </group>
 </launch>
