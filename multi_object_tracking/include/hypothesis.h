@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <chrono>
 
+#include <utils.h>
+
 // #include <QMutex>
 // #include <QColor>
 
@@ -52,9 +54,6 @@ struct TrackerParameters
 
   double ambiguous_dist;
 };
-
-
-double get_time_high_res ();
 
 
 class Hypothesis {
@@ -142,6 +141,14 @@ protected:
 
   unsigned int m_numStateDimensions;
 
+};
+
+class HypothesisFactory {
+public:
+  HypothesisFactory() {}
+  ~HypothesisFactory() {}
+
+  virtual Hypothesis* createHypothesis();
 };
 
 };

@@ -9,8 +9,7 @@
 #include <algorithm>
 #include <chrono>
 
-#include <hypothesis.h>
-#include <hypothesis_3D.h>
+#include <multi_object_hypothesis.h>
 
 // #include <QMutex>
 // #include <QColor>
@@ -27,8 +26,6 @@ namespace MultiHypothesisTracker
 {
 
 class HypothesisFactory;
-
-double get_time_high_res ();
 
 class MultiHypothesisTracker {
 public:
@@ -96,23 +93,11 @@ protected:
 // 		QMutex m_hypothesisMutex;
 };
 
-class HypothesisFactory {
-public:
-  HypothesisFactory() {}
-  ~HypothesisFactory() {}
-
-  virtual Hypothesis* createHypothesis();
-};
 
 
 
-class Hypothesis3DFactory : public HypothesisFactory {
-public:
-  Hypothesis3DFactory() {}
-  ~Hypothesis3DFactory() {}
 
-  virtual Hypothesis* createHypothesis();
-};
+
 
 };
 

@@ -7,7 +7,7 @@
 #include "hungarian.h"
 #include <limits.h> // for INT_MAX
 
-#include <sys/time.h>
+//#include <sys/time.h>
 #include <iostream>
 #include <map>
 
@@ -17,17 +17,17 @@
 namespace MultiHypothesisTracker {
 
 
-	double get_time_high_res (){
-		// std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
-		// auto duration = now.time_since_epoch();
-		// double time_high_res= std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-
-		timeval currTime;
-		gettimeofday( &currTime, NULL );
-		double time_high_res = ((double)currTime.tv_sec) + ((double)currTime.tv_usec) * 1e-6;
-
-		return time_high_res;
-	}
+//	double getTimeHighRes (){
+//		// std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+//		// auto duration = now.time_since_epoch();
+//		// double time_high_res= std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+//
+//		timeval currTime;
+//		gettimeofday( &currTime, NULL );
+//		double time_high_res = ((double)currTime.tv_sec) + ((double)currTime.tv_usec) * 1e-6;
+//
+//		return time_high_res;
+//	}
 
 
 	MultiHypothesisTracker::MultiHypothesisTracker( HypothesisFactory* hypothesisFactory = new HypothesisFactory() )
@@ -724,14 +724,10 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
 
 	}
 
-	Hypothesis* HypothesisFactory::createHypothesis() {
-		return new Hypothesis();
-	}
 
 
 
-	Hypothesis* Hypothesis3DFactory::createHypothesis() {
-		return new Hypothesis3D();
-	}
+
+
 
 };

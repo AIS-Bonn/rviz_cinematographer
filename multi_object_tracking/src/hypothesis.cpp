@@ -17,18 +17,6 @@
 namespace MultiHypothesisTracker
 {
 
-double get_time_high_res (){
-  // std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
-  // auto duration = now.time_since_epoch();
-  // double time_high_res= std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-
-  timeval currTime;
-  gettimeofday( &currTime, NULL );
-  double time_high_res = ((double)currTime.tv_sec) + ((double)currTime.tv_usec) * 1e-6;
-
-  return time_high_res;
-}
-
 Hypothesis::Hypothesis()
 :	m_mean( vnl_vector< double >( 6 ) )
 ,	m_covariance( vnl_matrix< double >( 6, 6 ) )
@@ -122,7 +110,7 @@ void Hypothesis::undetected() {
 
 bool Hypothesis::isSpurious() {
 
-  double currentTime = get_time_high_res();
+  double currentTime = getTimeHighRes();
 
   //static object that went more than 2 seconds with less than 3 detections
   //theme may just be missdetections of the laser that gives really briefly a measurement for an object
@@ -144,7 +132,7 @@ bool Hypothesis::isSpurious() {
   if( currentTime - m_lastMeasurementTime > 90 ){ //more than x second and the track will be deleted
     return true;
   }else {
-    double maxPositionCov = getParameters().max_cov;
+    double maxPositionCov = getParameters().max_cov; // TODO unused - delete?
 
     vnl_symmetric_eigensystem< double > eigensystemPosition( m_covariance.extract( 3, 3 ) );
     // if( eigensystemPosition.get_eigenvalue( 0 ) > maxPositionCov || eigensystemPosition.get_eigenvalue( 1 ) > maxPositionCov || eigensystemPosition.get_eigenvalue( 2 ) > maxPositionCov ) {
@@ -220,8 +208,8 @@ void Hypothesis::predict( double dt, const vnl_vector< double >& control ) {
 
   }
 
-  for( int i = 0; i < m_covariance.rows(); i++ )
-    for( int j = i; j < m_covariance.cols(); j++ )
+  for( int i = 0; i < (int)m_covariance.rows(); i++ )
+    for( int j = i; j < (int)m_covariance.cols(); j++ )
       m_covariance( i, j ) = m_covariance( j, i );
 
 
@@ -241,7 +229,7 @@ void Hypothesis::correct( const Measurement& measurement ) {
   identity.set_identity();
 
 
-  double curr_time = get_time_high_res();
+  double curr_time = getTimeHighRes(); // TODO: unused - delete?
   // double time_dif= curr_time-m_last_mean_time;
   // double time_dif= curr_time-m_lastMeasurementTime;  //Should be something like time_dif=measurement.time - previous_meaurement.time
   double time_dif= measurement.time-m_previous_measurement.time;
@@ -341,12 +329,12 @@ void Hypothesis::correct( const Measurement& measurement ) {
   m_is_first_position=false;
   m_previous_measurement=measurement;
   m_latest_measurement=measurement;
-  m_lastMeasurementTime = get_time_high_res();
+  m_lastMeasurementTime = getTimeHighRes();
 
 
 
-  for( int i = 0; i < m_covariance.rows(); i++ )
-    for( int j = i; j < m_covariance.cols(); j++ )
+  for( int i = 0; i < (int)m_covariance.rows(); i++ )
+    for( int j = i; j < (int)m_covariance.cols(); j++ )
       m_covariance( i, j ) = m_covariance( j, i );
 
 
@@ -417,6 +405,11 @@ void Hypothesis::measurementModel( vnl_vector< double >& expectedMeasurement, vn
   measurementCovariance( 1, 1 ) = measurementStd * measurementStd;
   measurementCovariance( 2, 2 ) = measurementStd * measurementStd;
 
+}
+
+
+Hypothesis* HypothesisFactory::createHypothesis() {
+  return new Hypothesis();
 }
 
 };

@@ -235,7 +235,7 @@ void Tracker::publish_measurement_covariance(std::vector<Measurement> measuremen
 
 void Tracker::publish_hypothesis_covariance(){
   std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
-  double cur= MultiHypothesisTracker::get_time_high_res();
+  double cur= MultiHypothesisTracker::getTimeHighRes();
 
   for (size_t i = 0; i < hypotheses.size(); i++) {
     visualization_msgs::Marker marker_cov;
@@ -281,7 +281,7 @@ void Tracker::publish_hypotheses() {
 
   std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
   visualization_msgs::Marker hypothesis_marker= createMarker();
-  double cur= MultiHypothesisTracker::get_time_high_res();
+  double cur= MultiHypothesisTracker::getTimeHighRes();
 
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i)
@@ -310,7 +310,7 @@ void Tracker::publish_hypotheses() {
 
 void Tracker::publish_hypotheses_object_msg(){
   std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
-  double cur= MultiHypothesisTracker::get_time_high_res();
+  double cur= MultiHypothesisTracker::getTimeHighRes();
   object_detection::ObjectDetections object_detecions;
   object_detection::ObjectDetection object;
   object_detecions.header.stamp=ros::Time::now();
@@ -338,7 +338,7 @@ void Tracker::publish_hypotheses_object_msg(){
 
 void Tracker::publish_hypotheses_future_object_msg(){
   std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
-  double cur= MultiHypothesisTracker::get_time_high_res();
+  double cur= MultiHypothesisTracker::getTimeHighRes();
   object_detection::ObjectDetections object_detecions;
   object_detection::ObjectDetection object;
   object_detecions.header.stamp=ros::Time::now();
@@ -374,7 +374,7 @@ void Tracker::publish_hypotheses_future() {
   hypothesis_marker.color.r=0.0;
   hypothesis_marker.color.g=0.0;
   hypothesis_marker.color.b=1.0;
-  double cur= MultiHypothesisTracker::get_time_high_res();
+  double cur= MultiHypothesisTracker::getTimeHighRes();
 
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i)
@@ -408,7 +408,7 @@ void Tracker::publish_static_hypotheses(){
   visualization_msgs::Marker static_object_marker= createMarker();
   static_object_marker.type = visualization_msgs::Marker::LINE_LIST;
   static_object_marker.color.a = 0.5; // Don't forget to set the alpha!
-  double cur= MultiHypothesisTracker::get_time_high_res();
+  double cur= MultiHypothesisTracker::getTimeHighRes();
 
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i){
@@ -442,7 +442,7 @@ void Tracker::publish_dynamic_hypotheses(){
   visualization_msgs::Marker dynamic_object_marker= createMarker(0,0,0 , 0.0, 0.5, 0.5);
   dynamic_object_marker.type = visualization_msgs::Marker::LINE_LIST;
   dynamic_object_marker.color.a = 0.5; // Don't forget to set the alpha!
-  double cur= MultiHypothesisTracker::get_time_high_res();
+  double cur= MultiHypothesisTracker::getTimeHighRes();
 
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i){

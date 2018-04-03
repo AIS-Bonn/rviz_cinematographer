@@ -16,19 +16,6 @@
 
 namespace MultiHypothesisTracker {
 
-
-	double get_time_high_res (){
-		// std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
-		// auto duration = now.time_since_epoch();
-		// double time_high_res= std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-
-		timeval currTime;
-		gettimeofday( &currTime, NULL );
-		double time_high_res = ((double)currTime.tv_sec) + ((double)currTime.tv_usec) * 1e-6;
-
-		return time_high_res;
-	}
-
 	Hypothesis3D::Hypothesis3D() {
 		m_mean = vnl_vector< double >( 3 );
 		m_covariance = vnl_matrix< double >( 3, 3 );
@@ -75,7 +62,7 @@ namespace MultiHypothesisTracker {
 
 		m_color=measurement.color;
 		m_first_position_in_track = m_mean;
-		m_born_time=get_time_high_res();
+		m_born_time=getTimeHighRes();
 		verify_static();  //Verifies that the object is static or not
 		m_times_measured++;
 
@@ -89,7 +76,7 @@ namespace MultiHypothesisTracker {
 		// std::cout << "measuremetnt cov is " << measurement.cov << '\n';
 
 
-		m_lastMeasurementTime = get_time_high_res();
+		m_lastMeasurementTime = getTimeHighRes();
 
 		m_detectionRate = 0.5f;
 		m_misdetectionRate = 0.5f;
@@ -108,7 +95,7 @@ namespace MultiHypothesisTracker {
 	}
 
 	vnl_vector<double> Hypothesis3D::velocity_decay(vnl_vector<double> velocity_in ){
-		double cur_time = get_time_high_res();
+		double cur_time = getTimeHighRes();
 		//Velocity stays the same up until 1 second then it decays
 		double time_start_decay=1.0;
 		double time_finish_decay=4.0;
@@ -202,5 +189,10 @@ namespace MultiHypothesisTracker {
 		measurementCovariance( 2, 2 ) = measurementStd * measurementStd;
 
 	}
+
+
+Hypothesis* Hypothesis3DFactory::createHypothesis() {
+	return new Hypothesis3D();
+}
 
 };

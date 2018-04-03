@@ -27,8 +27,6 @@ namespace MultiHypothesisTracker
 
 class HypothesisFactory;
 
-double get_time_high_res ();
-
 class Hypothesis3D : public Hypothesis {
 public:
   Hypothesis3D();
@@ -46,6 +44,14 @@ public:
 
 protected:
 
+};
+
+class Hypothesis3DFactory : public HypothesisFactory {
+public:
+  Hypothesis3DFactory() {}
+  ~Hypothesis3DFactory() {}
+
+  virtual Hypothesis* createHypothesis();
 };
 
 };

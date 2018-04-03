@@ -5,43 +5,8 @@
 #include <boost/concept_check.hpp>
 
 
-namespace MultiObjectTracker {
-
-
-const MultiHypothesisTracker::TrackerParameters& MultiObjectHypothesis::getParameters()
+namespace MultiObjectTracker
 {
-	static MultiHypothesisTracker::TrackerParameters params = {
-		0.0075,	// cov_x_per_sec
-		0.0075,	// cov_y_per_sec
-		0.0075,	// cov_z_per_sec
-
-		0.01,	// cov_vx_per_sec (independent of |vx|)
-		0.01,	// cov_vy_per_sec (independent of |vy|)
-		0.01,	// cov_vz_per_sec (independent of |vz|)
-
-		0,	// alpha_vx_vx_per_sec
-		0,	// alpha_vx_vy_per_sec
-		0,	// alpha_vy_vy_per_sec
-		0,	// alpha_vz_vz_per_sec
-
-		// 0.06*0.06, // init_cov
-		 0.02*0.02, // init_cov
-		0.10, // max_cov
-
-		0.2*0.2, // measurementStd
-
-// 		sqrt(2.204) // ambiguous_dist
-		13.3*sqrt(2.204)
-	};
-	return params;
-}
-
-MultiObjectHypothesis::MultiObjectHypothesis()  {
-}
-
-MultiObjectHypothesis::~MultiObjectHypothesis() {
-}
-
 
 MultiObjectTrackerAlgorithm::MultiObjectTrackerAlgorithm()
 : m_multi_hypothesis_tracker(new MultiObjectTracker::MultiObjectHypothesisFactory())
@@ -55,7 +20,7 @@ void MultiObjectTrackerAlgorithm::predictWithoutMeasurement(){
 	movement( 1 ) = 0;
 	movement( 2 ) = 0;
 
-	double currentTime = MultiHypothesisTracker::get_time_high_res();
+	double currentTime = MultiHypothesisTracker::getTimeHighRes();
 
 	if( m_last_prediction_time > 0 ) {
 		m_multi_hypothesis_tracker.predict( currentTime - m_last_prediction_time, movement);
