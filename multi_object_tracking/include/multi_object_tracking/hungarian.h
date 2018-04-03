@@ -26,13 +26,14 @@
 #ifndef HUNGARIAN_H
 #define HUNGARIAN_H
 
+#include <stdio.h>
+#include <stdlib.h>
 
 #define HUNGARIAN_NOT_ASSIGNED 0 
 #define HUNGARIAN_ASSIGNED 1
 
 #define HUNGARIAN_MODE_MINIMIZE_COST   0
 #define HUNGARIAN_MODE_MAXIMIZE_UTIL 1
-
 
 typedef struct {
   int num_rows;

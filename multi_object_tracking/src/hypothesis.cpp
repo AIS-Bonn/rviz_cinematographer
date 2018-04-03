@@ -1,15 +1,5 @@
-#include "multihypothesistracker.h"
+#include "multi_object_tracking/hypothesis.h"
 
-#include "vnl/vnl_inverse.h"
-#include "vnl/algo/vnl_svd.h"
-#include "vnl/algo/vnl_symmetric_eigensystem.h"
-
-#include "hungarian.h"
-#include <limits.h> // for INT_MAX
-
-#include <sys/time.h>
-#include <iostream>
-#include <map>
 
 // #define DETECTION_RATE_INCREMENT 0.04f
 #define DETECTION_RATE_INCREMENT 1.0f

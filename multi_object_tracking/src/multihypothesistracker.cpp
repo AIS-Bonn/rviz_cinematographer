@@ -1,34 +1,9 @@
-#include "multihypothesistracker.h"
-
-#include "vnl/vnl_inverse.h"
-#include "vnl/algo/vnl_svd.h"
-#include "vnl/algo/vnl_symmetric_eigensystem.h"
-
-#include "hungarian.h"
-#include <limits.h> // for INT_MAX
-
-//#include <sys/time.h>
-#include <iostream>
-#include <map>
+#include <multi_object_tracking/multihypothesistracker.h>
 
 // #define DETECTION_RATE_INCREMENT 0.04f
 #define DETECTION_RATE_INCREMENT 1.0f
 
 namespace MultiHypothesisTracker {
-
-
-//	double getTimeHighRes (){
-//		// std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
-//		// auto duration = now.time_since_epoch();
-//		// double time_high_res= std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-//
-//		timeval currTime;
-//		gettimeofday( &currTime, NULL );
-//		double time_high_res = ((double)currTime.tv_sec) + ((double)currTime.tv_usec) * 1e-6;
-//
-//		return time_high_res;
-//	}
-
 
 	MultiHypothesisTracker::MultiHypothesisTracker( HypothesisFactory* hypothesisFactory = new HypothesisFactory() )
 	:	m_lastHypothesisID( 1 )
@@ -671,6 +646,7 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
 
 	}
 
+// TODO: probably delete
 	uint8_t MultiHypothesisTracker::compute_most_prominent_color(std::vector< Measurement >& measurements){
 		// int num_r, num_b, num_g, num_y, num_o, num_u;
 		std::vector<int> colors(5,0); //5 colors, all initialized to 0

@@ -1,36 +1,15 @@
 #ifndef __HYPOTHESIS_3D_H__
 #define __HYPOTHESIS_3D_H__
 
-#include <vnl/vnl_matrix.h>
-#include <vnl/vnl_vector.h>
-
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <chrono>
-
-#include <hypothesis.h>
-
-// #include <QMutex>
-// #include <QColor>
-
-// JS: a generic multi hypothesis tracker
-// of course, the measurement and state transition models have to be implemented for the specific task
-// this class just implements the most basic models: 3D position, noisy velocity, and direct state measurement
-// control input: robot pose difference to last prediction step (dx, dy, dtheta)
-
-
-
+#include <multi_object_tracking/hypothesis.h>
 
 namespace MultiHypothesisTracker
 {
 
-class HypothesisFactory;
-
 class Hypothesis3D : public Hypothesis {
 public:
   Hypothesis3D();
-  ~Hypothesis3D();
+  virtual ~Hypothesis3D();
 
   virtual const TrackerParameters& getParameters();
 
@@ -49,7 +28,7 @@ protected:
 class Hypothesis3DFactory : public HypothesisFactory {
 public:
   Hypothesis3DFactory() {}
-  ~Hypothesis3DFactory() {}
+  virtual ~Hypothesis3DFactory() {}
 
   virtual Hypothesis* createHypothesis();
 };

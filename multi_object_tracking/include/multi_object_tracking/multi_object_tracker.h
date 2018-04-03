@@ -1,5 +1,5 @@
-#ifndef __MULTI_OBJECT_TRACKING_H__
-#define __MULTI_OBJECT_TRACKING_H__
+#ifndef __MULTI_OBJECT_TRACKER_H__
+#define __MULTI_OBJECT_TRACKER_H__
 
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
@@ -12,6 +12,7 @@
 #include <visualization_msgs/Marker.h>
 #include <std_srvs/Empty.h>
 #include <tf/transform_listener.h>
+
 #include <object_detection/ObjectDetections.h>
 // #include "multi_object_tracking/TrackReset.h"
 #include <multi_object_tracking/DebugTracking.h>
@@ -21,8 +22,8 @@
 #include <vnl/vnl_vector.h>
 #include <limits>
 
-#include "multiobjecttracker_algorithm.h"
-#include <multihypothesistracker.h>
+#include <multi_object_tracking/multiobjecttracker_algorithm.h>
+#include <multi_object_tracking/multihypothesistracker.h>
 
 
 namespace MultiObjectTracker

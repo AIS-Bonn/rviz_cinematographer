@@ -23,10 +23,7 @@
  ********************************************************************
  ********************************************************************/
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include "hungarian.h"
+#include <multi_object_tracking/hungarian.h>
 
 #define INF (0x7FFFFFFF)
 #define verbose (0)

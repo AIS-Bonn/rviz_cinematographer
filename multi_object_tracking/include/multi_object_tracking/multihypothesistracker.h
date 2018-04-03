@@ -9,7 +9,18 @@
 #include <algorithm>
 #include <chrono>
 
-#include <multi_object_hypothesis.h>
+#include "vnl/vnl_inverse.h"
+#include "vnl/algo/vnl_svd.h"
+#include "vnl/algo/vnl_symmetric_eigensystem.h"
+
+#include <multi_object_tracking/hungarian.h>
+#include <limits.h> // for INT_MAX
+
+//#include <sys/time.h>
+#include <iostream>
+#include <map>
+
+#include <multi_object_tracking/multi_object_hypothesis.h>
 
 // #include <QMutex>
 // #include <QColor>

@@ -1,6 +1,7 @@
 #ifndef __HYPOTHESIS_H__
 #define __HYPOTHESIS_H__
 
+// TODO: delete unused headers
 #include <vnl/vnl_matrix.h>
 #include <vnl/vnl_vector.h>
 
@@ -9,7 +10,20 @@
 #include <algorithm>
 #include <chrono>
 
-#include <utils.h>
+//#include <multi_object_tracking/multihypothesistracker.h>
+
+#include "vnl/vnl_inverse.h"
+#include "vnl/algo/vnl_svd.h"
+#include "vnl/algo/vnl_symmetric_eigensystem.h"
+
+#include <multi_object_tracking/hungarian.h>
+#include <limits.h> // for INT_MAX
+
+#include <sys/time.h>
+#include <iostream>
+#include <map>
+
+#include <multi_object_tracking/utils.h>
 
 // #include <QMutex>
 // #include <QColor>
@@ -59,7 +73,7 @@ struct TrackerParameters
 class Hypothesis {
 public:
   Hypothesis();
-  ~Hypothesis();
+  virtual ~Hypothesis();
 
   virtual const TrackerParameters& getParameters();
 
@@ -146,7 +160,7 @@ protected:
 class HypothesisFactory {
 public:
   HypothesisFactory() {}
-  ~HypothesisFactory() {}
+  virtual ~HypothesisFactory() {}
 
   virtual Hypothesis* createHypothesis();
 };

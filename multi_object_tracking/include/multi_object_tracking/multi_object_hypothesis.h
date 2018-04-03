@@ -1,17 +1,7 @@
 #ifndef __MULTI_OBJECT_HYPOTHESIS_H__
 #define __MULTI_OBJECT_HYPOTHESIS_H__
 
-#include <multihypothesistracker.h>
-
-#include <vnl/vnl_vector_fixed.h>
-#include <vnl/vnl_matrix_fixed.h>
-
-
-#include <ros/ros.h>
-#include <tf/tf.h>
-#include <tf/transform_listener.h>
-
-#include <hypothesis_3D.h>
+#include <multi_object_tracking/hypothesis_3D.h>
 
 namespace MultiObjectTracker
 {
@@ -19,7 +9,7 @@ namespace MultiObjectTracker
 class MultiObjectHypothesis : public MultiHypothesisTracker::Hypothesis3D {
 public:
   MultiObjectHypothesis();
-  ~MultiObjectHypothesis();
+  virtual ~MultiObjectHypothesis();
 
   virtual const MultiHypothesisTracker::TrackerParameters& getParameters();
 
@@ -43,7 +33,7 @@ protected:
 class MultiObjectHypothesisFactory : public MultiHypothesisTracker::Hypothesis3DFactory {
 public:
   MultiObjectHypothesisFactory() {}
-  ~MultiObjectHypothesisFactory() {}
+  virtual ~MultiObjectHypothesisFactory() {}
 
   virtual MultiHypothesisTracker::Hypothesis* createHypothesis() { return new MultiObjectHypothesis(); }
 };

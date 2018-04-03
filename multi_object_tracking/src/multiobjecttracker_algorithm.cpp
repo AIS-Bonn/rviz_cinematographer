@@ -1,9 +1,4 @@
-#include <sys/time.h>
-#include <vnl/vnl_vector_fixed.h>
-
-#include "multiobjecttracker_algorithm.h"
-#include <boost/concept_check.hpp>
-
+#include <multi_object_tracking/multiobjecttracker_algorithm.h>
 
 namespace MultiObjectTracker
 {

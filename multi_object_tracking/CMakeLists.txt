@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DAPC_CAPTURE_DEBUG=1")
 
 
 
-find_package(OpenCV REQUIRED)
+#find_package(OpenCV REQUIRED)
 find_package(VXL REQUIRED)
 find_package(Eigen3 REQUIRED)
 
@@ -30,34 +30,22 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 add_definitions(-std=gnu++11 -fext-numeric-literals)
-#find_package(Boost REQUIRED COMPONENTS system)
-
 
 add_message_files(
 	FILES
 	DebugTracking.msg
 )
-#add_service_files(
-#  FILES
-#  TrackReset.srv
-#)
+
 generate_messages(
 	DEPENDENCIES
-		std_msgs
-		geometry_msgs
+	std_msgs
+	geometry_msgs
 )
-
-
-
 
 catkin_package(
   INCLUDE_DIRS include
   CATKIN_DEPENDS message_runtime
-#    roscpp
-#    tf
-#    std_msgs
 )
-
 
 # Dummy target for IDE's
 FILE(GLOB_RECURSE all_headers_for_ides
@@ -69,7 +57,6 @@ ADD_CUSTOM_TARGET(ide_includes SOURCES ${all_headers_for_ides})
 
 include_directories(
 	include
-#	${PROJECT_INCLUDE_DIR}
 	${catkin_INCLUDE_DIRS}
 )
 
