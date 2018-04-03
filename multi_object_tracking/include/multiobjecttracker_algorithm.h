@@ -22,8 +22,6 @@ namespace MultiObjectTracker {
 
 		MultiObjectTrackerAlgorithm();
 
-		void updateFilterWithPrediction( MultiHypothesisTracker::HypothesisFilter* filter = new MultiHypothesisTracker::HypothesisFilter() );
-		void updateFilter( double dx, double dy, double da, MultiHypothesisTracker::HypothesisFilter* filter = new MultiHypothesisTracker::HypothesisFilter() );
 		void predictWithoutMeasurement();
 
 		void objectDetectionDataReceived( std::vector< Measurement >& measurements, const std::string& sourceName);
@@ -80,33 +78,6 @@ namespace MultiObjectTracker {
 
 		virtual MultiHypothesisTracker::Hypothesis* createHypothesis() { return new MultiObjectHypothesis(); }
 	};
-
-	class HypothesisFilterBySource : public MultiHypothesisTracker::HypothesisFilter {
-	public:
-		HypothesisFilterBySource( const std::string& source ) { m_source = source; }
-		~HypothesisFilterBySource() {}
-
-		bool passthrough( MultiHypothesisTracker::Hypothesis* hypothesis );
-		std::vector< MultiHypothesisTracker::Hypothesis* > filter( const std::vector< MultiHypothesisTracker::Hypothesis* >& hypotheses );
-
-	protected:
-		std::string m_source;
-	};
-
-
-
-//	class HypothesisFilterBySourceAndFrustum : public MultiHypothesisTracker::HypothesisFilter {
-//	public:
-//		HypothesisFilterBySourceAndFrustum( const std::string& source, const Frustum& frustum ) { m_source = source; m_frustum = frustum; }
-//		~HypothesisFilterBySourceAndFrustum() {}
-//
-//		bool passthrough( MultiHypothesisTracker::Hypothesis* hypothesis );
-//		std::vector< MultiHypothesisTracker::Hypothesis* > filter( const std::vector< MultiHypothesisTracker::Hypothesis* >& hypotheses );
-//
-//	protected:
-//		std::string m_source;
-//		Frustum m_frustum;
-//	};
 
 }
 

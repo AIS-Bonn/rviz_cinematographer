@@ -30,18 +30,6 @@ namespace MultiHypothesisTracker {
 	}
 
 
-
-
-	bool HypothesisFilter::passthrough( Hypothesis* hypothesis ) {
-		return true;
-	}
-
-	std::vector< Hypothesis* > HypothesisFilter::filter( const std::vector< Hypothesis* >& hypotheses ) {
-		// std::cout << "HypothesisFilter::filter input size " << hypotheses.size() << '\n';
-		return hypotheses;
-	}
-
-
 	MultiHypothesisTracker::MultiHypothesisTracker( HypothesisFactory* hypothesisFactory = new HypothesisFactory() )
 	:	m_lastHypothesisID( 1 )
 	,	m_numStateDimensions( 6 )
@@ -72,33 +60,36 @@ namespace MultiHypothesisTracker {
 // 		unlockHypotheses();
 	}
 
-	void MultiHypothesisTracker::predict( double dt, const vnl_vector< double >& control, HypothesisFilter* filter ) {
-// 		lockHypotheses();
+void MultiHypothesisTracker::predict(double time_diff,
+                                     const vnl_vector<double>& control)
+{
+// 	lockHypotheses();
 
-		std::vector< Hypothesis* > hypotheses = filter->filter( m_hypotheses );
-		// std::cout << "predict::m_hypothesis size is: " << m_hypotheses.size()  << '\n';
-		// std::cout << "predict::hypothesis size is: " << hypotheses.size()  << '\n';
-		for( unsigned int i = 0; i < hypotheses.size(); i++ )
-			hypotheses[i]->predict( dt, control );
-// 		unlockHypotheses();
+  // TODO: necessary?
+  std::vector<Hypothesis*> hypotheses = m_hypotheses;
+  for(auto& hypothesis : hypotheses)
+    hypothesis->predict(time_diff, control);
 
-	}
+// 	unlockHypotheses();
+}
 
-	void MultiHypothesisTracker::deleteSpuriosHypotheses( HypothesisFilter* filter )
-	{
-		// delete spurious hypotheses
-		std::vector< Hypothesis* >::iterator it = m_hypotheses.begin();
-		while( it != m_hypotheses.end() ) {
-			if( (*it)->isVisible() && (!filter || filter->passthrough( *it )) && (*it)->isSpurious() ) {
-				delete (*it);
-				it = m_hypotheses.erase( it );
-				continue;
-			}
-			++it;
-		}
-	}
+void MultiHypothesisTracker::deleteSpuriosHypotheses()
+{
+  // delete spurious hypotheses
+  std::vector< Hypothesis* >::iterator it = m_hypotheses.begin();
+  while(it != m_hypotheses.end())
+  {
+    if((*it)->isVisible() && (*it)->isSpurious())
+    {
+      delete (*it);
+      it = m_hypotheses.erase(it);
+      continue;
+    }
+    ++it;
+  }
+}
 
-	std::vector< unsigned int > MultiHypothesisTracker::correct( const std::vector< vnl_vector< double > >& measurements, HypothesisFilter* filter ) {
+	std::vector< unsigned int > MultiHypothesisTracker::correct( const std::vector< vnl_vector< double > >& measurements) {
 
 // // 		lockHypotheses();
 //
@@ -108,10 +99,7 @@ namespace MultiHypothesisTracker {
 //
 // 		// only update visible hypotheses, but associate with all of them
 // 		std::vector< Hypothesis* > hypotheses;
-// 		if(filter)
-// 			hypotheses = filter->filter( m_hypotheses );
-// 		else
-// 			hypotheses = m_hypotheses;
+// 		hypotheses = m_hypotheses;
 //
 // 		const int COST_FACTOR = 10000;
 // 		const double MAX_MAHALANOBIS_DISTANCE = sqrt( 2.204 );
@@ -235,14 +223,14 @@ namespace MultiHypothesisTracker {
 // 		delete[] cost_matrix;
 // 		hungarian_free(&hung);
 //
-// 		deleteSpuriosHypotheses( filter );
+// 		deleteSpuriosHypotheses();
 //
 // // 		unlockHypotheses();
 //
 // 		return assignments;
 	}
 
-	std::vector< unsigned int > MultiHypothesisTracker::correctAmbiguous( const std::vector< Measurement >& measurements, bool createNewHypotheses, HypothesisFilter* filter ) {
+	std::vector< unsigned int > MultiHypothesisTracker::correctAmbiguous( const std::vector< Measurement >& measurements, bool createNewHypotheses) {
 
 // 		typedef std::map<unsigned int, std::vector<vnl_vector<double> > > AssignmentMap;
 // 		struct HypothesisInfo
@@ -255,10 +243,7 @@ namespace MultiHypothesisTracker {
 //
 // 		std::vector< unsigned int > assignments( measurements.size() );
 // 		std::vector< Hypothesis* > hypotheses;
-// 		if(filter)
-// 			hypotheses = filter->filter( m_hypotheses );
-// 		else
-// 			hypotheses = m_hypotheses;
+// 		hypotheses = m_hypotheses;
 //
 // 		AssignmentMap assignmentMap;
 // 		HypothesisInfo *infoCache = new HypothesisInfo[hypotheses.size()];
@@ -365,7 +350,7 @@ namespace MultiHypothesisTracker {
 // 			}
 // 		}
 //
-// 		deleteSpuriosHypotheses( filter );
+// 		deleteSpuriosHypotheses();
 //
 // 		// std::cout << "correct ambious:: after deleting the spurious ones we have hypothesis size " << m_hypotheses.size() << '\n';
 //
@@ -377,7 +362,7 @@ namespace MultiHypothesisTracker {
 	}
 
 
-	std::vector< unsigned int > MultiHypothesisTracker::correctAmbiguous_simplified( const std::vector< Measurement >& measurements, bool createNewHypotheses, HypothesisFilter* filter ) {
+	std::vector< unsigned int > MultiHypothesisTracker::correctAmbiguous_simplified( const std::vector< Measurement >& measurements, bool createNewHypotheses) {
 
 
 		// vnl_vector< double > expectedMeasurement;
@@ -386,10 +371,8 @@ namespace MultiHypothesisTracker {
 
 		std::vector< unsigned int > assignments( measurements.size() );
 		std::vector< Hypothesis* > hypotheses;
-		if(filter)
-			hypotheses = filter->filter( m_hypotheses );
-		else
-			hypotheses = m_hypotheses;
+
+    hypotheses = m_hypotheses;
 
 		std::map<unsigned int, std::vector<Measurement > >  assignmentMap;
 
@@ -519,7 +502,7 @@ namespace MultiHypothesisTracker {
 			}
 		}
 
-		deleteSpuriosHypotheses( filter );
+		deleteSpuriosHypotheses();
 
 		// std::cout << "correct ambious:: after deleting the spurious ones we have hypothesis size " << m_hypotheses.size() << '\n';
 
@@ -530,7 +513,7 @@ namespace MultiHypothesisTracker {
 		return assignments;
 	}
 
-	std::vector< unsigned int > MultiHypothesisTracker::correct_hungarian_simplified( const std::vector< Measurement >& measurements, HypothesisFilter* filter ){
+	std::vector< unsigned int > MultiHypothesisTracker::correct_hungarian_simplified( const std::vector< Measurement >& measurements){
 		// 		lockHypotheses();
 
 		std::vector< unsigned int > assignments( measurements.size() , 0 );
@@ -538,10 +521,7 @@ namespace MultiHypothesisTracker {
 
 		// only update visible hypotheses, but associate with all of them
 		std::vector< Hypothesis* > hypotheses;
-		if(filter)
-			hypotheses = filter->filter( m_hypotheses );
-		else
-			hypotheses = m_hypotheses;
+    hypotheses = m_hypotheses;
 
 		const int COST_FACTOR = 10000;
 		// const double MAX_MAHALANOBIS_DISTANCE = sqrt( 2.204 );
@@ -681,7 +661,7 @@ namespace MultiHypothesisTracker {
 		delete[] cost_matrix;
 		hungarian_free(&hung);
 
-		deleteSpuriosHypotheses( filter );
+		deleteSpuriosHypotheses();
 
 
 // 		unlockHypotheses();
@@ -854,13 +834,13 @@ namespace MultiHypothesisTracker {
 			return true;
 		}
 
-
+// TODO: Jan: might not be the case for sparse data. 
 		if (m_is_static){
 			return false;
 		}
 
 
-
+// TODO: Jan: should be a parameter
 		if( currentTime - m_lastMeasurementTime > 90 ){ //more than x second and the track will be deleted
 			return true;
 		}else {
@@ -880,6 +860,7 @@ namespace MultiHypothesisTracker {
 		}
 	}
 
+	// TODO: Jan: get rid of color stuff and add parameters, or at least compare to member variable
 	void Hypothesis::verify_static(){
 
 		//In the case that it is a movable object it will forever be flagged as movable, ie, non-static
