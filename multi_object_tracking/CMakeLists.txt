@@ -74,6 +74,35 @@ include_directories(
 )
 
 
+add_library(hypothesis
+	src/hypothesis.cpp
+)
+
+#TODO
+target_link_libraries(hypothesis
+		${catkin_LIBRARIES}
+		vnl
+		vnl_algo
+		netlib
+		v3p_netlib
+		vcl
+		)
+
+add_library(hypothesis_3D
+	src/hypothesis_3D.cpp
+)
+
+#TODO
+target_link_libraries(hypothesis_3D
+		hypothesis
+		${catkin_LIBRARIES}
+		vnl
+		vnl_algo
+		netlib
+		v3p_netlib
+		vcl
+		)
+
 add_executable(multi_object_tracking
 		src/multi_object_tracker.cpp
 		src/multihypothesistracker.cpp
@@ -82,6 +111,8 @@ add_executable(multi_object_tracking
 )
 
 target_link_libraries(multi_object_tracking
+		hypothesis
+		hypothesis_3D
 		${catkin_LIBRARIES}
 		vnl
 		vnl_algo
