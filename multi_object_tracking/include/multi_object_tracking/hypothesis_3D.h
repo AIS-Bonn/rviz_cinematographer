@@ -25,10 +25,11 @@ protected:
 
 };
 
-class Hypothesis3DFactory : public HypothesisFactory {
+class Hypothesis3DFactory : public HypothesisFactory
+{
 public:
-  Hypothesis3DFactory() {}
-  virtual ~Hypothesis3DFactory() {}
+  Hypothesis3DFactory(){}
+  virtual ~Hypothesis3DFactory(){}
 
   virtual Hypothesis* createHypothesis();
 };

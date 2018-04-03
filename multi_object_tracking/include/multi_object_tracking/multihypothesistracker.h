@@ -16,14 +16,12 @@
 #include <multi_object_tracking/hungarian.h>
 #include <limits.h> // for INT_MAX
 
-//#include <sys/time.h>
 #include <iostream>
 #include <map>
 
 #include <multi_object_tracking/multi_object_hypothesis.h>
 
-// #include <QMutex>
-// #include <QColor>
+
 
 // JS: a generic multi hypothesis tracker
 // of course, the measurement and state transition models have to be implemented for the specific task

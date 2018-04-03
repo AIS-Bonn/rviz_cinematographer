@@ -1,8 +1,5 @@
 #include <multi_object_tracking/multihypothesistracker.h>
 
-// #define DETECTION_RATE_INCREMENT 0.04f
-#define DETECTION_RATE_INCREMENT 1.0f
-
 namespace MultiHypothesisTracker {
 
 	MultiHypothesisTracker::MultiHypothesisTracker( HypothesisFactory* hypothesisFactory = new HypothesisFactory() )
@@ -40,7 +37,7 @@ void MultiHypothesisTracker::predict(double time_diff,
 {
 // 	lockHypotheses();
 
-  // TODO: necessary?
+  // TODO: necessary? : check if hypotheses are changed in predict function and if this is useful
   std::vector<Hypothesis*> hypotheses = m_hypotheses;
   for(auto& hypothesis : hypotheses)
     hypothesis->predict(time_diff, control);

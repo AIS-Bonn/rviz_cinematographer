@@ -10,8 +10,6 @@
 #include <algorithm>
 #include <chrono>
 
-//#include <multi_object_tracking/multihypothesistracker.h>
-
 #include "vnl/vnl_inverse.h"
 #include "vnl/algo/vnl_svd.h"
 #include "vnl/algo/vnl_symmetric_eigensystem.h"
@@ -24,14 +22,6 @@
 #include <map>
 
 #include <multi_object_tracking/utils.h>
-
-// #include <QMutex>
-// #include <QColor>
-
-// JS: a generic multi hypothesis tracker
-// of course, the measurement and state transition models have to be implemented for the specific task
-// this class just implements the most basic models: 3D position, noisy velocity, and direct state measurement
-// control input: robot pose difference to last prediction step (dx, dy, dtheta)
 
 struct Measurement
 {
@@ -70,34 +60,35 @@ struct TrackerParameters
 };
 
 
-class Hypothesis {
+class Hypothesis
+{
 public:
+
   Hypothesis();
   virtual ~Hypothesis();
 
   virtual const TrackerParameters& getParameters();
 
-  inline unsigned int getID() { return m_ID; }
+  inline unsigned int getID(){ return m_ID; }
 
-  inline std::string getLabel() { return m_label; }
-  inline void setLabel( const std::string& label ) { m_label = label; }
+  // TODO: delete? - used in tracker but is identical to ID
+  inline std::string getLabel(){ return m_label; }
+  inline void setLabel(const std::string& label){ m_label = label; }
 
-// 		inline QColor getColor() { return m_color; }
-// 		inline void setColor( const QColor& color ) { m_color = color; }
-
+  // TODO: delete? - never used, just set
   inline unsigned int getNumStateDimensions() { return m_numStateDimensions; }
 
-  inline vnl_vector< double >& getMean() { return m_mean; }
-  inline vnl_matrix< double >& getCovariance() { return m_covariance; }
-  inline uint8_t getColor() { return m_color; }
-  inline bool isStatic() {return m_is_static; }
+  inline vnl_vector<double>& getMean(){ return m_mean; }
+  inline vnl_matrix<double>& getCovariance(){ return m_covariance; }
+  inline uint8_t getColor(){ return m_color; }
+  inline bool isStatic(){ return m_is_static; }
 
-  virtual void initialize( const Measurement& measurement, unsigned int id, const std::string& label = ""/*, const QColor& color = QColor( 0, 0, 0 )*/ );
+  virtual void initialize(const Measurement& measurement, unsigned int id, const std::string& label = ""/*, const QColor& color = QColor( 0, 0, 0 )*/ );
 
   virtual bool isSpurious();
 
-  inline void setVisible( bool v ) { m_visible = v; }
-  inline bool isVisible() { return m_visible; }
+  inline void setVisible(bool v){ m_visible = v; }
+  inline bool isVisible(){ return m_visible; }
 
   virtual void detected();
   virtual void undetected();

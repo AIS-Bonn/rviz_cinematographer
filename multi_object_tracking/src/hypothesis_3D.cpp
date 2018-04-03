@@ -1,8 +1,5 @@
 #include "multi_object_tracking/hypothesis_3D.h"
 
-// #define DETECTION_RATE_INCREMENT 0.04f
-#define DETECTION_RATE_INCREMENT 1.0f
-
 namespace MultiHypothesisTracker {
 
 	Hypothesis3D::Hypothesis3D() {

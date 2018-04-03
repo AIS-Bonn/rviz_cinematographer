@@ -5,7 +5,7 @@ namespace MultiObjectTracker
 {
 
 Tracker::Tracker():
-m_debug_counter(0)
+  m_debug_counter(0)
 {
   ros::NodeHandle n("~");
   ros::NodeHandle pub_n;
