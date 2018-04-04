@@ -1,35 +1,28 @@
 #include <multi_object_tracking/multihypothesistracker.h>
 
-namespace MultiHypothesisTracker {
+namespace MultiHypothesisTracker
+{
 
-	MultiHypothesisTracker::MultiHypothesisTracker( HypothesisFactory* hypothesisFactory = new HypothesisFactory() )
-	:	m_lastHypothesisID( 1 )
-	,	m_numStateDimensions( 6 )
-	,	m_hypothesisFactory( hypothesisFactory ) {
-	}
+MultiHypothesisTracker::MultiHypothesisTracker(HypothesisFactory* hypothesis_factory = new HypothesisFactory())
+:	m_lastHypothesisID(1)
+	,	m_numStateDimensions(6)
+	,	m_hypothesisFactory(hypothesis_factory)
+{
+}
 
-	MultiHypothesisTracker::~MultiHypothesisTracker() {
-// 		lockHypotheses();
-		for( unsigned int i = 0; i < m_hypotheses.size(); i++ )
-			delete m_hypotheses[i];
-		m_hypotheses.clear();
-		delete m_hypothesisFactory;
-// 		unlockHypotheses();
-	}
+MultiHypothesisTracker::~MultiHypothesisTracker()
+{
+	for( unsigned int i = 0; i < m_hypotheses.size(); i++ )
+		delete m_hypotheses[i];
+	m_hypotheses.clear();
+	delete m_hypothesisFactory;
+}
 
 	Hypothesis* MultiHypothesisTracker::getHypothesisByID( unsigned int ID ) {
 		for( unsigned int i = 0; i < m_hypotheses.size(); i++ )
 			if( m_hypotheses[i]->getID() == ID )
 				return m_hypotheses[i];
 		return NULL;
-	}
-
-	void MultiHypothesisTracker::clear() {
-// 		lockHypotheses();
-		for( unsigned int i = 0; i < m_hypotheses.size(); i++ )
-			delete m_hypotheses[i];
-		m_hypotheses.clear();
-// 		unlockHypotheses();
 	}
 
 void MultiHypothesisTracker::predict(double time_diff,
@@ -48,8 +41,7 @@ void MultiHypothesisTracker::predict(double time_diff,
 
 void MultiHypothesisTracker::deleteSpuriosHypotheses()
 {
-  // delete spurious hypotheses
-  std::vector< Hypothesis* >::iterator it = m_hypotheses.begin();
+  auto it = m_hypotheses.begin();
   while(it != m_hypotheses.end())
   {
     if((*it)->isVisible() && (*it)->isSpurious())
@@ -62,7 +54,7 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
   }
 }
 
-	std::vector< unsigned int > MultiHypothesisTracker::correct_hungarian_simplified( const std::vector< Measurement >& measurements){
+	std::vector< unsigned int > MultiHypothesisTracker::correct_hungarian_simplified(const std::vector< Measurement >& measurements){
 		// 		lockHypotheses();
 
 		std::vector< unsigned int > assignments( measurements.size() , 0 );
@@ -224,27 +216,26 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
 
 	}
 
-	void MultiHypothesisTracker::mergeCloseHypotheses(double mergeDistance)
-  {
-		auto it1 = m_hypotheses.begin();
-		while(it1 != m_hypotheses.end())
-    {
-			auto it2 = it1 + 1;
-			while(it2 != m_hypotheses.end())
-      {
-				double dist = ((*it1)->getMean() - (*it2)->getMean()).norm();
+void MultiHypothesisTracker::mergeCloseHypotheses(double distance_threshold)
+{
+	auto it1 = m_hypotheses.begin();
+	while(it1 != m_hypotheses.end())
+	{
+		auto it2 = it1 + 1;
+		while(it2 != m_hypotheses.end())
+		{
+			double distance = ((*it1)->getMean() - (*it2)->getMean()).norm();
 
-        // TODO: delete color comparison if color not used
-				if(dist < mergeDistance  && ((*it1)->getColor()==(*it2)->getColor()))
-        {
-					delete (*it2);
-					it2 = m_hypotheses.erase(it2);
-					continue;
-				}
-				++it2;
+			if(distance < distance_threshold)
+			{
+				delete (*it2);
+				it2 = m_hypotheses.erase(it2);
+				continue;
 			}
-			++it1;
+			++it2;
 		}
+		++it1;
 	}
+}
 
 };

@@ -1,6 +1,5 @@
 #include <multi_object_tracking/multi_object_tracker.h>
 
-
 namespace MultiObjectTracker
 {
 
@@ -32,30 +31,19 @@ Tracker::Tracker():
   n.param<std::string>("m_world_frame", m_world_frame, "world");
   n.param<double>("m_born_time_threshold", m_born_time_threshold, 0.5);
   n.param<double>("m_future_time", m_future_time, 0.0);
-//  n.param<double>("m_spurious_time", m_spurious_time, 4.0);
-//  n.param<double>("m_time_start_velocity_decay", m_time_start_velocity_decay, 1.0);
-//  n.param<double>("m_time_finish_velocity_decay", m_time_finish_velocity_decay, 4.0);
 
-
-  m_algorithm->set_merge_close_hypotheses_distance (m_merge_close_hypotheses_distance);
-  m_algorithm->m_multi_hypothesis_tracker.set_max_mahalanobis_distance(m_max_mahalanobis_distance);
-  // m_algorithm->m_multi_hypothesis_tracker.set_spurious_time(m_spurious_time);
-  // m_algorithm->m_multi_hypothesis_tracker.set_time_start_velocity_decay (m_time_start_velocity_decay);
-  // m_algorithm->m_multi_hypothesis_tracker.set_time_finish_velocity_decay (m_time_finish_velocity_decay);
-
+  m_algorithm->setMergeDistance(m_merge_close_hypotheses_distance);
+  m_algorithm->m_multi_hypothesis_tracker.setMaxMahalanobisDistance(m_max_mahalanobis_distance);
 }
 
-Tracker::~Tracker() {
-}
-
-void Tracker::update() {
-  // std::cout << std::endl << "predict without measurement" << '\n';
+void Tracker::update()
+{
   m_algorithm->predictWithoutMeasurement();
 }
 
 void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
 {
-  ROS_INFO_STREAM("laser callback");
+  ROS_DEBUG_STREAM("Laser detection callback.");
 
   std::vector<Measurement> measurements = laser_detections2measurements(msg);
 
@@ -67,11 +55,7 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
   publish_measurement_markers(measurements);
   publish_measurement_covariance(measurements);
 
-  std::string source = "all";
-  m_algorithm->objectDetectionDataReceived(measurements, source);
-
-
-  // std::vector< unsigned int > assignments = m_algorithm->objectDetectionDataReceived( measurements, source);
+  m_algorithm->objectDetectionDataReceived(measurements);
 
   //Full track for first hypothesis
   // std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();

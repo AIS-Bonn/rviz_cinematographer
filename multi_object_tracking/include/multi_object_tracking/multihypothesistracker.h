@@ -48,13 +48,19 @@ public:
   // returns vector of assignments
   std::vector< unsigned int > correct_hungarian_simplified( const std::vector< Measurement >& measurements);
 
-  void mergeCloseHypotheses(double mergeDistance);
+  /**
+   * @brief Deletes all hypotheses that are too close to others.
+   *
+   * //TODO: implement a reasonable merging function.
+   *
+   * @param[in] distance_threshold  minimal distance two hypotheses have to have to not be "merged"
+   */
+  void mergeCloseHypotheses(double distance_threshold);
 
   inline std::vector< Hypothesis* >& getHypotheses() { return m_hypotheses; }
   Hypothesis* getHypothesisByID( unsigned int ID );
-// 		inline void lockHypotheses() { m_hypothesisMutex.lock(); }
-// 		inline void unlockHypotheses() { m_hypothesisMutex.unlock(); }
-  void clear();
+
+//  void clear(){ m_hypotheses.clear(); };
 
   /**
    * @brief Deletes hypotheses that are visible and spurious
@@ -66,10 +72,7 @@ public:
 
 
   //params
-  inline void set_max_mahalanobis_distance(double val) {m_max_mahalanobis_distance=val;}
-  inline void set_spurious_time(double val) {m_spurious_time=val;}
-  inline void set_time_start_velocity_decay (double val) {m_time_start_velocity_decay=val;}
-  inline void set_time_finish_velocity_decay (double val) {m_time_finish_velocity_decay=val;}
+  inline void setMaxMahalanobisDistance(double distance){ m_max_mahalanobis_distance = distance; }
 
 protected:
 
@@ -82,9 +85,6 @@ protected:
   //Parameters
   // double m_merge_close_hypotheses_distance;
   double m_max_mahalanobis_distance;
-  double m_spurious_time;
-  double m_time_start_velocity_decay;
-  double m_time_finish_velocity_decay;
 
 
 // 		QMutex m_hypothesisMutex;

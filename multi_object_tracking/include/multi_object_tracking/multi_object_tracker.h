@@ -30,7 +30,7 @@ class Tracker
 {
 public:
   Tracker();
-  ~Tracker();
+  ~Tracker(){};
 
   void update();
 
@@ -65,10 +65,6 @@ private:
   std::string m_world_frame;
   double m_born_time_threshold;   //Time after which we start publishing the hypothesis. If the hypothesis is too young it may be unrealiable and therefore it will be removed by the isSpurious
   double m_future_time;
-  // double m_spurious_time;
-  // double m_time_start_velocity_decay;
-  // double m_time_finish_velocity_decay;
-
 
   ros::Publisher m_hypothesesPublisher;
   ros::Publisher m_measurement_marker_publisher;
