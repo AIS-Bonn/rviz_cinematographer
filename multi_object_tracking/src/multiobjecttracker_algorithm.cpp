@@ -4,7 +4,7 @@ namespace MultiHypothesisTracker
 {
 
 MultiObjectTrackerAlgorithm::MultiObjectTrackerAlgorithm()
-: m_multi_hypothesis_tracker(std::make_shared<MultiObjectHypothesisFactory>())
+: m_multi_hypothesis_tracker(std::make_shared<Hypothesis3DFactory>())
 	, m_last_prediction_time(0)
 {}
 
@@ -37,9 +37,9 @@ const std::vector<std::shared_ptr<Hypothesis>>& MultiObjectTrackerAlgorithm::get
 	return m_multi_hypothesis_tracker.getHypotheses();
 }
 
-std::shared_ptr<MultiObjectHypothesis> MultiObjectTrackerAlgorithm::getHypothesisByID(unsigned int id)
+std::shared_ptr<Hypothesis3D> MultiObjectTrackerAlgorithm::getHypothesisByID(unsigned int id)
 {
-  return std::static_pointer_cast<MultiObjectHypothesis>(m_multi_hypothesis_tracker.getHypothesisByID(id));
+  return std::static_pointer_cast<Hypothesis3D>(m_multi_hypothesis_tracker.getHypothesisByID(id));
 }
 
 }

@@ -47,7 +47,6 @@ include_directories(
 add_library(hypotheses
 	src/hypothesis.cpp
 	src/hypothesis_3D.cpp
-	src/multi_object_hypothesis.cpp
 )
 
 target_link_libraries(hypotheses

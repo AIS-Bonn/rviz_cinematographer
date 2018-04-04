@@ -59,7 +59,7 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
 
   //Full track for first hypothesis
   // std::vector<Hypothesis*> hypotheses = m_algorithm->getHypotheses();
-  // MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[0];
+  // Hypothesis3D *hypothesis = (Hypothesis3D *) hypotheses[0];
   // const Eigen::Vector3d& mean = hypothesis->getMean();
   // geometry_msgs::Point p;
   // p.x=mean(0);
@@ -270,7 +270,7 @@ void Tracker::publish_hypotheses() {
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
-    std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[i]);
+    std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[i]);
 
     const Eigen::Vector3d& mean = hypothesis->getMean();
     // std::cout << "publishhypothesis: mean of hypothesis " << i << " is " << mean << '\n';
@@ -304,7 +304,7 @@ void Tracker::publish_hypotheses_object_msg(){
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
-    std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[i]);
+    std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[i]);
 
     const Eigen::Vector3d& mean = hypothesis->getMean();
     object.position.x = mean(0);
@@ -332,7 +332,7 @@ void Tracker::publish_hypotheses_future_object_msg(){
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
-    std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[i]);
+    std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[i]);
     Eigen::Vector3d mean = hypothesis->getMean();
 
     //Predict a little bit into the future
@@ -363,7 +363,7 @@ void Tracker::publish_hypotheses_future() {
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
-    std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[i]);
+    std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[i]);
 
     Eigen::Vector3d mean = hypothesis->getMean();
 
@@ -396,7 +396,7 @@ void Tracker::publish_static_hypotheses(){
 
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i){
-    std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[i]);
+    std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[i]);
 
     if (hypothesis->isStatic() && !hypothesis->is_picked() && (cur - hypothesis->get_born_time() > m_born_time_threshold )    ){
       const Eigen::Vector3d& mean = hypothesis->getMean();
@@ -430,7 +430,7 @@ void Tracker::publish_dynamic_hypotheses(){
 
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i){
-    std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[i]);
+    std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[i]);
 
     if (!hypothesis->isStatic() && !hypothesis->is_picked() && (cur - hypothesis->get_born_time() > m_born_time_threshold )    ){
       const Eigen::Vector3d& mean = hypothesis->getMean();
@@ -464,7 +464,7 @@ void Tracker::publish_debug()
   if(hypotheses[0]->get_latest_measurement_time() == 0)
     return;
 
-  std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[0]);
+  std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[0]);
 
   multi_object_tracking::DebugTracking debug_msg;
   debug_msg.header.seq = m_debug_counter++;

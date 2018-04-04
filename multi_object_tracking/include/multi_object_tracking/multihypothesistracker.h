@@ -10,9 +10,9 @@
 #include <limits.h> // for INT_MAX
 
 #include <iostream>
-#include <map>
+//#include <map>
 
-#include <multi_object_tracking/multi_object_hypothesis.h>
+#include <multi_object_tracking/hypothesis_3D.h>
 
 
 // JS: a generic multi hypothesis tracker
@@ -69,24 +69,15 @@ public:
    */
   void deleteSpuriosHypotheses();
 
-
-  //params
   inline void setMaxMahalanobisDistance(double distance){ m_max_mahalanobis_distance = distance; }
 
 protected:
-
-
   std::vector<std::shared_ptr<Hypothesis>> m_hypotheses;
   unsigned int m_lastHypothesisID;
   unsigned int m_numStateDimensions;
   std::shared_ptr<HypothesisFactory> m_hypothesisFactory;
 
-  //Parameters
-  // double m_merge_close_hypotheses_distance;
   double m_max_mahalanobis_distance;
-
-
-// 		QMutex m_hypothesisMutex;
 };
 
 };

@@ -28,7 +28,7 @@ public:
 
   const std::vector<std::shared_ptr<Hypothesis>>& getHypotheses();
 
-  std::shared_ptr<MultiObjectHypothesis> getHypothesisByID(unsigned int id);
+  std::shared_ptr<Hypothesis3D> getHypothesisByID(unsigned int id);
 
   void setMergeDistance(double distance){ m_merge_distance = distance; }
 
