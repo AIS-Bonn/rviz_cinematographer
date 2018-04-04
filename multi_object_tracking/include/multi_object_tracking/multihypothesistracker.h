@@ -46,12 +46,7 @@ public:
                        Eigen::Vector3d& control);
 
   // returns vector of assignments
-  virtual std::vector< unsigned int > correct( const std::vector<Eigen::Vector3d>& measurements);
-  virtual std::vector< unsigned int > correctAmbiguous( const std::vector< Measurement >& measurements, bool createNewHypotheses = true);
-
-  virtual std::vector< unsigned int > correctAmbiguous_simplified( const std::vector< Measurement >& measurements, bool createNewHypotheses = true);
   std::vector< unsigned int > correct_hungarian_simplified( const std::vector< Measurement >& measurements);
-  uint8_t compute_most_prominent_color(std::vector< Measurement >& measurements);
 
   void mergeCloseHypotheses(double mergeDistance);
 
