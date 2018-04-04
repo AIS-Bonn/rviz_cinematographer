@@ -35,13 +35,13 @@ void MultiObjectTrackerAlgorithm::objectDetectionDataReceived(std::vector<Measur
 {
   // TODO: unused?
   std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_multi_hypothesis_tracker.getHypotheses();
-  std::cout << "MultiObjectTrackerAlgorithm::objectDetectionDataReceived: hypotheses.size " << hypotheses.size() << std::endl;
 
   predictWithoutMeasurement();
 
   // return m_multi_hypothesis_tracker.correctAmbiguous( measurements_legacy, true, &hypothesesFilter );
   // m_multi_hypothesis_tracker.correctAmbiguous_simplified( measurements, true, &hypothesesFilter );
   m_multi_hypothesis_tracker.correct_hungarian_simplified(measurements);
+
   m_multi_hypothesis_tracker.mergeCloseHypotheses( m_merge_close_hypotheses_distance );
 }
 

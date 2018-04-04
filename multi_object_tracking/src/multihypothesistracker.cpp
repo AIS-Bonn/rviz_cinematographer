@@ -39,8 +39,6 @@ void MultiHypothesisTracker::predict(double time_diff,
 
   // TODO: necessary? : check if hypotheses are changed in predict function and if this is useful
   std::vector<Hypothesis*> hypotheses = m_hypotheses;
-  std::cout << "hypotheses.size " << hypotheses.size() << std::endl;
-  std::cout << "m_hypotheses.size " << m_hypotheses.size() << std::endl;
 
   for(auto& hypothesis : hypotheses)
     hypothesis->predict(time_diff, control);
@@ -493,21 +491,12 @@ std::vector<unsigned int> MultiHypothesisTracker::correct(const std::vector<Eige
 	std::vector< unsigned int > MultiHypothesisTracker::correct_hungarian_simplified( const std::vector< Measurement >& measurements){
 		// 		lockHypotheses();
 
-    std::cout << "CORRECTING###" << std::endl;
 		std::vector< unsigned int > assignments( measurements.size() , 0 );
 
 
 		// only update visible hypotheses, but associate with all of them
 		std::vector< Hypothesis* > hypotheses;
     hypotheses = m_hypotheses;
-
-    std::cout << "correct_hungarian_simplified: hypotheses.size " << hypotheses.size() << std::endl;
-    std::cout << "correct_hungarian_simplified: m_hypotheses.size " << m_hypotheses.size() << std::endl;
-    std::cout << "correct_hungarian_simplified: measurements.size " << measurements.size() << std::endl;
-    if(m_hypotheses.size() > 0)
-      std::cout << "hypo 0 vector mean is " << m_hypotheses[0]->getMean() << std::endl;
-
-
 
     const int COST_FACTOR = 10000;
 		// const double MAX_MAHALANOBIS_DISTANCE = sqrt( 2.204 );
@@ -546,11 +535,14 @@ std::vector<unsigned int> MultiHypothesisTracker::correct(const std::vector<Eige
 					measurementMatrix.setIdentity();
           Eigen::Matrix3d correctionCovariance;
 					correctionCovariance = measurementMatrix * hypotheses[i]->getCovariance() * measurementMatrix.transpose() + measurements[j].cov;
-//					vnl_svd< double > svdCorrectionCovariance( correctionCovariance );
-//					vnl_matrix< double > invCorrectionCovariance= svdCorrectionCovariance.pinverse();
-					double mahalanobis_distance = sqrt( (
-						(measurements[j].pos - hypotheses[i]->getMean()).transpose() * correctionCovariance.inverse()).dot(measurements[j].pos -  hypotheses[i]->getMean()) );
 
+					Eigen::Vector3d diff_hyp_meas = measurements[j].pos - hypotheses[i]->getMean();
+
+					auto mahalanobis_distance_squared = diff_hyp_meas.transpose()
+													 * correctionCovariance.inverse()
+													 * diff_hyp_meas;
+
+					double mahalanobis_distance = sqrt(mahalanobis_distance_squared);
 
 					if( mahalanobis_distance < MAX_MAHALANOBIS_DISTANCE  &&
 							((measurements[j].color==hypotheses[i]->getColor() || measurements[j].color=='U' || hypotheses[i]->getColor()=='U')) ){
@@ -600,7 +592,7 @@ std::vector<unsigned int> MultiHypothesisTracker::correct(const std::vector<Eige
 							hypotheses[i]->correct( measurements[j] );
 							assignments[j] = hypotheses[i]->getID();
 							hypotheses[i]->detected();
-							hypotheses[i]->detected_absolute();
+							hypotheses[i]->detected_absolute(); // Jan: this was added by radu
 //						}
 
 					}
@@ -646,6 +638,7 @@ std::vector<unsigned int> MultiHypothesisTracker::correct(const std::vector<Eige
 			delete[] cost_matrix[i];
 		delete[] cost_matrix;
 		hungarian_free(&hung);
+
 
 		deleteSpuriosHypotheses();
 

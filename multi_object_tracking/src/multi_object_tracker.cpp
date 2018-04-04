@@ -99,6 +99,7 @@ std::vector<Measurement> Tracker::laser_detections2measurements(const geometry_m
 
     //TODO: radu: set covariance for the measurement to be dyamic depending on the altitude of the drone
     double measurementStd = 0.03;
+    measurement.cov.setIdentity();
     measurement.cov(0, 0) = measurementStd * measurementStd;
     measurement.cov(1, 1) = measurementStd * measurementStd;
     measurement.cov(2, 2) = measurementStd * measurementStd;
@@ -128,6 +129,8 @@ bool Tracker::transform_to_frame(std::vector<Measurement>& measurements,
     mes_in_origin_frame.point.x = measurements[i].pos(0);
     mes_in_origin_frame.point.y = measurements[i].pos(1);
     mes_in_origin_frame.point.z = measurements[i].pos(2);
+
+    // TODO:: add stamp for getting right transform?!
 
     // TODO prob. delete
     mes_in_target_frame.header.frame_id = target_frame;
@@ -503,6 +506,8 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "multi_object_tracking");
   ros::NodeHandle n;
+
+  // TODO: no constant loop rate but rather one update with each detection callback
   ros::Rate loopRate(30);
 
   MultiObjectTracker::Tracker tracker;

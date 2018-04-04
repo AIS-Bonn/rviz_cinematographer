@@ -1,17 +1,10 @@
 #ifndef __MULTIHYPOTHESISTRACKER_H__
 #define __MULTIHYPOTHESISTRACKER_H__
 
-#include <vnl/vnl_matrix.h>
-#include <vnl/vnl_vector.h>
-
 #include <vector>
 #include <string>
 #include <algorithm>
 #include <chrono>
-
-#include "vnl/vnl_inverse.h"
-#include "vnl/algo/vnl_svd.h"
-#include "vnl/algo/vnl_symmetric_eigensystem.h"
 
 #include <multi_object_tracking/hungarian.h>
 #include <limits.h> // for INT_MAX

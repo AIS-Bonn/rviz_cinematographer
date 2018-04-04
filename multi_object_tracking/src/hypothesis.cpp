@@ -124,32 +124,10 @@ bool Hypothesis::isSpurious() {
   }else {
     double maxPositionCov = getParameters().max_cov; // TODO unused - delete?
 
-    //TODO: test if result is same with the one below
     Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver(m_covariance);
 //     if( eigen_solver.eigenvalues().col(0)[0] > maxPositionCov || eigen_solver.eigenvalues().col(0)[1] > maxPositionCov || eigen_solver.eigenvalues().col(0)[2] > maxPositionCov ) {
 //     	return true;
 //     }
-
-    // TODO: delete, this is just here to test if result is same
-    vnl_matrix< double > covariance(3,3);
-    for( int i = 0; i < (int)covariance.rows(); i++ )
-      for( int j = i; j < (int)covariance.cols(); j++ )
-        covariance( i, j ) = m_covariance( i, j );
-
-    vnl_symmetric_eigensystem< double > eigensystemPosition( covariance.extract( 3, 3 ) );
-
-    auto eigen_values = eigen_solver.eigenvalues();
-    for( int i = 0; i < (int)covariance.rows(); i++ ){
-
-      std::cout << "Test if eigenvalues are same: is " << eigensystemPosition.get_eigenvalue(0) << " == " << eigen_values.col(0)[0].real() <<
-                                              " and " << eigensystemPosition.get_eigenvalue(1) << " == " << eigen_values.col(0)[1].real() <<
-                                              " and " << eigensystemPosition.get_eigenvalue(2) << " == " << eigen_values.col(0)[2].real() << std::endl;
-
-    }
-
-    // if( eigensystemPosition.get_eigenvalue( 0 ) > maxPositionCov || eigensystemPosition.get_eigenvalue( 1 ) > maxPositionCov || eigensystemPosition.get_eigenvalue( 2 ) > maxPositionCov ) {
-    // 	return true;
-    // }
 
     // if (!m_is_static){
     // 	std::cout << "------------------------" << '\n';
@@ -213,21 +191,7 @@ void Hypothesis::predict(double dt, Eigen::Vector3d& control)
 
     //TODO: test if result is same with the one below
     Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver(m_covariance);
-
-    // TODO: delete, this is just here to test if result is same
-    vnl_matrix< double > covariance(3,3);
-    for( int i = 0; i < (int)covariance.rows(); i++ )
-      for( int j = i; j < (int)covariance.cols(); j++ )
-        covariance( i, j ) = m_covariance( i, j );
-
-    vnl_symmetric_eigensystem< double > eigensystemPosition( covariance.extract( 3, 3 ) );
-
     auto eigen_values = eigen_solver.eigenvalues();
-    for( int i = 0; i < (int)covariance.rows(); i++ ){
-      std::cout << "Test if eigenvalues are same: is " << eigensystemPosition.get_eigenvalue(0) << " == " << eigen_values.col(0)[0].real() <<
-                " and " << eigensystemPosition.get_eigenvalue(1) << " == " << eigen_values.col(0)[1].real() <<
-                " and " << eigensystemPosition.get_eigenvalue(2) << " == " << eigen_values.col(0)[2].real() << std::endl;
-    }
 
     if( eigen_values.col(0)[0].real() > maxPositionCov || eigen_values.col(0)[1].real() > maxPositionCov || eigen_values.col(0)[2].real() > maxPositionCov ) {
       //don't update
@@ -252,25 +216,6 @@ void Hypothesis::correct( const Measurement& measurement ) {
   measurementModel( expectedMeasurement, measurementMatrix, measurementCovariance, m_mean );
 
   Eigen::Matrix3d correctionCovariance = measurementMatrix * m_covariance * measurementMatrix.transpose() + measurement.cov;
-
-
-
-  // TODO: delete, just for testing if same
-  vnl_matrix< double > vnl_correctionCovariance(3,3);
-  for( int i = 0; i < (int)vnl_correctionCovariance.rows(); i++ )
-    for( int j = i; j < (int)vnl_correctionCovariance.cols(); j++ )
-      vnl_correctionCovariance( i, j ) = correctionCovariance( i, j );
-  vnl_svd< double > svdCorrectionCovariance( vnl_correctionCovariance );
-  vnl_matrix< double > invCorrectionCovariance = svdCorrectionCovariance.pinverse();
-
-  Eigen::Matrix3d test = correctionCovariance.inverse();
-
-  for( int i = 0; i < (int)invCorrectionCovariance.rows(); i++ )
-    for( int j = i; j < (int)invCorrectionCovariance.cols(); j++ ){
-      std::cout << invCorrectionCovariance(i,j) << " =? " << test(i,j) << std::endl;
-  }
-
-
 
   kalmanGain = m_covariance * measurementMatrix.transpose() * correctionCovariance.inverse();
   Eigen::Matrix3d identity = m_covariance;
