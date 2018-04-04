@@ -15,7 +15,6 @@
 #include <multi_object_tracking/multi_object_hypothesis.h>
 
 
-
 // JS: a generic multi hypothesis tracker
 // of course, the measurement and state transition models have to be implemented for the specific task
 // this class just implements the most basic models: 3D position, noisy velocity, and direct state measurement
@@ -31,7 +30,7 @@ class HypothesisFactory;
 
 class MultiHypothesisTracker {
 public:
-  MultiHypothesisTracker( HypothesisFactory* hypothesisFactory );
+  MultiHypothesisTracker(std::shared_ptr<HypothesisFactory> hypothesis_factory);
   ~MultiHypothesisTracker();
 
   inline unsigned int getNumStateDimensions() { return m_numStateDimensions; }
@@ -46,7 +45,7 @@ public:
                        Eigen::Vector3d& control);
 
   // returns vector of assignments
-  std::vector< unsigned int > correct_hungarian_simplified( const std::vector< Measurement >& measurements);
+  std::vector<unsigned int> correct(const std::vector<Measurement>& measurements);
 
   /**
    * @brief Deletes all hypotheses that are too close to others.
@@ -57,10 +56,10 @@ public:
    */
   void mergeCloseHypotheses(double distance_threshold);
 
-  inline std::vector< Hypothesis* >& getHypotheses() { return m_hypotheses; }
-  Hypothesis* getHypothesisByID( unsigned int ID );
+  inline std::vector<std::shared_ptr<Hypothesis>>& getHypotheses() { return m_hypotheses; }
+  std::shared_ptr<Hypothesis> getHypothesisByID( unsigned int ID );
 
-//  void clear(){ m_hypotheses.clear(); };
+  void clear(){ m_hypotheses.clear(); };
 
   /**
    * @brief Deletes hypotheses that are visible and spurious
@@ -77,10 +76,10 @@ public:
 protected:
 
 
-  std::vector< Hypothesis* > m_hypotheses;
+  std::vector<std::shared_ptr<Hypothesis>> m_hypotheses;
   unsigned int m_lastHypothesisID;
   unsigned int m_numStateDimensions;
-  HypothesisFactory* m_hypothesisFactory;
+  std::shared_ptr<HypothesisFactory> m_hypothesisFactory;
 
   //Parameters
   // double m_merge_close_hypotheses_distance;
@@ -89,12 +88,6 @@ protected:
 
 // 		QMutex m_hypothesisMutex;
 };
-
-
-
-
-
-
 
 };
 

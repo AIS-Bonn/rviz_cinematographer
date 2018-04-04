@@ -405,8 +405,9 @@ void Hypothesis::measurementModel(Eigen::Vector3d& expectedMeasurement,
 }
 
 
-Hypothesis* HypothesisFactory::createHypothesis() {
-  return new Hypothesis();
+std::shared_ptr<Hypothesis> HypothesisFactory::createHypothesis()
+{
+  return std::make_shared<Hypothesis>();
 }
 
 };

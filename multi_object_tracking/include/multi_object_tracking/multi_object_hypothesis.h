@@ -3,15 +3,15 @@
 
 #include <multi_object_tracking/hypothesis_3D.h>
 
-namespace MultiObjectTracker
+namespace MultiHypothesisTracker
 {
 
-class MultiObjectHypothesis : public MultiHypothesisTracker::Hypothesis3D {
+class MultiObjectHypothesis : public Hypothesis3D {
 public:
   MultiObjectHypothesis();
   virtual ~MultiObjectHypothesis();
 
-  virtual const MultiHypothesisTracker::TrackerParameters& getParameters();
+  virtual const TrackerParameters& getParameters();
 
   inline Eigen::Vector3d getSize(){ return m_size; }
   inline void setSize(const Eigen::Vector3d& size){ m_size = size; }
@@ -30,12 +30,13 @@ protected:
 
 };
 
-class MultiObjectHypothesisFactory : public MultiHypothesisTracker::Hypothesis3DFactory {
+class MultiObjectHypothesisFactory : public Hypothesis3DFactory
+{
 public:
-  MultiObjectHypothesisFactory() {}
-  virtual ~MultiObjectHypothesisFactory() {}
+  MultiObjectHypothesisFactory(){}
+  virtual ~MultiObjectHypothesisFactory(){}
 
-  virtual MultiHypothesisTracker::Hypothesis* createHypothesis() { return new MultiObjectHypothesis(); }
+  virtual std::shared_ptr<Hypothesis> createHypothesis(){ return std::make_shared<MultiObjectHypothesis>(); }
 };
 
 }

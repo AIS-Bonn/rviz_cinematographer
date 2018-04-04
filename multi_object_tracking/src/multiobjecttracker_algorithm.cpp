@@ -1,16 +1,16 @@
 #include <multi_object_tracking/multiobjecttracker_algorithm.h>
 
-namespace MultiObjectTracker
+namespace MultiHypothesisTracker
 {
 
 MultiObjectTrackerAlgorithm::MultiObjectTrackerAlgorithm()
-: m_multi_hypothesis_tracker(new MultiObjectTracker::MultiObjectHypothesisFactory())
+: m_multi_hypothesis_tracker(std::make_shared<MultiObjectHypothesisFactory>())
 	, m_last_prediction_time(0)
 {}
 
 void MultiObjectTrackerAlgorithm::predictWithoutMeasurement()
 {
-  double currentTime = MultiHypothesisTracker::getTimeHighRes();
+  double currentTime = getTimeHighRes();
 
 	if(m_last_prediction_time > 0)
   {
@@ -27,19 +27,19 @@ void MultiObjectTrackerAlgorithm::objectDetectionDataReceived(const std::vector<
 {
   predictWithoutMeasurement();
 
-  m_multi_hypothesis_tracker.correct_hungarian_simplified(measurements);
+  m_multi_hypothesis_tracker.correct(measurements);
 
   m_multi_hypothesis_tracker.mergeCloseHypotheses(m_merge_distance);
 }
 
-const std::vector<MultiHypothesisTracker::Hypothesis*>& MultiObjectTrackerAlgorithm::getHypotheses()
+const std::vector<std::shared_ptr<Hypothesis>>& MultiObjectTrackerAlgorithm::getHypotheses()
 {
 	return m_multi_hypothesis_tracker.getHypotheses();
 }
 
-MultiObjectHypothesis* MultiObjectTrackerAlgorithm::getHypothesisByID(unsigned int id)
+std::shared_ptr<MultiObjectHypothesis> MultiObjectTrackerAlgorithm::getHypothesisByID(unsigned int id)
 {
-  return (MultiObjectHypothesis*)m_multi_hypothesis_tracker.getHypothesisByID(id);
+  return std::static_pointer_cast<MultiObjectHypothesis>(m_multi_hypothesis_tracker.getHypothesisByID(id));
 }
 
 }

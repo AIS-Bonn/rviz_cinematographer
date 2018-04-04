@@ -3,7 +3,7 @@
 namespace MultiHypothesisTracker
 {
 
-MultiHypothesisTracker::MultiHypothesisTracker(HypothesisFactory* hypothesis_factory = new HypothesisFactory())
+MultiHypothesisTracker::MultiHypothesisTracker(std::shared_ptr<HypothesisFactory> hypothesis_factory = std::make_shared<HypothesisFactory>())
 :	m_lastHypothesisID(1)
 	,	m_numStateDimensions(6)
 	,	m_hypothesisFactory(hypothesis_factory)
@@ -12,31 +12,25 @@ MultiHypothesisTracker::MultiHypothesisTracker(HypothesisFactory* hypothesis_fac
 
 MultiHypothesisTracker::~MultiHypothesisTracker()
 {
-	for( unsigned int i = 0; i < m_hypotheses.size(); i++ )
-		delete m_hypotheses[i];
-	m_hypotheses.clear();
-	delete m_hypothesisFactory;
 }
 
-	Hypothesis* MultiHypothesisTracker::getHypothesisByID( unsigned int ID ) {
-		for( unsigned int i = 0; i < m_hypotheses.size(); i++ )
-			if( m_hypotheses[i]->getID() == ID )
-				return m_hypotheses[i];
-		return NULL;
-	}
+std::shared_ptr<Hypothesis> MultiHypothesisTracker::getHypothesisByID(unsigned int id)
+{
+	for(unsigned int i = 0; i < m_hypotheses.size(); i++)
+		if(m_hypotheses[i]->getID() == id)
+			return m_hypotheses[i];
+
+	return nullptr;
+}
 
 void MultiHypothesisTracker::predict(double time_diff,
                                      Eigen::Vector3d& control)
 {
-// 	lockHypotheses();
-
   // TODO: necessary? : check if hypotheses are changed in predict function and if this is useful
-  std::vector<Hypothesis*> hypotheses = m_hypotheses;
+  std::vector<std::shared_ptr<Hypothesis>> hypotheses = m_hypotheses;
 
   for(auto& hypothesis : hypotheses)
     hypothesis->predict(time_diff, control);
-
-// 	unlockHypotheses();
 }
 
 void MultiHypothesisTracker::deleteSpuriosHypotheses()
@@ -46,7 +40,6 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
   {
     if((*it)->isVisible() && (*it)->isSpurious())
     {
-      delete (*it);
       it = m_hypotheses.erase(it);
       continue;
     }
@@ -54,14 +47,14 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
   }
 }
 
-	std::vector< unsigned int > MultiHypothesisTracker::correct_hungarian_simplified(const std::vector< Measurement >& measurements){
+	std::vector< unsigned int > MultiHypothesisTracker::correct(const std::vector< Measurement >& measurements){
 		// 		lockHypotheses();
 
 		std::vector< unsigned int > assignments( measurements.size() , 0 );
 
 
 		// only update visible hypotheses, but associate with all of them
-		std::vector< Hypothesis* > hypotheses;
+		std::vector<std::shared_ptr<Hypothesis>> hypotheses;
     hypotheses = m_hypotheses;
 
     const int COST_FACTOR = 10000;
@@ -171,7 +164,7 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
 						}
 
 						// create new hypothesis for observation
-						Hypothesis* hypothesis = m_hypothesisFactory->createHypothesis();
+						std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis();
 						hypothesis->initialize( measurements[j], m_lastHypothesisID++ );
 						m_hypotheses.push_back( hypothesis );
 						assignments[j] = hypothesis->getID();
@@ -188,7 +181,7 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
 				else if (i>=jobs && j<machines)  {
 					// an observation with no corresponding hypothesis -> add
 					if (!associated) {
-						Hypothesis* hypothesis = m_hypothesisFactory->createHypothesis();
+						std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis();
 						hypothesis->initialize( measurements[j], m_lastHypothesisID++ );
 						m_hypotheses.push_back( hypothesis );
 						assignments[j] = hypothesis->getID();
@@ -228,7 +221,6 @@ void MultiHypothesisTracker::mergeCloseHypotheses(double distance_threshold)
 
 			if(distance < distance_threshold)
 			{
-				delete (*it2);
 				it2 = m_hypotheses.erase(it2);
 				continue;
 			}

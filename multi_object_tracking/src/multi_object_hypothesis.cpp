@@ -1,10 +1,11 @@
 #include <multi_object_tracking/multi_object_hypothesis.h>
 
-namespace MultiObjectTracker {
-
-const MultiHypothesisTracker::TrackerParameters& MultiObjectHypothesis::getParameters()
+namespace MultiHypothesisTracker
 {
-	static MultiHypothesisTracker::TrackerParameters params = {
+
+const TrackerParameters& MultiObjectHypothesis::getParameters()
+{
+	static TrackerParameters params = {
 		0.0075,	// cov_x_per_sec
 		0.0075,	// cov_y_per_sec
 		0.0075,	// cov_z_per_sec

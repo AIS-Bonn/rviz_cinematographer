@@ -3,7 +3,7 @@
 
 #include <multi_object_tracking/multihypothesistracker.h>
 
-namespace MultiObjectTracker
+namespace MultiHypothesisTracker
 {
 
 class MultiObjectTrackerAlgorithm
@@ -26,13 +26,13 @@ public:
    */
   void objectDetectionDataReceived(const std::vector<Measurement>& measurements);
 
-  const std::vector<MultiHypothesisTracker::Hypothesis*>& getHypotheses();
+  const std::vector<std::shared_ptr<Hypothesis>>& getHypotheses();
 
-  MultiObjectHypothesis* getHypothesisByID(unsigned int id);
+  std::shared_ptr<MultiObjectHypothesis> getHypothesisByID(unsigned int id);
 
   void setMergeDistance(double distance){ m_merge_distance = distance; }
 
-  MultiHypothesisTracker::MultiHypothesisTracker m_multi_hypothesis_tracker;
+  MultiHypothesisTracker m_multi_hypothesis_tracker;
 
 private:
   double m_last_prediction_time;

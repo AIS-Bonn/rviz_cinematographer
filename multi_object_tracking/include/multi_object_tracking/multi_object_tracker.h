@@ -23,7 +23,7 @@
 #include <multi_object_tracking/multihypothesistracker.h>
 
 
-namespace MultiObjectTracker
+namespace MultiHypothesisTracker
 {
 
 class Tracker

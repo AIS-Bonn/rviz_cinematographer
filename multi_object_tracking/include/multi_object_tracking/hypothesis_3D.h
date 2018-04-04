@@ -45,7 +45,7 @@ public:
   Hypothesis3DFactory(){}
   virtual ~Hypothesis3DFactory(){}
 
-  virtual Hypothesis* createHypothesis();
+  virtual std::shared_ptr<Hypothesis> createHypothesis();
 };
 
 };

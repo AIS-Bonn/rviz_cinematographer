@@ -1,6 +1,6 @@
 #include <multi_object_tracking/multi_object_tracker.h>
 
-namespace MultiObjectTracker
+namespace MultiHypothesisTracker
 {
 
 Tracker::Tracker():
@@ -58,7 +58,7 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
   m_algorithm->objectDetectionDataReceived(measurements);
 
   //Full track for first hypothesis
-  // std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
+  // std::vector<Hypothesis*> hypotheses = m_algorithm->getHypotheses();
   // MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[0];
   // const Eigen::Vector3d& mean = hypothesis->getMean();
   // geometry_msgs::Point p;
@@ -218,8 +218,8 @@ void Tracker::publish_measurement_covariance(std::vector<Measurement> measuremen
 }
 
 void Tracker::publish_hypothesis_covariance(){
-  std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
-  double cur= MultiHypothesisTracker::getTimeHighRes();
+  std::vector<std::shared_ptr<Hypothesis>> hypotheses = m_algorithm->getHypotheses();
+  double cur = getTimeHighRes();
 
   for (size_t i = 0; i < hypotheses.size(); i++) {
     visualization_msgs::Marker marker_cov;
@@ -263,14 +263,14 @@ void Tracker::publish_hypothesis_covariance(){
 
 void Tracker::publish_hypotheses() {
 
-  std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
+  std::vector<std::shared_ptr<Hypothesis>> hypotheses = m_algorithm->getHypotheses();
   visualization_msgs::Marker hypothesis_marker= createMarker();
-  double cur= MultiHypothesisTracker::getTimeHighRes();
+  double cur= getTimeHighRes();
 
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
-    MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[i];
+    std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[i]);
 
     const Eigen::Vector3d& mean = hypothesis->getMean();
     // std::cout << "publishhypothesis: mean of hypothesis " << i << " is " << mean << '\n';
@@ -293,8 +293,8 @@ void Tracker::publish_hypotheses() {
 }
 
 void Tracker::publish_hypotheses_object_msg(){
-  std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
-  double cur= MultiHypothesisTracker::getTimeHighRes();
+  std::vector<std::shared_ptr<Hypothesis>> hypotheses = m_algorithm->getHypotheses();
+  double cur= getTimeHighRes();
   object_detection::ObjectDetections object_detecions;
   object_detection::ObjectDetection object;
   object_detecions.header.stamp=ros::Time::now();
@@ -304,7 +304,7 @@ void Tracker::publish_hypotheses_object_msg(){
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
-    MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[i];
+    std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[i]);
 
     const Eigen::Vector3d& mean = hypothesis->getMean();
     object.position.x = mean(0);
@@ -321,8 +321,8 @@ void Tracker::publish_hypotheses_object_msg(){
 }
 
 void Tracker::publish_hypotheses_future_object_msg(){
-  std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
-  double cur= MultiHypothesisTracker::getTimeHighRes();
+  std::vector<std::shared_ptr<Hypothesis>> hypotheses = m_algorithm->getHypotheses();
+  double cur= getTimeHighRes();
   object_detection::ObjectDetections object_detecions;
   object_detection::ObjectDetection object;
   object_detecions.header.stamp=ros::Time::now();
@@ -332,7 +332,7 @@ void Tracker::publish_hypotheses_future_object_msg(){
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
-    MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[i];
+    std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[i]);
     Eigen::Vector3d mean = hypothesis->getMean();
 
     //Predict a little bit into the future
@@ -353,17 +353,17 @@ void Tracker::publish_hypotheses_future_object_msg(){
 
 void Tracker::publish_hypotheses_future() {
 
-  std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
+  std::vector<std::shared_ptr<Hypothesis>> hypotheses = m_algorithm->getHypotheses();
   visualization_msgs::Marker hypothesis_marker= createMarker();
   hypothesis_marker.color.r=0.0;
   hypothesis_marker.color.g=0.0;
   hypothesis_marker.color.b=1.0;
-  double cur= MultiHypothesisTracker::getTimeHighRes();
+  double cur= getTimeHighRes();
 
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
-    MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[i];
+    std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[i]);
 
     Eigen::Vector3d mean = hypothesis->getMean();
 
@@ -388,15 +388,15 @@ void Tracker::publish_hypotheses_future() {
 }
 
 void Tracker::publish_static_hypotheses(){
-  std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
+  std::vector<std::shared_ptr<Hypothesis>> hypotheses = m_algorithm->getHypotheses();
   visualization_msgs::Marker static_object_marker= createMarker();
   static_object_marker.type = visualization_msgs::Marker::LINE_LIST;
   static_object_marker.color.a = 0.5; // Don't forget to set the alpha!
-  double cur= MultiHypothesisTracker::getTimeHighRes();
+  double cur= getTimeHighRes();
 
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i){
-    MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[i];
+    std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[i]);
 
     if (hypothesis->isStatic() && !hypothesis->is_picked() && (cur - hypothesis->get_born_time() > m_born_time_threshold )    ){
       const Eigen::Vector3d& mean = hypothesis->getMean();
@@ -422,15 +422,15 @@ void Tracker::publish_static_hypotheses(){
 
 
 void Tracker::publish_dynamic_hypotheses(){
-  std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
+  std::vector<std::shared_ptr<Hypothesis>> hypotheses = m_algorithm->getHypotheses();
   visualization_msgs::Marker dynamic_object_marker= createMarker(0,0,0 , 0.0, 0.5, 0.5);
   dynamic_object_marker.type = visualization_msgs::Marker::LINE_LIST;
   dynamic_object_marker.color.a = 0.5; // Don't forget to set the alpha!
-  double cur= MultiHypothesisTracker::getTimeHighRes();
+  double cur= getTimeHighRes();
 
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i){
-    MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[i];
+    std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[i]);
 
     if (!hypothesis->isStatic() && !hypothesis->is_picked() && (cur - hypothesis->get_born_time() > m_born_time_threshold )    ){
       const Eigen::Vector3d& mean = hypothesis->getMean();
@@ -457,14 +457,14 @@ void Tracker::publish_dynamic_hypotheses(){
 
 void Tracker::publish_debug()
 {
-  std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
+  std::vector<std::shared_ptr<Hypothesis>> hypotheses = m_algorithm->getHypotheses();
   if(hypotheses.empty())
     return;
 
   if(hypotheses[0]->get_latest_measurement_time() == 0)
     return;
 
-  MultiObjectHypothesis* hypothesis = (MultiObjectHypothesis*) hypotheses[0];
+  std::shared_ptr<MultiObjectHypothesis> hypothesis = std::static_pointer_cast<MultiObjectHypothesis>(hypotheses[0]);
 
   multi_object_tracking::DebugTracking debug_msg;
   debug_msg.header.seq = m_debug_counter++;
@@ -494,7 +494,7 @@ int main(int argc, char** argv)
   // TODO: no constant loop rate but rather one update with each detection callback
   ros::Rate loopRate(30);
 
-  MultiObjectTracker::Tracker tracker;
+  MultiHypothesisTracker::Tracker tracker;
 
   while(n.ok())
   {

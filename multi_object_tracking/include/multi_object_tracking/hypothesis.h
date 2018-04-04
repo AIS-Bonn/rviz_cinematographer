@@ -7,6 +7,7 @@
 #include <string>
 #include <algorithm>
 #include <chrono>
+#include <memory> // std::shared_ptr
 
 #include <multi_object_tracking/hungarian.h>
 #include <limits.h> // for INT_MAX
@@ -152,12 +153,13 @@ protected:
 
 };
 
-class HypothesisFactory {
+class HypothesisFactory
+{
 public:
-  HypothesisFactory() {}
-  virtual ~HypothesisFactory() {}
+  HypothesisFactory(){}
+  virtual ~HypothesisFactory(){}
 
-  virtual Hypothesis* createHypothesis();
+  virtual std::shared_ptr<Hypothesis> createHypothesis();
 };
 
 };
