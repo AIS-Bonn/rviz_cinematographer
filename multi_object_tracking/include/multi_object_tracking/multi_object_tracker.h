@@ -2,22 +2,13 @@
 #define __MULTI_OBJECT_TRACKER_H__
 
 #include <ros/ros.h>
-#include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Vector3.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/Pose2D.h>
 #include <geometry_msgs/PoseArray.h>
-#include <nav_msgs/Odometry.h>
 #include <visualization_msgs/Marker.h>
-#include <std_srvs/Empty.h>
 #include <tf/transform_listener.h>
 
 #include <object_detection/ObjectDetections.h>
-// #include "multi_object_tracking/TrackReset.h"
-#include <multi_object_tracking/DebugTracking.h>
-
-#include <limits>
 
 #include <multi_object_tracking/multiobjecttracker_algorithm.h>
 #include <multi_object_tracking/multihypothesistracker.h>
@@ -34,6 +25,10 @@ public:
   ~Tracker(){};
 
   void update();
+
+  /**
+   * @brief Publishes the hypothesis in several versions.
+   */
   void publish();
 
   /**
@@ -54,31 +49,37 @@ public:
    *
    * @return false if at least one measurement couldn't be transformed, true otherwise
    */
-  bool transform_to_frame(std::vector<Measurement>& measurements,
-                          std::string target_frame);
+  bool transformToFrame(std::vector<Measurement>& measurements,
+                        const std::string target_frame);
 
   /**
    * @brief Converts the detections from the laser into the internal format
    *
-   * @param[in] msg   poses of the detections.
+   * @param[in]     msg             poses of the detections.
+   * @param[out]    measurements    detections in tracker format.
    */
-  std::vector<Measurement> laser_detections2measurements(const geometry_msgs::PoseArray::ConstPtr& msg);
+  void convert(const geometry_msgs::PoseArray::ConstPtr &msg,
+               std::vector<Measurement>& measurements);
 
 private:
+  /** @brief Subscribes to detections. */
+  ros::Subscriber m_laser_detection_subscriber;
+  /** @brief Publishes results. */
   MOTPublisher m_mot_publisher;
 
-  std::vector<Measurement> m_picked_static_positions;
+  /** @brief Provides transforms to world frame. */
+  std::shared_ptr<tf::TransformListener> m_transform_listener;
+
+  /** @brief The functionality. */
+  std::shared_ptr<MultiObjectTrackerAlgorithm> m_algorithm;
 
   //Params
+  /** @brief Hypotheses that are closer than this distance to one another are merged. */
   double m_merge_close_hypotheses_distance;
+  /** @brief Threshold for Mahalanobis distance. */
   double m_max_mahalanobis_distance;
+  /** @brief Fixed frame the detections and tracks are in. */
   std::string m_world_frame;
-
-  ros::Subscriber m_laser_detection_subscriber;
-
-  std::shared_ptr<tf::TransformListener> m_transformListener;
-
-  std::shared_ptr<MultiObjectTrackerAlgorithm> m_algorithm;
 };
 
 }

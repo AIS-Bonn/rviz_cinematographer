@@ -9,12 +9,12 @@ Tracker::Tracker()
   ros::NodeHandle pub_n;
 
   m_algorithm = std::make_shared<MultiObjectTrackerAlgorithm>();
-  m_transformListener = std::make_shared<tf::TransformListener>();
+  m_transform_listener = std::make_shared<tf::TransformListener>();
 
   m_laser_detection_subscriber = n.subscribe<geometry_msgs::PoseArray>("/object_poses", 30, &Tracker::detectionCallback, this);
 
   n.param<double>("m_merge_close_hypotheses_distance", m_merge_close_hypotheses_distance, 0.1);
-  n.param<double>("m_max_mahalanobis_distance", m_max_mahalanobis_distance,3.75);
+  n.param<double>("m_max_mahalanobis_distance", m_max_mahalanobis_distance, 3.75);
   n.param<std::string>("m_world_frame", m_world_frame, "world");
 
   m_algorithm->setMergeDistance(m_merge_close_hypotheses_distance);
@@ -35,11 +35,12 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
 {
   ROS_DEBUG_STREAM("Laser detection callback.");
 
-  std::vector<Measurement> measurements = laser_detections2measurements(msg);
+  std::vector<Measurement> measurements;
+  convert(msg, measurements);
 
   m_mot_publisher.publish_debug(m_algorithm->getHypotheses());
 
-  if(!transform_to_frame(measurements, m_world_frame))
+  if(!transformToFrame(measurements, m_world_frame))
     return;
 
   m_mot_publisher.publish_measurement_markers(measurements);
@@ -59,11 +60,10 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
   // m_track_linePublisher.publish(full_track);
 }
 
-// TODO return measurements efficiently
-std::vector<Measurement> Tracker::laser_detections2measurements(const geometry_msgs::PoseArray::ConstPtr& msg)
+void Tracker::convert(const geometry_msgs::PoseArray::ConstPtr &msg,
+                      std::vector<Measurement>& measurements)
 {
   Measurement measurement;
-  std::vector<Measurement> measurements;
 
   for(size_t i = 0; i < msg->poses.size(); i++)
   {
@@ -79,38 +79,30 @@ std::vector<Measurement> Tracker::laser_detections2measurements(const geometry_m
     measurement.cov(2, 2) = measurementStd * measurementStd;
 
     measurement.color = 'U'; // for unknown
-
     measurement.frame = msg->header.frame_id;
-
-    // TODO: is this enough precision?
     measurement.time = msg->header.stamp.toSec();
 
     measurements.push_back(measurement);
   }
-
-  return measurements;
 }
 
-bool Tracker::transform_to_frame(std::vector<Measurement>& measurements,
-                                 const std::string target_frame)
+bool Tracker::transformToFrame(std::vector<Measurement>& measurements,
+                               const std::string target_frame)
 {
-  // TODO refactoring to range based
-  for(size_t i = 0; i < measurements.size(); i++)
+  for(auto& measurement : measurements)
   {
     geometry_msgs::PointStamped mes_in_origin_frame;
     geometry_msgs::PointStamped mes_in_target_frame;
-    mes_in_origin_frame.header.frame_id = measurements[i].frame;
-    mes_in_origin_frame.point.x = measurements[i].pos(0);
-    mes_in_origin_frame.point.y = measurements[i].pos(1);
-    mes_in_origin_frame.point.z = measurements[i].pos(2);
+    mes_in_origin_frame.header.frame_id = measurement.frame;
+    mes_in_origin_frame.point.x = measurement.pos(0);
+    mes_in_origin_frame.point.y = measurement.pos(1);
+    mes_in_origin_frame.point.z = measurement.pos(2);
 
     // TODO:: add stamp for getting right transform?!
 
-    // TODO prob. delete
-    mes_in_target_frame.header.frame_id = target_frame;
     try
     {
-      m_transformListener->transformPoint(target_frame, mes_in_origin_frame, mes_in_target_frame);
+      m_transform_listener->transformPoint(target_frame, mes_in_origin_frame, mes_in_target_frame);
     }
     catch(tf::TransformException& ex)
     {
@@ -118,10 +110,10 @@ bool Tracker::transform_to_frame(std::vector<Measurement>& measurements,
       return false;
     }
 
-    measurements[i].pos(0) = mes_in_target_frame.point.x;
-    measurements[i].pos(1) = mes_in_target_frame.point.y;
-    measurements[i].pos(2) = mes_in_target_frame.point.z;
-    measurements[i].frame = target_frame;
+    measurement.pos(0) = mes_in_target_frame.point.x;
+    measurement.pos(1) = mes_in_target_frame.point.y;
+    measurement.pos(2) = mes_in_target_frame.point.z;
+    measurement.frame = target_frame;
   }
 
   return true;
