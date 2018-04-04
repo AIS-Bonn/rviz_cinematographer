@@ -53,9 +53,10 @@ target_link_libraries(hypotheses
 	${catkin_LIBRARIES}
 )
 
-
+# TODO: to libraries
 add_executable(multi_object_tracking
 	src/multi_object_tracker.cpp
+	src/mot_publisher.cpp
 	src/multihypothesistracker.cpp
 	src/multiobjecttracker_algorithm.cpp
 	src/hungarian.cpp
