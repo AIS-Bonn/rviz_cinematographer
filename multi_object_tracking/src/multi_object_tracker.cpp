@@ -43,7 +43,7 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
   if(!transformToFrame(measurements, m_world_frame))
     return;
 
-  m_mot_publisher.publish_measurement_markers(measurements);
+  m_mot_publisher.publishMeasurementMarkers(measurements);
   m_mot_publisher.publish_measurement_covariance(measurements);
 
   m_algorithm->objectDetectionDataReceived(measurements);

@@ -9,17 +9,18 @@ MOTPublisher::MOTPublisher():
   ros::NodeHandle n("~");
   ros::NodeHandle pub_n;
 
-  m_hypothesis_object_msg_publisher = pub_n.advertise< object_detection     ::ObjectDetections >( "object_tracks_object_msg_tracked" , 1 );
-  m_hypothesis_future_object_msg_publisher = pub_n.advertise< object_detection     ::ObjectDetections >( "object_tracks_object_msg" , 1 );
-  m_measurement_marker_publisher   = n.advertise< visualization_msgs::Marker >( n.getNamespace()+ "/measurements", 1 );
-  m_hypothesesPublisher          = n.advertise< visualization_msgs::Marker >( n.getNamespace()+ "/object_tracks" , 1 );
-  m_track_linePublisher          = n.advertise< visualization_msgs::Marker >( n.getNamespace()+ "/object_tracks_line" , 1 );
-  m_measurementCovPublisher      = n.advertise< visualization_msgs::Marker >( n.getNamespace()+ "/measurements_covariances" , 1 );
-  m_hypothesisCovPublisher       = n.advertise< visualization_msgs::Marker >( n.getNamespace()+ "/hypotheses_covariances" , 1 );
-  m_static_objectsPublisher      = n.advertise< visualization_msgs::Marker >( n.getNamespace()+ "/static_objects" , 1 );
-  m_dynamic_objectsPublisher     = n.advertise< visualization_msgs::Marker >( n.getNamespace()+ "/dynamic_objects" , 1 );
-  m_debug_publisher              = n.advertise< multi_object_tracking::DebugTracking >( n.getNamespace()+ "/debug" , 1 );
-  m_hypotheses_future_publisher  = n.advertise< visualization_msgs::Marker >( n.getNamespace()+ "/future_tracks" , 1 );
+  m_hypothesis_object_msg_publisher = pub_n.advertise<object_detection::ObjectDetections>("object_tracks_object_msg_tracked", 1);
+  m_hypothesis_future_object_msg_publisher = pub_n.advertise<object_detection::ObjectDetections>("object_tracks_object_msg", 1);
+
+  m_measurement_marker_publisher = n.advertise<visualization_msgs::Marker>(n.getNamespace()+ "/measurements", 1);
+  m_hypothesesPublisher          = n.advertise<visualization_msgs::Marker>(n.getNamespace()+ "/object_tracks", 1);
+  m_track_linePublisher          = n.advertise<visualization_msgs::Marker>(n.getNamespace()+ "/object_tracks_line", 1);
+  m_measurementCovPublisher      = n.advertise<visualization_msgs::Marker>(n.getNamespace()+ "/measurements_covariances", 1);
+  m_hypothesisCovPublisher       = n.advertise<visualization_msgs::Marker>(n.getNamespace()+ "/hypotheses_covariances", 1);
+  m_static_objectsPublisher      = n.advertise<visualization_msgs::Marker>(n.getNamespace()+ "/static_objects", 1);
+  m_dynamic_objectsPublisher     = n.advertise<visualization_msgs::Marker>(n.getNamespace()+ "/dynamic_objects", 1);
+  m_hypotheses_future_publisher  = n.advertise<visualization_msgs::Marker>(n.getNamespace()+ "/future_tracks", 1);
+  m_debug_publisher              = n.advertise<multi_object_tracking::DebugTracking>( n.getNamespace()+ "/debug", 1);
 
   n.param<std::string>("m_world_frame", m_world_frame, "world");
   n.param<double>("m_born_time_threshold", m_born_time_threshold, 0.5);
@@ -33,20 +34,19 @@ void MOTPublisher::publishAll(const std::vector<std::shared_ptr<Hypothesis>>& hy
   publish_hypotheses_future_object_msg(hypotheses);
   publish_hypotheses_future(hypotheses);
   publish_hypothesis_covariance(hypotheses);
-  publish_static_hypotheses(hypotheses);  //publishes a vertical line indicating which hypothesis are static (non-moveable)
+  publish_static_hypotheses(hypotheses);
   publish_dynamic_hypotheses(hypotheses);
 //  publish_debug(hypotheses);
 }
 
 // TODO: check if correct - marker.id , ints for position , frame_id, and so on
-visualization_msgs::Marker MOTPublisher::createMarker(int x, int y, int z, float r, float g, float b)
+visualization_msgs::Marker MOTPublisher::createMarker(int x, int y, int z, float r, float g, float b, std::string ns)
 {
   visualization_msgs::Marker marker;
   marker.header.frame_id    = m_world_frame;
   marker.header.stamp       = ros::Time::now();
-  marker.ns                 = "multi_object_tracking";
+  marker.ns                 = ns;
   marker.id                 = 0;
-  // marker.type            = visualization_msgs::Marker::SPHERE;
   marker.type               = visualization_msgs::Marker::POINTS;
   marker.action             = visualization_msgs::Marker::ADD;
   marker.pose.position.x    = x;
@@ -67,23 +67,25 @@ visualization_msgs::Marker MOTPublisher::createMarker(int x, int y, int z, float
   return marker;
 }
 
-void MOTPublisher::publish_measurement_markers(const std::vector<Measurement>& measurements)
+void MOTPublisher::publishMeasurementMarkers(const std::vector<Measurement> &measurements)
 {
+  if(m_measurement_marker_publisher.getNumSubscribers() == 0)
+    return;
+
   if(measurements.empty())
     return;
 
-  visualization_msgs::Marker mes_marker = createMarker(0, 0, 0, 1.0, 0.0, 0.0); //red marker
-  mes_marker.points.resize(measurements.size());
-  mes_marker.header.frame_id = m_world_frame;
+  visualization_msgs::Marker marker = createMarker(0, 0, 0, 1.0, 0.0, 0.0, "mot_measurement_markers"); //red marker
+  marker.header.frame_id = measurements.at(0).frame;
 
+  marker.points.resize(measurements.size());
   for(size_t i = 0; i < measurements.size(); i++) 
   {
-    mes_marker.points[i].x = measurements[i].pos(0);
-    mes_marker.points[i].y = measurements[i].pos(1);
-    mes_marker.points[i].z = measurements[i].pos(2);
-    // std::cout << "publish_measurement_markers:: object "<< i << " is " <<  measurements[i].pos << '\n';
+    marker.points[i].x = measurements[i].pos(0);
+    marker.points[i].y = measurements[i].pos(1);
+    marker.points[i].z = measurements[i].pos(2);
   }
-  m_measurement_marker_publisher.publish(mes_marker);
+  m_measurement_marker_publisher.publish(marker);
 }
 
 void MOTPublisher::publish_measurement_covariance(const std::vector<Measurement>& measurements)

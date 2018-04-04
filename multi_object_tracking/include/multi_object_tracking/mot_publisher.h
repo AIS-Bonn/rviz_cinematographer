@@ -16,8 +16,6 @@
 #include <object_detection/ObjectDetections.h>
 #include <multi_object_tracking/DebugTracking.h>
 
-#include <limits>
-
 #include <multi_object_tracking/multihypothesistracker.h>
 
 
@@ -58,14 +56,20 @@ public:
    *
    * @return marker.
    */
-  visualization_msgs::Marker createMarker(int x=0, int y=0, int z=0, float r=0.0, float g=1.0, float b=0.0);
+  visualization_msgs::Marker createMarker(int x = 0,
+                                          int y = 0,
+                                          int z = 0,
+                                          float r = 0.0,
+                                          float g = 1.0,
+                                          float b = 0.0,
+                                          std::string ns = "multi_object_tracker");
 
   /**
    * @brief Publishes measurements as markers.
    *
    * @param[in] measurements   detections.
    */
-  void publish_measurement_markers(const std::vector<Measurement>& measurements);
+  void publishMeasurementMarkers(const std::vector<Measurement> &measurements);
 
   /**
    * @brief Publishes measurements covariances as markers.
