@@ -17,9 +17,9 @@
 // #include "multi_object_tracking/TrackReset.h"
 #include <multi_object_tracking/DebugTracking.h>
 
-#include <vnl/vnl_vector_fixed.h>
-#include <vnl/vnl_det.h>
-#include <vnl/vnl_vector.h>
+//#include <vnl/vnl_vector_fixed.h>
+//#include <vnl/vnl_det.h>
+//#include <vnl/vnl_vector.h>
 #include <limits>
 
 #include <multi_object_tracking/multiobjecttracker_algorithm.h>

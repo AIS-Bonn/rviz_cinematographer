@@ -1,11 +1,12 @@
 #include "multi_object_tracking/hypothesis_3D.h"
 
-namespace MultiHypothesisTracker {
+namespace MultiHypothesisTracker
+{
 
 	Hypothesis3D::Hypothesis3D() {
-		m_mean = vnl_vector< double >( 3 );
-		m_covariance = vnl_matrix< double >( 3, 3 );
-		m_numStateDimensions = 3;
+		m_mean.setZero();
+		m_covariance.setIdentity();
+		m_numStateDimensions = 3; // TODO prob delete
 		m_color='U';
 		m_is_static=true;
 		// m_last_prediction_time=-1;
@@ -41,7 +42,10 @@ namespace MultiHypothesisTracker {
 		return params;
 	}
 
-	void Hypothesis3D::initialize( const Measurement& measurement, unsigned int id, const std::string& label/*, const QColor& color*/ ) {
+	void Hypothesis3D::initialize(const Measurement& measurement,
+                                unsigned int id,
+                                const std::string& label/*, const QColor& color*/)
+  {
 		m_mean( 0 ) = measurement.pos( 0 );
 		m_mean( 1 ) = measurement.pos( 1 );
 		m_mean( 2 ) = measurement.pos( 2 );
@@ -53,7 +57,7 @@ namespace MultiHypothesisTracker {
 		m_times_measured++;
 
 
-		m_covariance.set_identity();
+		m_covariance.setIdentity();
 		// m_covariance *= getParameters().init_cov;
 		m_covariance=measurement.cov;
 
@@ -80,40 +84,46 @@ namespace MultiHypothesisTracker {
 // 		m_color = color;
 	}
 
-	vnl_vector<double> Hypothesis3D::velocity_decay(vnl_vector<double> velocity_in ){
-		double cur_time = getTimeHighRes();
-		//Velocity stays the same up until 1 second then it decays
-		double time_start_decay=1.0;
-		double time_finish_decay=4.0;
-		double dif= time_finish_decay-time_start_decay;
+Eigen::Vector3d Hypothesis3D::velocity_decay(Eigen::Vector3d velocity_in)
+{
+  double cur_time = getTimeHighRes();
+  //Velocity stays the same up until 1 second then it decays
+  double time_start_decay=1.0;
+  double time_finish_decay=4.0;
+  double dif= time_finish_decay-time_start_decay;
 
-		if (cur_time - m_lastMeasurementTime > time_start_decay){
-			double weight = std::max (0.0, (time_finish_decay - (cur_time - m_lastMeasurementTime)) /dif ) ;
-			return velocity_in*weight;
-		}else{
-			return velocity_in;
-		}
+  if (cur_time - m_lastMeasurementTime > time_start_decay){
+    double weight = std::max (0.0, (time_finish_decay - (cur_time - m_lastMeasurementTime)) /dif ) ;
+    return velocity_in*weight;
+  }else{
+    return velocity_in;
+  }
 
-	}
+}
 
 
-	void Hypothesis3D::stateTransitionModel( vnl_vector< double >& predictedState, vnl_matrix< double >& stateTransitionMatrix, vnl_matrix< double >& stateTransitionCovariance, const vnl_vector< double >& currentState, double dt, const vnl_vector< double >& control ) {
+	void Hypothesis3D::stateTransitionModel( Eigen::Vector3d& predictedState,
+                                           Eigen::Matrix3d& stateTransitionMatrix,
+                                           Eigen::Matrix3d& stateTransitionCovariance,
+                                           const Eigen::Vector3d& currentState,
+                                           double dt,
+                                           const Eigen::Vector3d& control )
+  {
 
-		stateTransitionMatrix = vnl_matrix< double >( 3, 3 );
-		stateTransitionMatrix.set_identity();
+    // TODO: this is only correct for zero velocity
+		stateTransitionMatrix.setIdentity();
 
 //		std::cout << dt << "\n";
 
 
-		stateTransitionCovariance = vnl_matrix< double >( 3, 3 );
-		stateTransitionCovariance.set_identity();
+		stateTransitionCovariance.setIdentity();
 
 		const TrackerParameters &params = getParameters();
 
 
-		stateTransitionCovariance( 0, 0 ) = dt * params.cov_x_per_sec;
-		stateTransitionCovariance( 1, 1 ) = dt * params.cov_y_per_sec;
-		stateTransitionCovariance( 2, 2 ) = dt * params.cov_z_per_sec;
+		stateTransitionCovariance(0, 0) = dt * params.cov_x_per_sec;
+		stateTransitionCovariance(1, 1) = dt * params.cov_y_per_sec;
+		stateTransitionCovariance(2, 2) = dt * params.cov_z_per_sec;
 
 
 
@@ -128,9 +138,8 @@ namespace MultiHypothesisTracker {
 		// std::cout << "state transitin: time diff is " << dt << '\n';
 		// std::cout << "state transitin: velocity with time is " << velocity*dt << '\n';
 		if (!m_is_first_position && !m_is_static){  //If it's hte first position in the hypothesis then we don't have a velocity cuz we don't have a prev measurement
-			vnl_vector<double> velocity_decayed= velocity_decay(m_velocity);
-			// vnl_vector<double> velocity_decayed = m_velocity;
-			predictedState +=  velocity_decayed*(dt);
+      Eigen::Vector3d velocity_decayed = velocity_decay(m_velocity);
+			predictedState +=  velocity_decayed * (dt);
 
 			// m_velocity=m_velocity*0.97; // TODO Not a very good way of doing decay becuase it depend on how often you do prediction
 		}
@@ -145,36 +154,35 @@ namespace MultiHypothesisTracker {
 		predictedState(0) = predictedState(0) - control(0);
 		predictedState(1) = predictedState(1) - control(1);
 
-		vnl_matrix< double > R_control( 2, 2 );
+		Eigen::Matrix2d R_control;
 		R_control( 0, 0 ) = cos( -control( 2 ) );
 		R_control( 0, 1 ) = -sin( -control( 2 ) );
 		R_control( 1, 0 ) = sin( -control( 2 ) );
 		R_control( 1, 1 ) = cos( -control( 2 ) );
 
-		vnl_vector< double > predictedState2D( 2 );
-		predictedState2D = R_control * predictedState.extract( 2 );
+    Eigen::Vector2d predictedState2D;
+		predictedState2D = R_control * predictedState.block(0,0,2,2);
 		predictedState(0) = predictedState2D(0);
 		predictedState(1) = predictedState2D(1);
 
 
 	}
 
-	void Hypothesis3D::measurementModel( vnl_vector< double >& expectedMeasurement, vnl_matrix< double >& measurementMatrix, vnl_matrix< double >& measurementCovariance, const vnl_vector< double >& currentState ) {
+void Hypothesis3D::measurementModel(Eigen::Vector3d& expectedMeasurement,
+                                    Eigen::Matrix3d& measurementMatrix,
+                                    Eigen::Matrix3d& measurementCovariance,
+                                    const Eigen::Vector3d& currentState)
+{
+  measurementMatrix.setIdentity();
 
-		measurementMatrix = vnl_matrix< double >( 3, 3 );
-		measurementMatrix.set_identity();
+  expectedMeasurement = measurementMatrix * currentState;
 
-		expectedMeasurement = vnl_vector< double >( 3 );
-		expectedMeasurement = measurementMatrix * currentState;
-
-		measurementCovariance = vnl_matrix< double >( 3, 3 );
-		measurementCovariance.set_identity();
-		double measurementStd = getParameters().measurementStd;
-		measurementCovariance( 0, 0 ) = measurementStd * measurementStd;
-		measurementCovariance( 1, 1 ) = measurementStd * measurementStd;
-		measurementCovariance( 2, 2 ) = measurementStd * measurementStd;
-
-	}
+  measurementCovariance.setIdentity();
+  double measurementStd = getParameters().measurementStd;
+  measurementCovariance( 0, 0 ) = measurementStd * measurementStd;
+  measurementCovariance( 1, 1 ) = measurementStd * measurementStd;
+  measurementCovariance( 2, 2 ) = measurementStd * measurementStd;
+}
 
 
 Hypothesis* Hypothesis3DFactory::createHypothesis() {

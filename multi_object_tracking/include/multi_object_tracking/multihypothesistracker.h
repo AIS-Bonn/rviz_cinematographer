@@ -50,17 +50,17 @@ public:
    * @param[in] control     for state transition model //TODO: better description
    */
   virtual void predict(double time_diff,
-                       const vnl_vector< double >& control);
+                       Eigen::Vector3d& control);
 
   // returns vector of assignments
-  virtual std::vector< unsigned int > correct( const std::vector< vnl_vector< double > >& measurements);
+  virtual std::vector< unsigned int > correct( const std::vector<Eigen::Vector3d>& measurements);
   virtual std::vector< unsigned int > correctAmbiguous( const std::vector< Measurement >& measurements, bool createNewHypotheses = true);
 
   virtual std::vector< unsigned int > correctAmbiguous_simplified( const std::vector< Measurement >& measurements, bool createNewHypotheses = true);
   std::vector< unsigned int > correct_hungarian_simplified( const std::vector< Measurement >& measurements);
   uint8_t compute_most_prominent_color(std::vector< Measurement >& measurements);
 
-  void mergeCloseHypotheses( float mergeDistance );
+  void mergeCloseHypotheses(double mergeDistance);
 
   inline std::vector< Hypothesis* >& getHypotheses() { return m_hypotheses; }
   Hypothesis* getHypothesisByID( unsigned int ID );

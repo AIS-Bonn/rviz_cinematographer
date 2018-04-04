@@ -1,26 +1,29 @@
 #include <multi_object_tracking/multiobjecttracker_algorithm.h>
 
+#include <iomanip>
+
 namespace MultiObjectTracker
 {
 
 MultiObjectTrackerAlgorithm::MultiObjectTrackerAlgorithm()
+//: m_multi_hypothesis_tracker(new MultiHypothesisTracker::HypothesisFactory())
 : m_multi_hypothesis_tracker(new MultiObjectTracker::MultiObjectHypothesisFactory())
 	, m_last_prediction_time(0)
 {}
 
 void MultiObjectTrackerAlgorithm::predictWithoutMeasurement(){
 
-	vnl_vector_fixed< double, 3 > movement;
-	movement( 0 ) = 0;
-	movement( 1 ) = 0;
-	movement( 2 ) = 0;
+  Eigen::Vector3d movement;
+  movement(0) = 0;
+	movement(1) = 0;
+	movement(2) = 0;
 
-	double currentTime = MultiHypothesisTracker::getTimeHighRes();
+  double currentTime = MultiHypothesisTracker::getTimeHighRes();
 
 	if( m_last_prediction_time > 0 ) {
 		m_multi_hypothesis_tracker.predict( currentTime - m_last_prediction_time, movement);
 	}
-	m_last_prediction_time=currentTime;
+	m_last_prediction_time = currentTime;
 
 	m_multi_hypothesis_tracker.deleteSpuriosHypotheses();
 
@@ -30,7 +33,9 @@ void MultiObjectTrackerAlgorithm::predictWithoutMeasurement(){
 void MultiObjectTrackerAlgorithm::objectDetectionDataReceived(std::vector<Measurement>& measurements,
                                                               const std::string& sourceName)
 {
+  // TODO: unused?
   std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_multi_hypothesis_tracker.getHypotheses();
+  std::cout << "MultiObjectTrackerAlgorithm::objectDetectionDataReceived: hypotheses.size " << hypotheses.size() << std::endl;
 
   predictWithoutMeasurement();
 

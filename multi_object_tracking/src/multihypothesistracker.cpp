@@ -33,12 +33,15 @@ namespace MultiHypothesisTracker {
 	}
 
 void MultiHypothesisTracker::predict(double time_diff,
-                                     const vnl_vector<double>& control)
+                                     Eigen::Vector3d& control)
 {
 // 	lockHypotheses();
 
   // TODO: necessary? : check if hypotheses are changed in predict function and if this is useful
   std::vector<Hypothesis*> hypotheses = m_hypotheses;
+  std::cout << "hypotheses.size " << hypotheses.size() << std::endl;
+  std::cout << "m_hypotheses.size " << m_hypotheses.size() << std::endl;
+
   for(auto& hypothesis : hypotheses)
     hypothesis->predict(time_diff, control);
 
@@ -61,7 +64,9 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
   }
 }
 
-	std::vector< unsigned int > MultiHypothesisTracker::correct( const std::vector< vnl_vector< double > >& measurements) {
+//TODO: if you use this, then convert vnl vectors to Eigen vectors first
+std::vector<unsigned int> MultiHypothesisTracker::correct(const std::vector<Eigen::Vector3d>& measurements)
+{
 
 // // 		lockHypotheses();
 //
@@ -335,159 +340,160 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
 
 
 	std::vector< unsigned int > MultiHypothesisTracker::correctAmbiguous_simplified( const std::vector< Measurement >& measurements, bool createNewHypotheses) {
-
-
-		// vnl_vector< double > expectedMeasurement;
-		vnl_matrix< double > invCorrectionCovariance;
-
-
-		std::vector< unsigned int > assignments( measurements.size() );
-		std::vector< Hypothesis* > hypotheses;
-
-    hypotheses = m_hypotheses;
-
-		std::map<unsigned int, std::vector<Measurement > >  assignmentMap;
-
-
-		// Pre-calculate hypothesis measurement model informations
-		// for(unsigned int i = 0; i < hypotheses.size(); ++i)
-		// {
-		// 	Hypothesis *hypothesis = hypotheses[i];
-		// 	HypothesisInfo info;
-		//
-		// 	vnl_matrix< double > measurementMatrix, measurementCovariance, kalmanGain;
-		//
-		// 	hypothesis->measurementModel( info.expectedMeasurement, measurementMatrix, measurementCovariance, hypothesis->getMean() );
-		//
-		// 	vnl_matrix< double > correctionCovariance;
-		//
-		// 	correctionCovariance = measurementMatrix * hypothesis->getCovariance() * measurementMatrix.transpose() + measurementCovariance;
-		// 	vnl_svd< double > svdCorrectionCovariance( correctionCovariance );
-		// 	info.invCorrectionCovariance= svdCorrectionCovariance.pinverse();
-		//
-		// 	infoCache[i] = info;
-		// }
-
-
-		unsigned int startNumHypotheses = hypotheses.size();
-		for(unsigned int j = 0; j < measurements.size(); ++j)
-		{
-			double min_dist = -1;
-			Hypothesis *min_dist_hypothesis = 0;
-			unsigned int min_dist_hypothesis_num;
-
-			for(unsigned int i = 0; i < startNumHypotheses; ++i)
-			{
-				Hypothesis *hypothesis = hypotheses[i];
-
-				//Calculate the inverse correction covariance
-				vnl_matrix< double > measurementMatrix = vnl_matrix< double >( 3, 3 );
-				measurementMatrix.set_identity();
-				vnl_matrix< double > correctionCovariance;
-				correctionCovariance = measurementMatrix * hypothesis->getCovariance() * measurementMatrix.transpose() + measurements[j].cov;
-				vnl_svd< double > svdCorrectionCovariance( correctionCovariance );
-				vnl_matrix< double > invCorrectionCovariance= svdCorrectionCovariance.pinverse();
-
-
-				double mahalanobis_distance = sqrt( dot_product< double >(
-					(measurements[j].pos - hypothesis->getMean()) * invCorrectionCovariance, (measurements[j].pos -  hypothesis->getMean()) ) );
-
-				//finds the hypothesis which is closes to the mesurement
-				if( (mahalanobis_distance < min_dist || !min_dist_hypothesis) &&
-						(measurements[j].color==hypothesis->getColor() || measurements[j].color=='U' || hypothesis->getColor()=='U') )
-				{
-					min_dist = mahalanobis_distance;
-					min_dist_hypothesis = hypothesis;
-					min_dist_hypothesis_num = i;
-				}
-			}
-
-			// TODO: move parameter to tracker
-			if(min_dist_hypothesis && min_dist < min_dist_hypothesis->getParameters().ambiguous_dist)
-			{
-				// std::cout << "correct ambigous: assign to existing hypothesis " << '\n';
-				// std::cout << "correct ambigous: assigning measurement " << measurements[j].color << " to " << min_dist_hypothesis->getColor() << '\n';
-				// assign to existing hypothesis
-				assignments[j] = min_dist_hypothesis->getID();
-
-				assignmentMap[min_dist_hypothesis_num].push_back(measurements[j]);
-			}
-			else if(createNewHypotheses)
-			{
-				// create new hypothesis
-				// std::cout << "correct ambigous: creating new hypothesis" << '\n';
-				Hypothesis* hypothesis = m_hypothesisFactory->createHypothesis();
-				hypothesis->initialize( measurements[j], m_lastHypothesisID++ );
-				m_hypotheses.push_back( hypothesis );
-				assignments[j] = hypothesis->getID();
-			}
-			else // Creation of new hypotheses disabled
-			{
-				assignments[j] = INT_MAX;
-			}
-		}
-
-		// Process new assignments
-
-		for(unsigned int j = 0; j < hypotheses.size(); ++j){
-			Hypothesis *hypothesis = hypotheses[j];
-
-//			if( !hypothesis->isVisible() )
-//				continue;
-
-
-			if(assignmentMap.count(j) > 0) {
-				std::vector<Measurement >& hypothesisMeasurements = assignmentMap[j];
-				//make a mean measurement, mean will in this case be an average mean based on the covariance matrices
-				Measurement mean_mes;
-				mean_mes.pos=vnl_vector<double>(3);
-				mean_mes.pos.fill(0);
-				mean_mes.cov=vnl_matrix< double >( 3, 3 );
-				mean_mes.cov.set_identity();
-
-				mean_mes.color=compute_most_prominent_color(hypothesisMeasurements);
-
-
-				double sum_inv_cov=0;
-				double sum_cov=0;
-				for(unsigned int i = 0; i < hypothesisMeasurements.size(); ++i)
-				{
-					mean_mes.pos += hypothesisMeasurements[i].pos * (1/hypothesisMeasurements[i].cov(0,0));
-					sum_inv_cov += (1/hypothesisMeasurements[i].cov(0,0));
-					sum_cov+=hypothesisMeasurements[i].cov(0,0);
-				}
-
-				mean_mes.pos /= sum_inv_cov;
-				mean_mes.cov (0,0) = sum_cov/hypothesisMeasurements.size();
-				mean_mes.cov (1,1) = sum_cov/hypothesisMeasurements.size();
-				mean_mes.cov (2,2) = sum_cov/hypothesisMeasurements.size();
-
-
-
-				hypothesis->correct(mean_mes);
-				hypothesis->detected();
-			}
-			else
-			{
-				if( hypothesis->isVisible() )
-					hypothesis->undetected();
-			}
-		}
-
-		deleteSpuriosHypotheses();
-
-		// std::cout << "correct ambious:: after deleting the spurious ones we have hypothesis size " << m_hypotheses.size() << '\n';
-
-// 		unlockHypotheses();
-
-
-
-		return assignments;
+//
+//
+//		// vnl_vector< double > expectedMeasurement;
+//		vnl_matrix< double > invCorrectionCovariance;
+//
+//
+//		std::vector< unsigned int > assignments( measurements.size() );
+//		std::vector< Hypothesis* > hypotheses;
+//
+//    hypotheses = m_hypotheses;
+//
+//		std::map<unsigned int, std::vector<Measurement > >  assignmentMap;
+//
+//
+//		// Pre-calculate hypothesis measurement model informations
+//		// for(unsigned int i = 0; i < hypotheses.size(); ++i)
+//		// {
+//		// 	Hypothesis *hypothesis = hypotheses[i];
+//		// 	HypothesisInfo info;
+//		//
+//		// 	vnl_matrix< double > measurementMatrix, measurementCovariance, kalmanGain;
+//		//
+//		// 	hypothesis->measurementModel( info.expectedMeasurement, measurementMatrix, measurementCovariance, hypothesis->getMean() );
+//		//
+//		// 	vnl_matrix< double > correctionCovariance;
+//		//
+//		// 	correctionCovariance = measurementMatrix * hypothesis->getCovariance() * measurementMatrix.transpose() + measurementCovariance;
+//		// 	vnl_svd< double > svdCorrectionCovariance( correctionCovariance );
+//		// 	info.invCorrectionCovariance= svdCorrectionCovariance.pinverse();
+//		//
+//		// 	infoCache[i] = info;
+//		// }
+//
+//
+//		unsigned int startNumHypotheses = hypotheses.size();
+//		for(unsigned int j = 0; j < measurements.size(); ++j)
+//		{
+//			double min_dist = -1;
+//			Hypothesis *min_dist_hypothesis = 0;
+//			unsigned int min_dist_hypothesis_num;
+//
+//			for(unsigned int i = 0; i < startNumHypotheses; ++i)
+//			{
+//				Hypothesis *hypothesis = hypotheses[i];
+//
+//				//Calculate the inverse correction covariance
+//				vnl_matrix< double > measurementMatrix = vnl_matrix< double >( 3, 3 );
+//				measurementMatrix.set_identity();
+//				vnl_matrix< double > correctionCovariance;
+//				correctionCovariance = measurementMatrix * hypothesis->getCovariance() * measurementMatrix.transpose() + measurements[j].cov;
+//				vnl_svd< double > svdCorrectionCovariance( correctionCovariance );
+//				vnl_matrix< double > invCorrectionCovariance= svdCorrectionCovariance.pinverse();
+//
+//
+//				double mahalanobis_distance = sqrt( dot_product< double >(
+//					(measurements[j].pos - hypothesis->getMean()) * invCorrectionCovariance, (measurements[j].pos -  hypothesis->getMean()) ) );
+//
+//				//finds the hypothesis which is closes to the mesurement
+//				if( (mahalanobis_distance < min_dist || !min_dist_hypothesis) &&
+//						(measurements[j].color==hypothesis->getColor() || measurements[j].color=='U' || hypothesis->getColor()=='U') )
+//				{
+//					min_dist = mahalanobis_distance;
+//					min_dist_hypothesis = hypothesis;
+//					min_dist_hypothesis_num = i;
+//				}
+//			}
+//
+//			// TODO: move parameter to tracker
+//			if(min_dist_hypothesis && min_dist < min_dist_hypothesis->getParameters().ambiguous_dist)
+//			{
+//				// std::cout << "correct ambigous: assign to existing hypothesis " << '\n';
+//				// std::cout << "correct ambigous: assigning measurement " << measurements[j].color << " to " << min_dist_hypothesis->getColor() << '\n';
+//				// assign to existing hypothesis
+//				assignments[j] = min_dist_hypothesis->getID();
+//
+//				assignmentMap[min_dist_hypothesis_num].push_back(measurements[j]);
+//			}
+//			else if(createNewHypotheses)
+//			{
+//				// create new hypothesis
+//				// std::cout << "correct ambigous: creating new hypothesis" << '\n';
+//				Hypothesis* hypothesis = m_hypothesisFactory->createHypothesis();
+//				hypothesis->initialize( measurements[j], m_lastHypothesisID++ );
+//				m_hypotheses.push_back( hypothesis );
+//				assignments[j] = hypothesis->getID();
+//			}
+//			else // Creation of new hypotheses disabled
+//			{
+//				assignments[j] = INT_MAX;
+//			}
+//		}
+//
+//		// Process new assignments
+//
+//		for(unsigned int j = 0; j < hypotheses.size(); ++j){
+//			Hypothesis *hypothesis = hypotheses[j];
+//
+////			if( !hypothesis->isVisible() )
+////				continue;
+//
+//
+//			if(assignmentMap.count(j) > 0) {
+//				std::vector<Measurement >& hypothesisMeasurements = assignmentMap[j];
+//				//make a mean measurement, mean will in this case be an average mean based on the covariance matrices
+//				Measurement mean_mes;
+//				mean_mes.pos=vnl_vector<double>(3);
+//				mean_mes.pos.fill(0);
+//				mean_mes.cov=vnl_matrix< double >( 3, 3 );
+//				mean_mes.cov.set_identity();
+//
+//				mean_mes.color=compute_most_prominent_color(hypothesisMeasurements);
+//
+//
+//				double sum_inv_cov=0;
+//				double sum_cov=0;
+//				for(unsigned int i = 0; i < hypothesisMeasurements.size(); ++i)
+//				{
+//					mean_mes.pos += hypothesisMeasurements[i].pos * (1/hypothesisMeasurements[i].cov(0,0));
+//					sum_inv_cov += (1/hypothesisMeasurements[i].cov(0,0));
+//					sum_cov+=hypothesisMeasurements[i].cov(0,0);
+//				}
+//
+//				mean_mes.pos /= sum_inv_cov;
+//				mean_mes.cov (0,0) = sum_cov/hypothesisMeasurements.size();
+//				mean_mes.cov (1,1) = sum_cov/hypothesisMeasurements.size();
+//				mean_mes.cov (2,2) = sum_cov/hypothesisMeasurements.size();
+//
+//
+//
+//				hypothesis->correct(mean_mes);
+//				hypothesis->detected();
+//			}
+//			else
+//			{
+//				if( hypothesis->isVisible() )
+//					hypothesis->undetected();
+//			}
+//		}
+//
+//		deleteSpuriosHypotheses();
+//
+//		// std::cout << "correct ambious:: after deleting the spurious ones we have hypothesis size " << m_hypotheses.size() << '\n';
+//
+//// 		unlockHypotheses();
+//
+//
+//
+//		return assignments;
 	}
 
 	std::vector< unsigned int > MultiHypothesisTracker::correct_hungarian_simplified( const std::vector< Measurement >& measurements){
 		// 		lockHypotheses();
 
+    std::cout << "CORRECTING###" << std::endl;
 		std::vector< unsigned int > assignments( measurements.size() , 0 );
 
 
@@ -495,7 +501,15 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
 		std::vector< Hypothesis* > hypotheses;
     hypotheses = m_hypotheses;
 
-		const int COST_FACTOR = 10000;
+    std::cout << "correct_hungarian_simplified: hypotheses.size " << hypotheses.size() << std::endl;
+    std::cout << "correct_hungarian_simplified: m_hypotheses.size " << m_hypotheses.size() << std::endl;
+    std::cout << "correct_hungarian_simplified: measurements.size " << measurements.size() << std::endl;
+    if(m_hypotheses.size() > 0)
+      std::cout << "hypo 0 vector mean is " << m_hypotheses[0]->getMean() << std::endl;
+
+
+
+    const int COST_FACTOR = 10000;
 		// const double MAX_MAHALANOBIS_DISTANCE = sqrt( 2.204 );
 		const double MAX_MAHALANOBIS_DISTANCE = m_max_mahalanobis_distance;
 		int jobs = hypotheses.size();
@@ -528,14 +542,14 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
 
 
 					//Calculate the inverse correction covariance
-					vnl_matrix< double > measurementMatrix = vnl_matrix< double >( 3, 3 );
-					measurementMatrix.set_identity();
-					vnl_matrix< double > correctionCovariance;
+					Eigen::Matrix3d measurementMatrix;
+					measurementMatrix.setIdentity();
+          Eigen::Matrix3d correctionCovariance;
 					correctionCovariance = measurementMatrix * hypotheses[i]->getCovariance() * measurementMatrix.transpose() + measurements[j].cov;
-					vnl_svd< double > svdCorrectionCovariance( correctionCovariance );
-					vnl_matrix< double > invCorrectionCovariance= svdCorrectionCovariance.pinverse();
-					double mahalanobis_distance = sqrt( dot_product< double >(
-						(measurements[j].pos - hypotheses[i]->getMean()) * invCorrectionCovariance, (measurements[j].pos -  hypotheses[i]->getMean()) ) );
+//					vnl_svd< double > svdCorrectionCovariance( correctionCovariance );
+//					vnl_matrix< double > invCorrectionCovariance= svdCorrectionCovariance.pinverse();
+					double mahalanobis_distance = sqrt( (
+						(measurements[j].pos - hypotheses[i]->getMean()).transpose() * correctionCovariance.inverse()).dot(measurements[j].pos -  hypotheses[i]->getMean()) );
 
 
 					if( mahalanobis_distance < MAX_MAHALANOBIS_DISTANCE  &&
@@ -670,37 +684,27 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
 	}
 
 
-	void MultiHypothesisTracker::mergeCloseHypotheses( float mergeDistance ) {
+	void MultiHypothesisTracker::mergeCloseHypotheses(double mergeDistance)
+  {
+		auto it1 = m_hypotheses.begin();
+		while(it1 != m_hypotheses.end())
+    {
+			auto it2 = it1 + 1;
+			while(it2 != m_hypotheses.end())
+      {
+				double dist = ((*it1)->getMean() - (*it2)->getMean()).norm();
 
-		std::vector< Hypothesis* >::iterator it1 = m_hypotheses.begin();
-		while( it1 != m_hypotheses.end() ) {
-
-			std::vector< Hypothesis* >::iterator it2 = it1 + 1;
-			while( it2 != m_hypotheses.end() ) {
-
-				float dist = ((*it1)->getMean() - (*it2)->getMean()).two_norm();
-
-				// std::cout << "mergeClose dist is " << dist << '\n';
-
-				if( dist < mergeDistance  && ((*it1)->getColor()==(*it2)->getColor())  ) {
+        // TODO: delete color comparison if color not used
+				if(dist < mergeDistance  && ((*it1)->getColor()==(*it2)->getColor()))
+        {
 					delete (*it2);
-					it2 = m_hypotheses.erase( it2 );
+					it2 = m_hypotheses.erase(it2);
 					continue;
 				}
-
 				++it2;
 			}
-
 			++it1;
-
 		}
-
 	}
-
-
-
-
-
-
 
 };

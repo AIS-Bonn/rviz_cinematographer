@@ -76,7 +76,7 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
   //Full track for first hypothesis
   // std::vector<MultiHypothesisTracker::Hypothesis*> hypotheses = m_algorithm->getHypotheses();
   // MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[0];
-  // const vnl_vector<double> &mean = hypothesis->getMean();
+  // const Eigen::Vector3d& mean = hypothesis->getMean();
   // geometry_msgs::Point p;
   // p.x=mean(0);
   // p.y=mean(1);
@@ -93,24 +93,21 @@ std::vector<Measurement> Tracker::laser_detections2measurements(const geometry_m
 
   for(size_t i = 0; i < msg->poses.size(); i++)
   {
-    measurement.pos = vnl_vector<double>(3);
     measurement.pos(0) = msg->poses[i].position.x;
     measurement.pos(1) = msg->poses[i].position.y;
     measurement.pos(2) = msg->poses[i].position.z;
 
     //TODO: radu: set covariance for the measurement to be dyamic depending on the altitude of the drone
-    vnl_matrix<double> measurementCovariance = vnl_matrix<double>(3, 3);
-    measurementCovariance.set_identity();
     double measurementStd = 0.03;
-    measurementCovariance(0, 0) = measurementStd * measurementStd;
-    measurementCovariance(1, 1) = measurementStd * measurementStd;
-    measurementCovariance(2, 2) = measurementStd * measurementStd;
-    measurement.cov = measurementCovariance;
+    measurement.cov(0, 0) = measurementStd * measurementStd;
+    measurement.cov(1, 1) = measurementStd * measurementStd;
+    measurement.cov(2, 2) = measurementStd * measurementStd;
 
     measurement.color = 'U'; // for unknown
 
     measurement.frame = msg->header.frame_id;
 
+    // TODO: is this enough precision?
     measurement.time = msg->header.stamp.toSec();
 
     measurements.push_back(measurement);
@@ -288,13 +285,13 @@ void Tracker::publish_hypotheses() {
   {
     MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[i];
 
-    const vnl_vector<double> &mean = hypothesis->getMean();
+    const Eigen::Vector3d& mean = hypothesis->getMean();
     // std::cout << "publishhypothesis: mean of hypothesis " << i << " is " << mean << '\n';
     // std::cout << "color is-------------------------------------" << hypothesis->getColor() << '\n';
     geometry_msgs::Point p;
-    p.x=mean(0);
-    p.y=mean(1);
-    p.z=mean(2);
+    p.x = mean(0);
+    p.y = mean(1);
+    p.z = mean(2);
 
     if (!hypothesis->is_picked()   && (cur - hypothesis->get_born_time() > m_born_time_threshold )  ){
       hypothesis_marker.points.push_back(p);
@@ -322,10 +319,10 @@ void Tracker::publish_hypotheses_object_msg(){
   {
     MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[i];
 
-    const vnl_vector<double> &mean = hypothesis->getMean();
-    object.position.x=mean(0);
-    object.position.y=mean(1);
-    object.position.z=mean(2);
+    const Eigen::Vector3d& mean = hypothesis->getMean();
+    object.position.x = mean(0);
+    object.position.y = mean(1);
+    object.position.z = mean(2);
     object.color=hypothesis->getColor();
 
     if (!hypothesis->is_picked()   && (cur - hypothesis->get_born_time() > m_born_time_threshold )  ){
@@ -349,14 +346,14 @@ void Tracker::publish_hypotheses_future_object_msg(){
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
     MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[i];
-    vnl_vector<double> mean = hypothesis->getMean();
+    Eigen::Vector3d mean = hypothesis->getMean();
 
     //Predict a little bit into the future
-    mean += hypothesis->get_velocity()* m_future_time;
+    mean += hypothesis->get_velocity() * m_future_time;
 
-    object.position.x=mean(0);
-    object.position.y=mean(1);
-    object.position.z=mean(2);
+    object.position.x = mean(0);
+    object.position.y = mean(1);
+    object.position.z = mean(2);
     object.color=hypothesis->getColor();
 
     if (!hypothesis->is_picked()   && (cur - hypothesis->get_born_time() > m_born_time_threshold )  ){
@@ -381,16 +378,16 @@ void Tracker::publish_hypotheses_future() {
   {
     MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[i];
 
-    vnl_vector<double> mean = hypothesis->getMean();
+    Eigen::Vector3d mean = hypothesis->getMean();
 
     //Predict a little bit into the future
     mean += hypothesis->get_velocity()* m_future_time;
 
 
     geometry_msgs::Point p;
-    p.x=mean(0);
-    p.y=mean(1);
-    p.z=mean(2);
+    p.x = mean(0);
+    p.y = mean(1);
+    p.z = mean(2);
 
     if (!hypothesis->is_picked()   && (cur - hypothesis->get_born_time() > m_born_time_threshold )  ){
       hypothesis_marker.points.push_back(p);
@@ -415,17 +412,17 @@ void Tracker::publish_static_hypotheses(){
     MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[i];
 
     if (hypothesis->isStatic() && !hypothesis->is_picked() && (cur - hypothesis->get_born_time() > m_born_time_threshold )    ){
-      const vnl_vector<double> &mean = hypothesis->getMean();
+      const Eigen::Vector3d& mean = hypothesis->getMean();
       geometry_msgs::Point p;
-      p.x=mean(0);
-      p.y=mean(1);
-      p.z=mean(2);
+      p.x = mean(0);
+      p.y = mean(1);
+      p.z = mean(2);
       static_object_marker.points.push_back(p);
 
       //push another point for the second point of the line
-      p.x=mean(0);
-      p.y=mean(1);
-      p.z=mean(2)+3;
+      p.x = mean(0);
+      p.y = mean(1);
+      p.z = mean(2) + 3;
       static_object_marker.points.push_back(p);
     }
 
@@ -449,17 +446,17 @@ void Tracker::publish_dynamic_hypotheses(){
     MultiObjectHypothesis *hypothesis = (MultiObjectHypothesis *) hypotheses[i];
 
     if (!hypothesis->isStatic() && !hypothesis->is_picked() && (cur - hypothesis->get_born_time() > m_born_time_threshold )    ){
-      const vnl_vector<double> &mean = hypothesis->getMean();
+      const Eigen::Vector3d& mean = hypothesis->getMean();
       geometry_msgs::Point p;
-      p.x=mean(0);
-      p.y=mean(1);
-      p.z=mean(2);
+      p.x = mean(0);
+      p.y = mean(1);
+      p.z = mean(2);
       dynamic_object_marker.points.push_back(p);
 
       //push another point for the second point of the line
-      p.x=mean(0);
-      p.y=mean(1);
-      p.z=mean(2)+1.5;
+      p.x = mean(0);
+      p.y = mean(1);
+      p.z = mean(2)+1.5;
       dynamic_object_marker.points.push_back(p);
     }
 
@@ -490,11 +487,11 @@ void Tracker::publish_debug()
   debug_msg.velocity.x = hypothesis->get_velocity()(0);
   debug_msg.velocity.y = hypothesis->get_velocity()(1);
   debug_msg.velocity.z = hypothesis->get_velocity()(2);
-  debug_msg.velocity_norm = hypothesis->get_velocity().two_norm();
+  debug_msg.velocity_norm = hypothesis->get_velocity().norm();
   debug_msg.position.x = hypothesis->getMean()(0);
   debug_msg.position.y = hypothesis->getMean()(1);
   debug_msg.position.z = hypothesis->getMean()(2);
-  debug_msg.drone_tilt_angle = hypothesis->get_latest_measurement().rotation_angle;
+//  debug_msg.drone_tilt_angle = hypothesis->get_latest_measurement().rotation_angle;
 
   m_debug_publisher.publish(debug_msg);
 }

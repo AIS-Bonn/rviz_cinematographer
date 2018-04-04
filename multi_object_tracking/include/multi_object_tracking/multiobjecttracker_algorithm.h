@@ -2,8 +2,8 @@
 #define __MULTI_OBJECT_TRACKER_ALGORITHM_H__
 
 
-#include <vnl/vnl_vector_fixed.h>
-#include <vnl/vnl_matrix_fixed.h>
+//#include <vnl/vnl_vector_fixed.h>
+//#include <vnl/vnl_matrix_fixed.h>
 
 #include <multi_object_tracking/multihypothesistracker.h>
 

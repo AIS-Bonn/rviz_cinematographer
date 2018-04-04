@@ -8,21 +8,21 @@ namespace MultiHypothesisTracker
 {
 
 Hypothesis::Hypothesis()
-:	m_mean( vnl_vector< double >( 6 ) )
-,	m_covariance( vnl_matrix< double >( 6, 6 ) )
-,	m_numStateDimensions( 6 ) {
+{
+  // NOTE: was dimensionality of 6
+  m_mean.setZero();
+  m_covariance.setIdentity();
+  m_numStateDimensions = 3;
+
   m_visible = true;
-  m_lastMeasurementTime=0;
-  m_last_mean_with_measurement=	vnl_vector< double >(3);
-  m_last_mean_with_measurement.fill(0);
-  m_is_first_position=true;
-  m_velocity = vnl_vector< double >(3);
-  m_velocity.fill(0);
-  m_max_velocity_in_track= vnl_vector<double> (3);
-  m_max_velocity_in_track.fill(0);
-  m_is_picked=false;
-  m_born_time=0;
-  m_times_measured=0;
+  m_lastMeasurementTime = 0;
+  m_last_mean_with_measurement.setZero();
+  m_is_first_position = true;
+  m_velocity.setZero();
+  m_max_velocity_in_track.setZero();
+  m_is_picked = false;
+  m_born_time = 0;
+  m_times_measured = 0;
 }
 
 Hypothesis::~Hypothesis() {
@@ -124,7 +124,29 @@ bool Hypothesis::isSpurious() {
   }else {
     double maxPositionCov = getParameters().max_cov; // TODO unused - delete?
 
-    vnl_symmetric_eigensystem< double > eigensystemPosition( m_covariance.extract( 3, 3 ) );
+    //TODO: test if result is same with the one below
+    Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver(m_covariance);
+//     if( eigen_solver.eigenvalues().col(0)[0] > maxPositionCov || eigen_solver.eigenvalues().col(0)[1] > maxPositionCov || eigen_solver.eigenvalues().col(0)[2] > maxPositionCov ) {
+//     	return true;
+//     }
+
+    // TODO: delete, this is just here to test if result is same
+    vnl_matrix< double > covariance(3,3);
+    for( int i = 0; i < (int)covariance.rows(); i++ )
+      for( int j = i; j < (int)covariance.cols(); j++ )
+        covariance( i, j ) = m_covariance( i, j );
+
+    vnl_symmetric_eigensystem< double > eigensystemPosition( covariance.extract( 3, 3 ) );
+
+    auto eigen_values = eigen_solver.eigenvalues();
+    for( int i = 0; i < (int)covariance.rows(); i++ ){
+
+      std::cout << "Test if eigenvalues are same: is " << eigensystemPosition.get_eigenvalue(0) << " == " << eigen_values.col(0)[0].real() <<
+                                              " and " << eigensystemPosition.get_eigenvalue(1) << " == " << eigen_values.col(0)[1].real() <<
+                                              " and " << eigensystemPosition.get_eigenvalue(2) << " == " << eigen_values.col(0)[2].real() << std::endl;
+
+    }
+
     // if( eigensystemPosition.get_eigenvalue( 0 ) > maxPositionCov || eigensystemPosition.get_eigenvalue( 1 ) > maxPositionCov || eigensystemPosition.get_eigenvalue( 2 ) > maxPositionCov ) {
     // 	return true;
     // }
@@ -153,7 +175,7 @@ void Hypothesis::verify_static(){
       m_is_static=false;
       return;
     }else{																							//If it's of unknown color we have to check how much it moved
-      if (  (m_mean-m_first_position_in_track).two_norm() > 0.25  ){
+      if (  (m_mean-m_first_position_in_track).norm() > 0.25  ){
         m_is_static=false;
         return;
       }
@@ -162,16 +184,17 @@ void Hypothesis::verify_static(){
 
 
   // if (m_is_static){
-  // 	if (  (m_mean-m_first_position_in_track).two_norm() > 0.4   &&  (m_max_velocity_in_track.two_norm() > 0.85)  ){
+  // 	if (  (m_mean-m_first_position_in_track).norm() > 0.4   &&  (m_max_velocity_in_track.norm() > 0.85)  ){
   // 		m_is_static=false;
   // 	}
   // }
 
 }
 
-void Hypothesis::predict( double dt, const vnl_vector< double >& control ) {
+void Hypothesis::predict(double dt, Eigen::Vector3d& control)
+{
   // control is neglected
-  vnl_matrix< double > stateTransitionMatrix, stateTransitionCovariance;
+  Eigen::Matrix3d stateTransitionMatrix, stateTransitionCovariance;
 
   // std::cout << "Hypothesis:predict dt is " << dt << '\n';
   // std::cout << "Hypothesis:predict state before prediction is " << m_mean << '\n';
@@ -187,8 +210,26 @@ void Hypothesis::predict( double dt, const vnl_vector< double >& control ) {
 
     //If covariance is bigger than the maximum cov than do not update it anymore
     double maxPositionCov = getParameters().max_cov;
-    vnl_symmetric_eigensystem< double > eigensystemPosition( m_covariance.extract( 3, 3 ) );
-    if( eigensystemPosition.get_eigenvalue( 0 ) > maxPositionCov || eigensystemPosition.get_eigenvalue( 1 ) > maxPositionCov || eigensystemPosition.get_eigenvalue( 2 ) > maxPositionCov ) {
+
+    //TODO: test if result is same with the one below
+    Eigen::EigenSolver<Eigen::Matrix3d> eigen_solver(m_covariance);
+
+    // TODO: delete, this is just here to test if result is same
+    vnl_matrix< double > covariance(3,3);
+    for( int i = 0; i < (int)covariance.rows(); i++ )
+      for( int j = i; j < (int)covariance.cols(); j++ )
+        covariance( i, j ) = m_covariance( i, j );
+
+    vnl_symmetric_eigensystem< double > eigensystemPosition( covariance.extract( 3, 3 ) );
+
+    auto eigen_values = eigen_solver.eigenvalues();
+    for( int i = 0; i < (int)covariance.rows(); i++ ){
+      std::cout << "Test if eigenvalues are same: is " << eigensystemPosition.get_eigenvalue(0) << " == " << eigen_values.col(0)[0].real() <<
+                " and " << eigensystemPosition.get_eigenvalue(1) << " == " << eigen_values.col(0)[1].real() <<
+                " and " << eigensystemPosition.get_eigenvalue(2) << " == " << eigen_values.col(0)[2].real() << std::endl;
+    }
+
+    if( eigen_values.col(0)[0].real() > maxPositionCov || eigen_values.col(0)[1].real() > maxPositionCov || eigen_values.col(0)[2].real() > maxPositionCov ) {
       //don't update
     }else{
       //update
@@ -206,17 +247,34 @@ void Hypothesis::predict( double dt, const vnl_vector< double >& control ) {
 }
 
 void Hypothesis::correct( const Measurement& measurement ) {
-  vnl_matrix< double > measurementMatrix, measurementCovariance, kalmanGain;
-  vnl_vector< double > expectedMeasurement;
+  Eigen::Matrix3d measurementMatrix, measurementCovariance, kalmanGain;
+  Eigen::Vector3d expectedMeasurement;
   measurementModel( expectedMeasurement, measurementMatrix, measurementCovariance, m_mean );
 
-  vnl_matrix< double > correctionCovariance = measurementMatrix * m_covariance * measurementMatrix.transpose() + measurement.cov;
-  vnl_svd< double > svdCorrectionCovariance( correctionCovariance );
+  Eigen::Matrix3d correctionCovariance = measurementMatrix * m_covariance * measurementMatrix.transpose() + measurement.cov;
+
+
+
+  // TODO: delete, just for testing if same
+  vnl_matrix< double > vnl_correctionCovariance(3,3);
+  for( int i = 0; i < (int)vnl_correctionCovariance.rows(); i++ )
+    for( int j = i; j < (int)vnl_correctionCovariance.cols(); j++ )
+      vnl_correctionCovariance( i, j ) = correctionCovariance( i, j );
+  vnl_svd< double > svdCorrectionCovariance( vnl_correctionCovariance );
   vnl_matrix< double > invCorrectionCovariance = svdCorrectionCovariance.pinverse();
 
-  kalmanGain = m_covariance * measurementMatrix.transpose() * invCorrectionCovariance;
-  vnl_matrix< double > identity = m_covariance;
-  identity.set_identity();
+  Eigen::Matrix3d test = correctionCovariance.inverse();
+
+  for( int i = 0; i < (int)invCorrectionCovariance.rows(); i++ )
+    for( int j = i; j < (int)invCorrectionCovariance.cols(); j++ ){
+      std::cout << invCorrectionCovariance(i,j) << " =? " << test(i,j) << std::endl;
+  }
+
+
+
+  kalmanGain = m_covariance * measurementMatrix.transpose() * correctionCovariance.inverse();
+  Eigen::Matrix3d identity = m_covariance;
+  identity.setIdentity();
 
 
   double curr_time = getTimeHighRes(); // TODO: unused - delete?
@@ -248,8 +306,9 @@ void Hypothesis::correct( const Measurement& measurement ) {
 
 
   //Running average
-  vnl_vector<double> new_velocity = vnl_vector<double>(3);
-  new_velocity=(m_mean-m_last_mean_with_measurement)/time_dif; new_velocity(2)=0;
+  Eigen::Vector3d new_velocity;
+  new_velocity = (m_mean - m_last_mean_with_measurement) / time_dif;
+  new_velocity(2) = 0;
   double alpha=0.80;
   if (m_velocity(0)==0 && m_velocity(1)==0 && m_velocity(2)==0){  //If it's the first velocity just integrate it so we don0t have this retency to movement
     m_velocity=(m_mean-m_last_mean_with_measurement)/time_dif; m_velocity(2)=0;
@@ -262,8 +321,8 @@ void Hypothesis::correct( const Measurement& measurement ) {
   // std::cout << "velocity is " << m_velocity.magnitude() << '\n';
   double max_velocity=1.4;   //1.4ms or 5kmh
   double slack=1;
-  if (m_velocity.magnitude() > max_velocity + slack ){
-    m_velocity=m_velocity.normalize();
+  if (m_velocity.norm() > max_velocity + slack ){
+    m_velocity.normalize();
     // std::cout << "over-----" << '\n';
     m_velocity*=(max_velocity+slack);
   }
@@ -285,7 +344,7 @@ void Hypothesis::correct( const Measurement& measurement ) {
 
 
   // std::cout << "---------velocity norm is ------------"<< m_velocity.two_norm() << '\n';
-  if (m_velocity.two_norm() > m_max_velocity_in_track.two_norm()){
+  if (m_velocity.norm() > m_max_velocity_in_track.norm()){
     m_max_velocity_in_track=m_velocity;
   }
 
@@ -330,27 +389,32 @@ void Hypothesis::correct( const Measurement& measurement ) {
 
 }
 
-void Hypothesis::stateTransitionModel( vnl_vector< double >& predictedState, vnl_matrix< double >& stateTransitionMatrix, vnl_matrix< double >& stateTransitionCovariance, const vnl_vector< double >& currentState, double dt, const vnl_vector< double >& control ) {
+void Hypothesis::stateTransitionModel(Eigen::Vector3d& predictedState,
+                                      Eigen::Matrix3d& stateTransitionMatrix,
+                                      Eigen::Matrix3d& stateTransitionCovariance,
+                                      const Eigen::Vector3d& currentState,
+                                      double dt,
+                                      const Eigen::Vector3d& control )
+{
 
-  stateTransitionMatrix = vnl_matrix< double >( 6, 6 );
-  stateTransitionMatrix.set_identity();
-  stateTransitionMatrix( 0, 3 ) = dt;
-  stateTransitionMatrix( 1, 4 ) = dt;
-  stateTransitionMatrix( 2, 5 ) = dt;
+  stateTransitionMatrix.setIdentity();
+  // TODO: check what this was doing once
+//  stateTransitionMatrix( 0, 3 ) = dt;
+//  stateTransitionMatrix( 1, 4 ) = dt;
+//  stateTransitionMatrix( 2, 5 ) = dt;
 
 //		std::cout << dt << "\n";
 
-  stateTransitionCovariance = vnl_matrix< double >( 6, 6 );
-  stateTransitionCovariance.set_identity();
+  stateTransitionCovariance.setIdentity();
 
   const TrackerParameters &params = getParameters();
 
   stateTransitionCovariance( 0, 0 ) = dt * params.cov_x_per_sec;
   stateTransitionCovariance( 1, 1 ) = dt * params.cov_y_per_sec;
   stateTransitionCovariance( 2, 2 ) = dt * params.cov_z_per_sec;
-  stateTransitionCovariance( 3, 3 ) = dt * ( params.cov_vx_per_sec + params.alpha_vx_vx_per_sec * params.alpha_vx_vx_per_sec * currentState( 3 ) * currentState( 3 ) + params.alpha_vx_vy_per_sec * params.alpha_vx_vy_per_sec * currentState( 4 ) * currentState( 4 ) + params.alpha_vx_vy_per_sec * params.alpha_vx_vy_per_sec * currentState( 5 ) * currentState( 5 ) );
-  stateTransitionCovariance( 4, 4 ) = dt * ( params.cov_vy_per_sec + params.alpha_vy_vy_per_sec * params.alpha_vy_vy_per_sec * currentState( 4 ) * currentState( 4 ) + params.alpha_vx_vy_per_sec * params.alpha_vx_vy_per_sec * currentState( 3 ) * currentState( 3 ) + params.alpha_vx_vy_per_sec * params.alpha_vx_vy_per_sec * currentState( 5 ) * currentState( 5 ) );
-  stateTransitionCovariance( 5, 5 ) = dt * ( params.cov_vz_per_sec + params.alpha_vz_vz_per_sec * params.alpha_vz_vz_per_sec * currentState( 5 ) * currentState( 5 ) + params.alpha_vx_vy_per_sec * params.alpha_vx_vy_per_sec * currentState( 3 ) * currentState( 3 ) + params.alpha_vx_vy_per_sec * params.alpha_vx_vy_per_sec * currentState( 4 ) * currentState( 4 ) );
+//  stateTransitionCovariance( 3, 3 ) = dt * ( params.cov_vx_per_sec + params.alpha_vx_vx_per_sec * params.alpha_vx_vx_per_sec * currentState( 3 ) * currentState( 3 ) + params.alpha_vx_vy_per_sec * params.alpha_vx_vy_per_sec * currentState( 4 ) * currentState( 4 ) + params.alpha_vx_vy_per_sec * params.alpha_vx_vy_per_sec * currentState( 5 ) * currentState( 5 ) );
+//  stateTransitionCovariance( 4, 4 ) = dt * ( params.cov_vy_per_sec + params.alpha_vy_vy_per_sec * params.alpha_vy_vy_per_sec * currentState( 4 ) * currentState( 4 ) + params.alpha_vx_vy_per_sec * params.alpha_vx_vy_per_sec * currentState( 3 ) * currentState( 3 ) + params.alpha_vx_vy_per_sec * params.alpha_vx_vy_per_sec * currentState( 5 ) * currentState( 5 ) );
+//  stateTransitionCovariance( 5, 5 ) = dt * ( params.cov_vz_per_sec + params.alpha_vz_vz_per_sec * params.alpha_vz_vz_per_sec * currentState( 5 ) * currentState( 5 ) + params.alpha_vx_vy_per_sec * params.alpha_vx_vy_per_sec * currentState( 3 ) * currentState( 3 ) + params.alpha_vx_vy_per_sec * params.alpha_vx_vy_per_sec * currentState( 4 ) * currentState( 4 ) );
 
   predictedState = stateTransitionMatrix * currentState;
 
@@ -363,33 +427,31 @@ void Hypothesis::stateTransitionModel( vnl_vector< double >& predictedState, vnl
   predictedState(0) = predictedState(0) - control(0);
   predictedState(1) = predictedState(1) - control(1);
 
-  vnl_matrix< double > R_control( 2, 2 );
+  Eigen::Matrix2d R_control( 2, 2 );
   R_control( 0, 0 ) = cos( -control( 2 ) );
   R_control( 0, 1 ) = -sin( -control( 2 ) );
   R_control( 1, 0 ) = sin( -control( 2 ) );
   R_control( 1, 1 ) = cos( -control( 2 ) );
 
-  vnl_vector< double > predictedState2D( 2 );
-  predictedState2D = R_control * predictedState.extract( 2 );
+  Eigen::Vector2d predictedState2D( 2 );
+  predictedState2D = R_control * predictedState.block(0, 0, 2, 2);
   predictedState(0) = predictedState2D(0);
   predictedState(1) = predictedState2D(1);
 
 
 }
 
-void Hypothesis::measurementModel( vnl_vector< double >& expectedMeasurement, vnl_matrix< double >& measurementMatrix, vnl_matrix< double >& measurementCovariance, const vnl_vector< double >& currentState ) {
+void Hypothesis::measurementModel(Eigen::Vector3d& expectedMeasurement,
+                                  Eigen::Matrix3d& measurementMatrix,
+                                  Eigen::Matrix3d& measurementCovariance,
+                                  const Eigen::Vector3d& currentState)
+{
 
-  measurementMatrix = vnl_matrix< double >( 3, 6 );
-  measurementMatrix.fill( 0 );
-  measurementMatrix( 0, 0 ) = 1;
-  measurementMatrix( 1, 1 ) = 1;
-  measurementMatrix( 2, 2 ) = 1;
+  measurementMatrix.setIdentity();
 
-  expectedMeasurement = vnl_vector< double >( 3 );
   expectedMeasurement = measurementMatrix * currentState;
 
-  measurementCovariance = vnl_matrix< double >( 3, 3 );
-  measurementCovariance.set_identity();
+  measurementCovariance.setIdentity();
   double measurementStd = getParameters().measurementStd;
   measurementCovariance( 0, 0 ) = measurementStd * measurementStd;
   measurementCovariance( 1, 1 ) = measurementStd * measurementStd;
