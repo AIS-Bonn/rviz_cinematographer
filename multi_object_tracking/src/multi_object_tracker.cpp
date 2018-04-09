@@ -38,26 +38,15 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
   std::vector<Measurement> measurements;
   convert(msg, measurements);
 
-  m_mot_publisher.publish_debug(m_algorithm->getHypotheses());
+  m_mot_publisher.publishDebug(m_algorithm->getHypotheses());
 
   if(!transformToFrame(measurements, m_world_frame))
     return;
 
-  m_mot_publisher.publishMeasurementMarkers(measurements);
-  m_mot_publisher.publish_measurement_covariance(measurements);
+  m_mot_publisher.publishMeasurementPositions(measurements);
+  m_mot_publisher.publishMeasurementsCovariances(measurements);
 
   m_algorithm->objectDetectionDataReceived(measurements);
-
-  //Full track for first hypothesis
-  // std::vector<Hypothesis*> hypotheses = m_algorithm->getHypotheses();
-  // Hypothesis3D *hypothesis = (Hypothesis3D *) hypotheses[0];
-  // const Eigen::Vector3d& mean = hypothesis->getMean();
-  // geometry_msgs::Point p;
-  // p.x=mean(0);
-  // p.y=mean(1);
-  // p.z=mean(2);
-  // full_track.points.push_back(p);
-  // m_track_linePublisher.publish(full_track);
 }
 
 void Tracker::convert(const geometry_msgs::PoseArray::ConstPtr &msg,
