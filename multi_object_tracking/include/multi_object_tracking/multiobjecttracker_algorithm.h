@@ -15,7 +15,7 @@ public:
   /**
    * @brief Calls prediction method of the hypotheses and deletes spurious hypothesis afterwards.
    */
-  void predictWithoutMeasurement();
+  void predict();
 
   /**
    * @brief Predicts and corrects the hypotheses based on the new measurements.

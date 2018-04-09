@@ -11,7 +11,7 @@ Tracker::Tracker()
   m_algorithm = std::make_shared<MultiObjectTrackerAlgorithm>();
   m_transform_listener = std::make_shared<tf::TransformListener>();
 
-  m_laser_detection_subscriber = n.subscribe<geometry_msgs::PoseArray>("/object_poses", 30, &Tracker::detectionCallback, this);
+  m_laser_detection_subscriber = n.subscribe<geometry_msgs::PoseArray>("/object_poses", 1, &Tracker::detectionCallback, this);
 
   n.param<double>("m_merge_close_hypotheses_distance", m_merge_close_hypotheses_distance, 0.1);
   n.param<double>("m_max_mahalanobis_distance", m_max_mahalanobis_distance, 3.75);
@@ -28,7 +28,7 @@ void Tracker::publish()
 
 void Tracker::update()
 {
-  m_algorithm->predictWithoutMeasurement();
+  m_algorithm->predict();
 }
 
 void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
@@ -37,8 +37,6 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
 
   std::vector<Measurement> measurements;
   convert(msg, measurements);
-
-  m_mot_publisher.publishDebug(m_algorithm->getHypotheses());
 
   if(!transformToFrame(measurements, m_world_frame))
     return;
@@ -116,7 +114,8 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "multi_object_tracking");
   ros::NodeHandle n;
 
-  // TODO: no constant loop rate but rather one update with each detection callback
+  // TODO: no constant loop rate but rather one update with each detection callback... is on one hand more efficient. on the other hand the tracker would keep predicting for a short time even if the detector or some other node fails.
+  // TODO: test how long it would take for the hypotheses to be deleted when the detection crashes.
   ros::Rate loopRate(30);
 
   MultiHypothesisTracker::Tracker tracker;

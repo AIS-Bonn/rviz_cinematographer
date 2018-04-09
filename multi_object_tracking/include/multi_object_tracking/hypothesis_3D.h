@@ -11,15 +11,31 @@ class Hypothesis3D : public Hypothesis
 public:
 
   Hypothesis3D();
-  virtual ~Hypothesis3D();
+  virtual ~Hypothesis3D(){};
 
+  /** @brief Returns the parameters of the tracker for 3D objects.*/
   virtual const TrackerParameters& getParameters();
 
+  /**
+   * @brief Initializes a Hypothesis.
+   *
+   * @param[in] measurement detection.
+   * @param[in] id          id.
+   * @param[in] label       label.
+   */
   virtual void initialize(const Measurement& measurement,
                           unsigned int id,
-                          const std::string& label = ""/*, const QColor& color = QColor( 0, 0, 0 )*/ );
+                          const std::string& label = "");
 
-  Eigen::Vector3d velocity_decay(Eigen::Vector3d decay);
+  /**
+   * @brief Computes the velocity decay.
+   *
+   * The decay depends on the last time the hypothesis was assigned to a measurement.
+   *
+   * @param[in] velocity_in input velocity.
+   * @return updated velocity.
+   */
+  Eigen::Vector3d velocity_decay(Eigen::Vector3d velocity_in);
 
 
   // EKF

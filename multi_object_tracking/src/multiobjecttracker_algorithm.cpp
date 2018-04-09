@@ -8,14 +8,14 @@ MultiObjectTrackerAlgorithm::MultiObjectTrackerAlgorithm()
 	, m_last_prediction_time(0)
 {}
 
-void MultiObjectTrackerAlgorithm::predictWithoutMeasurement()
+void MultiObjectTrackerAlgorithm::predict()
 {
   double currentTime = getTimeHighRes();
 
 	if(m_last_prediction_time > 0)
   {
-    Eigen::Vector3d correct(0.0, 0.0, 0.0);
-    m_multi_hypothesis_tracker.predict(currentTime - m_last_prediction_time, correct);
+    Eigen::Vector3d control(0.0, 0.0, 0.0);
+    m_multi_hypothesis_tracker.predict(currentTime - m_last_prediction_time, control);
   }
 
 	m_last_prediction_time = currentTime;
@@ -25,7 +25,7 @@ void MultiObjectTrackerAlgorithm::predictWithoutMeasurement()
 
 void MultiObjectTrackerAlgorithm::objectDetectionDataReceived(const std::vector<Measurement>& measurements)
 {
-  predictWithoutMeasurement();
+  predict();
 
   m_multi_hypothesis_tracker.correct(measurements);
 

@@ -61,11 +61,11 @@ class Hypothesis
 public:
 
   Hypothesis();
-  virtual ~Hypothesis();
+  virtual ~Hypothesis(){};
 
   virtual const TrackerParameters& getParameters();
 
-  inline unsigned int getID(){ return m_ID; }
+  inline unsigned int getID(){ return m_id; }
 
   // TODO: delete? - used in tracker but is identical to ID
   inline std::string getLabel(){ return m_label; }
@@ -83,14 +83,11 @@ public:
 
   virtual bool isSpurious();
 
-  inline void setVisible(bool v){ m_visible = v; }
-  inline bool isVisible(){ return m_visible; }
-
   virtual void detected();
   virtual void undetected();
 
-  inline float getDetectionRate() { return m_detectionRate; }
-  inline float getMisdetectionRate() { return m_misdetectionRate; }
+  inline float getDetectionRate() { return m_detection_rate; }
+  inline float getMisdetectionRate() { return m_misdetection_rate; }
 
   // EKF
   virtual void predict( double dt, Eigen::Vector3d& control );
@@ -108,13 +105,11 @@ public:
                                 Eigen::Matrix3d& measurementCovariance,
                                 const Eigen::Vector3d& currentState);
 
-  inline void set_picked(bool val){m_is_picked=val;}
-  inline bool is_picked(){return m_is_picked;}
   inline double get_born_time(){return m_born_time;}
   inline void detected_absolute(){m_times_measured++;}  //total number of times that hypothesis had a measurement
   inline Eigen::Vector3d get_velocity(){ return m_velocity;}
   inline Measurement get_latest_measurement(){ return m_latest_measurement;}
-  inline double get_latest_measurement_time(){ return m_lastMeasurementTime;}
+  inline double get_latest_measurement_time(){ return m_last_measurement_time;}
 
 protected:
   Eigen::Vector3d m_last_mean_with_measurement;
@@ -128,7 +123,6 @@ protected:
   bool m_is_static;
   Eigen::Vector3d m_first_position_in_track;
   Eigen::Vector3d m_max_velocity_in_track;
-  bool m_is_picked;
   double m_born_time;
   int m_times_measured;
 
@@ -138,12 +132,11 @@ protected:
   Eigen::Vector3d m_mean;
   Eigen::Matrix3d m_covariance;
   uint8_t m_color;
-  double m_lastMeasurementTime;    //needed to calculate if it's spurious or not.
-  float m_detectionRate;
-  float m_misdetectionRate;
-  bool m_visible;
+  double m_last_measurement_time;    //needed to calculate if it's spurious or not.
+  float m_detection_rate;
+  float m_misdetection_rate;
 
-  unsigned int m_ID;
+  unsigned int m_id;
 
   // for visualization
   std::string m_label;
@@ -151,6 +144,7 @@ protected:
 
   unsigned int m_numStateDimensions;
 
+  double m_static_distance_threshold;
 };
 
 class HypothesisFactory

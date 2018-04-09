@@ -36,7 +36,7 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
   auto it = m_hypotheses.begin();
   while(it != m_hypotheses.end())
   {
-    if((*it)->isVisible() && (*it)->isSpurious())
+    if((*it)->isSpurious())
     {
       it = m_hypotheses.erase(it);
       continue;
@@ -177,9 +177,9 @@ void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
           // hungarian method assigned with INT_MAX => observation and track unassigned
 
           // discount hypothesis detection rate
-          if( m_hypotheses[i]->isVisible() ) {
+//          if( m_hypotheses[i]->isVisible() ) {
             m_hypotheses[i]->undetected();
-          }
+//          }
 
           // create new hypothesis for observation
           std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis();
