@@ -7,6 +7,7 @@ MultiHypothesisTracker::MultiHypothesisTracker(std::shared_ptr<HypothesisFactory
 :	m_lastHypothesisID(1)
 	,	m_numStateDimensions(6)
 	,	m_hypothesisFactory(hypothesis_factory)
+  , m_cost_factor(10000)
 {
 }
 
@@ -26,10 +27,7 @@ std::shared_ptr<Hypothesis> MultiHypothesisTracker::getHypothesisByID(unsigned i
 void MultiHypothesisTracker::predict(double time_diff,
                                      Eigen::Vector3d& control)
 {
-  // TODO: necessary? : check if hypotheses are changed in predict function and if this is useful
-  std::vector<std::shared_ptr<Hypothesis>> hypotheses = m_hypotheses;
-
-  for(auto& hypothesis : hypotheses)
+  for(auto& hypothesis : m_hypotheses)
     hypothesis->predict(time_diff, control);
 }
 
@@ -47,167 +45,171 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
   }
 }
 
-	std::vector< unsigned int > MultiHypothesisTracker::correct(const std::vector< Measurement >& measurements){
-		// 		lockHypotheses();
+void MultiHypothesisTracker::correct(const std::vector<Measurement>& measurements)
+{
+  int **cost_matrix;
+  setupCostMatrix(measurements, m_hypotheses, cost_matrix);
 
-		std::vector< unsigned int > assignments( measurements.size() , 0 );
-
-
-		// only update visible hypotheses, but associate with all of them
-		std::vector<std::shared_ptr<Hypothesis>> hypotheses;
-    hypotheses = m_hypotheses;
-
-    const int COST_FACTOR = 10000;
-		// const double MAX_MAHALANOBIS_DISTANCE = sqrt( 2.204 );
-		const double MAX_MAHALANOBIS_DISTANCE = m_max_mahalanobis_distance;
-		int jobs = hypotheses.size();
-		int machines = measurements.size();
-
-		// Use Hungarian Method for assignment
-		int dim = machines+jobs;
-		hungarian_problem_t hung;
-		int **cost_matrix = new int*[dim];
-		for (int i=0; i < dim; i++ ) {
-			cost_matrix[i] = new int[dim];
-
-			// vnl_matrix< double > measurementMatrix, measurementCovariance, kalmanGain;
-			// vnl_vector< double > expectedMeasurement;
-			// if( i < jobs )
-			// 	hypotheses[i]->measurementModel( expectedMeasurement, measurementMatrix, measurementCovariance, hypotheses[i]->getMean() );
-			//
-			// vnl_matrix< double > correctionCovariance;
-			// vnl_matrix< double > invCorrectionCovariance;
-			// if( i < jobs ) {
-			// 	correctionCovariance = measurementMatrix * hypotheses[i]->getCovariance() * measurementMatrix.transpose() + measurementCovariance;
-			// 	vnl_svd< double > svdCorrectionCovariance( correctionCovariance );
-			// 	invCorrectionCovariance= svdCorrectionCovariance.pinverse();
-			// }
-
-			for (int j=0; j < dim; j++ ) {
-
-				if (i<jobs && j<machines) {
-					// an observation with a corresponding hypothesis
-
-
-					//Calculate the inverse correction covariance
-					Eigen::Matrix3d measurementMatrix;
-					measurementMatrix.setIdentity();
-          Eigen::Matrix3d correctionCovariance;
-					correctionCovariance = measurementMatrix * hypotheses[i]->getCovariance() * measurementMatrix.transpose() + measurements[j].cov;
-
-					Eigen::Vector3d diff_hyp_meas = measurements[j].pos - hypotheses[i]->getMean();
-
-					auto mahalanobis_distance_squared = diff_hyp_meas.transpose()
-													 * correctionCovariance.inverse()
-													 * diff_hyp_meas;
-
-					double mahalanobis_distance = sqrt(mahalanobis_distance_squared);
-
-					if( mahalanobis_distance < MAX_MAHALANOBIS_DISTANCE  &&
-							((measurements[j].color==hypotheses[i]->getColor() || measurements[j].color=='U' || hypotheses[i]->getColor()=='U')) ){
-						cost_matrix[i][j] = (int) (COST_FACTOR*mahalanobis_distance);
-					}
-					else{
-						cost_matrix[i][j] = INT_MAX;
-					}
-				}
-				else if(i<jobs && j>=machines)  {
-					// cost for a hypothesis with no corresponding observation
-					cost_matrix[i][j] = (int) (COST_FACTOR*MAX_MAHALANOBIS_DISTANCE);
-				}
-				else if (i>=jobs && j<machines)  {
-					// cost for an observation with no corresponding hypothesis
-					cost_matrix[i][j] = (int) (COST_FACTOR*MAX_MAHALANOBIS_DISTANCE);
-				}
-				else if (i>=jobs && j>=machines)  {
-					// cost for a dummy job to a dummy machine
-					cost_matrix[i][j] = 0;
-				}
-			}
-
-		}
-
-		hungarian_init(&hung, cost_matrix, dim, dim, HUNGARIAN_MODE_MINIMIZE_COST);
+  hungarian_problem_t hung;
+  size_t dim = measurements.size() + m_hypotheses.size();
+  hungarian_init(&hung, cost_matrix, dim, dim, HUNGARIAN_MODE_MINIMIZE_COST);
 
 // 		hungarian_print_costmatrix(&hung);
-		hungarian_solve(&hung);
+  hungarian_solve(&hung);
 // 		hungarian_print_assignment(&hung);
 
-		for (int i=0; i < dim; i++ ) {
-			for (int j=0; j < dim; j++ ) {
+  assign(hung, measurements, m_hypotheses);
 
-				bool associated = false;
-				if( i<jobs && j<machines ) {
-					if( hung.assignment[i][j] == HUNGARIAN_ASSIGNED && hung.cost[i][j] < COST_FACTOR*MAX_MAHALANOBIS_DISTANCE )
-						associated = true;
-				}
-				else
-					associated = ( hung.assignment[i][j] != HUNGARIAN_ASSIGNED );
+  for(size_t i = 0; i < dim; i++)
+    delete[] cost_matrix[i];
+  delete[] cost_matrix;
+  hungarian_free(&hung);
 
-				if( i<jobs && j<machines ) {
-					if( associated ) {
+  deleteSpuriosHypotheses();
+}
 
-//						if( hypotheses[i]->isVisible() ) {
-							hypotheses[i]->correct( measurements[j] );
-							assignments[j] = hypotheses[i]->getID();
-							hypotheses[i]->detected();
-							hypotheses[i]->detected_absolute(); // Jan: this was added by radu
-//						}
+void MultiHypothesisTracker::setupCostMatrix(const std::vector<Measurement>& measurements,
+                                             std::vector<std::shared_ptr<Hypothesis>>& hypotheses,
+                                             int**& cost_matrix)
+{
+  size_t hyp_size = hypotheses.size();
+  size_t meas_size = measurements.size();
+  size_t dim = hyp_size + meas_size;
 
-					}
-					else if( hung.assignment[i][j] == HUNGARIAN_ASSIGNED ) {
-						// hungarian method assigned with INT_MAX => observation and track unassigned
+  cost_matrix = new int*[dim];
 
-						// discount hypothesis detection rate
-						if( hypotheses[i]->isVisible() ) {
-							hypotheses[i]->undetected();
-						}
+  for(size_t i=0; i < dim; i++)
+  {
+    cost_matrix[i] = new int[dim];
 
-						// create new hypothesis for observation
-						std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis();
-						hypothesis->initialize( measurements[j], m_lastHypothesisID++ );
-						m_hypotheses.push_back( hypothesis );
-						assignments[j] = hypothesis->getID();
-					}
-				}
-				else if (i<jobs && j>=machines)  {
-					// a hypothesis with no corresponding observation
-					if (!associated) {
-						if( hypotheses[i]->isVisible() ) {
-							hypotheses[i]->undetected();
-						}
-					}
-				}
-				else if (i>=jobs && j<machines)  {
-					// an observation with no corresponding hypothesis -> add
-					if (!associated) {
-						std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis();
-						hypothesis->initialize( measurements[j], m_lastHypothesisID++ );
-						m_hypotheses.push_back( hypothesis );
-						assignments[j] = hypothesis->getID();
-					}
-				}
-				else if (i>=jobs && j>=machines)  {
-					// a dummy job to a dummy machine
-				}
-			}
-		}
+    // vnl_matrix< double > measurementMatrix, measurementCovariance, kalmanGain;
+    // vnl_vector< double > expectedMeasurement;
+    // if( i < hyp_size )
+    // 	m_hypotheses[i]->measurementModel( expectedMeasurement, measurementMatrix, measurementCovariance, m_hypotheses[i]->getMean() );
+    //
+    // vnl_matrix< double > correctionCovariance;
+    // vnl_matrix< double > invCorrectionCovariance;
+    // if( i < hyp_size ) {
+    // 	correctionCovariance = measurementMatrix * m_hypotheses[i]->getCovariance() * measurementMatrix.transpose() + measurementCovariance;
+    // 	vnl_svd< double > svdCorrectionCovariance( correctionCovariance );
+    // 	invCorrectionCovariance= svdCorrectionCovariance.pinverse();
+    // }
 
-		for (int i=0; i<dim; i++)
-			delete[] cost_matrix[i];
-		delete[] cost_matrix;
-		hungarian_free(&hung);
+    for(size_t j=0; j < dim; j++)
+    {
+      if(i < hyp_size && j < meas_size)
+      {
+        // an observation with a corresponding hypothesis
 
+        //Calculate the inverse correction covariance
+        Eigen::Matrix3d measurementMatrix;
+        measurementMatrix.setIdentity();
+        Eigen::Matrix3d correctionCovariance;
+        correctionCovariance = measurementMatrix * m_hypotheses[i]->getCovariance() * measurementMatrix.transpose() + measurements[j].cov;
 
-		deleteSpuriosHypotheses();
+        Eigen::Vector3d diff_hyp_meas = measurements[j].pos - m_hypotheses[i]->getMean();
 
+        auto mahalanobis_distance_squared = diff_hyp_meas.transpose()
+                         * correctionCovariance.inverse()
+                         * diff_hyp_meas;
 
-// 		unlockHypotheses();
+        double mahalanobis_distance = sqrt(mahalanobis_distance_squared);
 
-		return assignments;
+        if(mahalanobis_distance < m_max_mahalanobis_distance)
+        {
+          cost_matrix[i][j] = (int)(m_cost_factor * mahalanobis_distance);
+        }
+        else
+        {
+          cost_matrix[i][j] = INT_MAX;
+        }
+      }
+      else if(i < hyp_size && j >= meas_size)
+      {
+        // cost for a hypothesis with no corresponding observation
+        cost_matrix[i][j] = (int)(m_cost_factor * m_max_mahalanobis_distance);
+      }
+      else if(i >= hyp_size && j < meas_size)
+      {
+        // cost for an observation with no corresponding hypothesis
+        cost_matrix[i][j] = (int)(m_cost_factor * m_max_mahalanobis_distance);
+      }
+      else if(i >= hyp_size && j >= meas_size)
+      {
+        // cost for a dummy job to a dummy machine
+        cost_matrix[i][j] = 0;
+      }
+    }
+  }
+}
 
+void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
+                                    const std::vector<Measurement>& measurements,
+                                    std::vector<std::shared_ptr<Hypothesis>>& hypotheses)
+{
+  size_t hyp_size = hypotheses.size();
+  size_t meas_size = measurements.size();
+  size_t dim = hyp_size + meas_size;
 
-	}
+  for(size_t i = 0; i < dim; i++)
+  {
+    for(size_t j = 0; j < dim; j++)
+    {
+      bool associated = false;
+      if(i < hyp_size && j < meas_size)
+      {
+        if(hung.assignment[i][j] == HUNGARIAN_ASSIGNED && hung.cost[i][j] < m_cost_factor * m_max_mahalanobis_distance)
+          associated = true;
+      }
+      else
+        associated = ( hung.assignment[i][j] != HUNGARIAN_ASSIGNED );
+
+      if(i < hyp_size && j < meas_size)
+      {
+        if(associated)
+        {
+          m_hypotheses[i]->correct(measurements[j]);
+          m_hypotheses[i]->detected();
+          m_hypotheses[i]->detected_absolute(); // Jan: this was added by radu
+        }
+        else if(hung.assignment[i][j] == HUNGARIAN_ASSIGNED)
+        {
+          // hungarian method assigned with INT_MAX => observation and track unassigned
+
+          // discount hypothesis detection rate
+          if( m_hypotheses[i]->isVisible() ) {
+            m_hypotheses[i]->undetected();
+          }
+
+          // create new hypothesis for observation
+          std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis();
+          hypothesis->initialize(measurements[j], m_lastHypothesisID++);
+          m_hypotheses.push_back(hypothesis);
+        }
+      }
+      else if(i < hyp_size && j >= meas_size)
+      {
+        // a hypothesis with no corresponding observation
+        if(!associated)
+          m_hypotheses[i]->undetected();
+      }
+      else if(i >= hyp_size && j < meas_size)
+      {
+        // an observation with no corresponding hypothesis -> add
+        if(!associated)
+        {
+          std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis();
+          hypothesis->initialize(measurements[j], m_lastHypothesisID++);
+          m_hypotheses.push_back(hypothesis);
+        }
+      }
+      else if(i >= hyp_size && j >= meas_size)
+      {
+        // a dummy job to a dummy machine
+      }
+    }
+  }
+}
 
 void MultiHypothesisTracker::mergeCloseHypotheses(double distance_threshold)
 {

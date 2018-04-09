@@ -45,7 +45,7 @@ public:
                        Eigen::Vector3d& control);
 
   // returns vector of assignments
-  std::vector<unsigned int> correct(const std::vector<Measurement>& measurements);
+  void correct(const std::vector<Measurement>& measurements);
 
   /**
    * @brief Deletes all hypotheses that are too close to others.
@@ -77,7 +77,38 @@ protected:
   unsigned int m_numStateDimensions;
   std::shared_ptr<HypothesisFactory> m_hypothesisFactory;
 
+  int m_cost_factor;
   double m_max_mahalanobis_distance;
+
+  /**
+   * @brief Set up cost matrix for hungarian method.
+   *
+   * //TODO: better description
+   * Pairwise thresholded Mahalanobis distance of each measurement to each
+   * hypothesis in top left block of matrix.
+   * Max values in top right and bottom left blocks.
+   * Zeroes in bottom right block.
+   *
+   * @param[in]     measurements    detections.
+   * @param[in]     hypotheses      already existing hypotheses.
+   * @param[out]    cost_matrix     cost matrix.
+   */
+  void setupCostMatrix(const std::vector<Measurement>& measurements,
+                       std::vector<std::shared_ptr<Hypothesis>>& hypotheses,
+                       int**& cost_matrix);
+
+  /**
+   * @brief Use assignments to correct each hypothesis with assigned measurement.
+   *
+   * //TODO: description
+   *
+   * @param[in]     hung            assignments and costs from hungarian method.
+   * @param[in]     measurements    detections.
+   * @param[in,out] hypotheses      in current hypotheses, out corrected and new hypotheses.
+   */
+  void assign(const hungarian_problem_t& hung,
+              const std::vector<Measurement>& measurements,
+              std::vector<std::shared_ptr<Hypothesis>>& hypotheses);
 };
 
 };
