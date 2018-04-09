@@ -35,7 +35,7 @@ public:
    * @param[in] velocity_in input velocity.
    * @return updated velocity.
    */
-  Eigen::Vector3d velocity_decay(Eigen::Vector3d velocity_in);
+  Eigen::Vector3d velocityDecay(Eigen::Vector3d velocity_in);
 
 
   // EKF

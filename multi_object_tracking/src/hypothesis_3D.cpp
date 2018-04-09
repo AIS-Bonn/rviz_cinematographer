@@ -76,7 +76,7 @@ void Hypothesis3D::initialize(const Measurement& measurement,
 }
 
 // TODO: at the very least replace magic numbers by parameters or members
-Eigen::Vector3d Hypothesis3D::velocity_decay(Eigen::Vector3d velocity_in)
+Eigen::Vector3d Hypothesis3D::velocityDecay(Eigen::Vector3d velocity_in)
 {
   double current_time = getTimeHighRes();
   //Velocity stays the same up until 1 second then it decays
@@ -102,7 +102,6 @@ void Hypothesis3D::stateTransitionModel(Eigen::Vector3d& predictedState,
                                         double dt,
                                         const Eigen::Vector3d& control)
 {
-
   // TODO: this is only correct for zero velocity
   stateTransitionMatrix.setIdentity();
 
@@ -131,7 +130,7 @@ void Hypothesis3D::stateTransitionModel(Eigen::Vector3d& predictedState,
   // std::cout << "state transitin: time diff is " << dt << '\n';
   // std::cout << "state transitin: velocity with time is " << velocity*dt << '\n';
   if (!m_is_first_position && !m_is_static){  //If it's hte first position in the hypothesis then we don't have a velocity cuz we don't have a prev measurement
-    Eigen::Vector3d velocity_decayed = velocity_decay(m_velocity);
+    Eigen::Vector3d velocity_decayed = velocityDecay(m_velocity);
     predictedState +=  velocity_decayed * (dt);
 
     // m_velocity=m_velocity*0.97; // TODO Not a very good way of doing decay becuase it depend on how often you do prediction
