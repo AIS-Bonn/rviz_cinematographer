@@ -1,0 +1,150 @@
+{
+  "keys": {},
+  "groups": {
+    "pluginmanager": {
+      "keys": {
+        "running-plugins": {
+          "type": "repr",
+          "repr": "{u'parametertuner/Parametertuner': [1]}"
+        }
+      },
+      "groups": {
+        "plugin__rqt_rviz__RViz__1": {
+          "keys": {},
+          "groups": {
+            "dock_widget__": {
+              "keys": {
+                "dockable": {
+                  "type": "repr",
+                  "repr": "True"
+                },
+                "parent": {
+                  "type": "repr",
+                  "repr": "None"
+                },
+                "dock_widget_title": {
+                  "type": "repr",
+                  "repr": "u'&cost_visualization.rviz[*] - RViz'"
+                }
+              },
+              "groups": {}
+            }
+          }
+        },
+        "plugin__sb_rqt_rviz__RViz__1": {
+          "keys": {},
+          "groups": {
+            "dock_widget__": {
+              "keys": {
+                "dockable": {
+                  "type": "repr",
+                  "repr": "u'true'"
+                },
+                "parent": {
+                  "type": "repr",
+                  "repr": "None"
+                }
+              },
+              "groups": {}
+            },
+            "plugin": {
+              "keys": {
+                "config": {
+                  "type": "repr",
+                  "repr": "u'./cost_visualization.rviz'"
+                }
+              },
+              "groups": {}
+            }
+          }
+        },
+        "plugin__parametertuner__Parametertuner__1": {
+          "keys": {},
+          "groups": {
+            "dock_widget__parametertuner": {
+              "keys": {
+                "dockable": {
+                  "type": "repr",
+                  "repr": "True"
+                },
+                "parent": {
+                  "type": "repr",
+                  "repr": "None"
+                },
+                "dock_widget_title": {
+                  "type": "repr",
+                  "repr": "u'P&arameter Tuner'"
+                }
+              },
+              "groups": {}
+            }
+          }
+        },
+        "plugin__rqt_image_view__ImageView__1": {
+          "keys": {},
+          "groups": {
+            "dock_widget__ImageViewWidget": {
+              "keys": {
+                "dockable": {
+                  "type": "repr",
+                  "repr": "u'true'"
+                },
+                "parent": {
+                  "type": "repr",
+                  "repr": "None"
+                }
+              },
+              "groups": {}
+            },
+            "plugin": {
+              "keys": {
+                "dynamic_range": {
+                  "type": "repr",
+                  "repr": "u'false'"
+                },
+                "max_range": {
+                  "type": "repr",
+                  "repr": "u'10'"
+                },
+                "topic": {
+                  "type": "repr",
+                  "repr": "u''"
+                },
+                "zoom1": {
+                  "type": "repr",
+                  "repr": "u'false'"
+                }
+              },
+              "groups": {}
+            }
+          }
+        }
+      }
+    },
+    "mainwindow": {
+      "keys": {
+        "geometry": {
+          "type": "repr(QByteArray.hex)",
+          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb00020000fffffffc0000000000000262000003fd000000000000001d0000025e000003f900000000000000000780')",
+          "pretty-print": "         b       ^       "
+        },
+        "state": {
+          "type": "repr(QByteArray.hex)",
+          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd00000001000000030000025f000003a8fc0100000005fb000000620070006100720061006d006500740065007200740075006e00650072005f005f0050006100720061006d006500740065007200740075006e00650072005f005f0031005f005f0070006100720061006d006500740065007200740075006e0065007201000000000000025f0000025f01000003fb000000620070006100720061006d006500740065007200740075006e00650072005f005f0050006100720061006d006500740065007200740075006e00650072005f005f0032005f005f0070006100720061006d006500740065007200740075006e006500720100000235000002320000000000000000fb0000002c00730062005f007200710074005f007200760069007a005f005f005200560069007a005f005f0031005f005f01000002130000052c0000000000000000fb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d0061006700650056006900650077005700690064006700650074010000046a000002d50000000000000000fb00000026007200710074005f007200760069007a005f005f005200560069007a005f005f0031005f005f01000002600000050300000000000000000000025f0000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')",
+          "pretty-print": "                 bparametertuner__Parametertuner__1__parametertuner          bparametertuner__Parametertuner__2__parametertuner          ,sb_rqt_rviz__RViz__1__          Zrqt_image_view__ImageView__1__ImageViewWidget          &rqt_rviz__RViz__1__                            6MinimizedDockWidgetsToolbar        "
+        }
+      },
+      "groups": {
+        "toolbar_areas": {
+          "keys": {
+            "MinimizedDockWidgetsToolbar": {
+              "type": "repr",
+              "repr": "8"
+            }
+          },
+          "groups": {}
+        }
+      }
+    }
+  }
+}
