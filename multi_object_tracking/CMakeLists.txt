@@ -46,7 +46,7 @@ include_directories(
 
 add_library(hypotheses
 	src/hypothesis.cpp
-	src/hypothesis_3D.cpp
+	src/kalman_filter.cpp
 )
 
 target_link_libraries(hypotheses

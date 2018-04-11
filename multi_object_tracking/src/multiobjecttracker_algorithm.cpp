@@ -4,7 +4,7 @@ namespace MultiHypothesisTracker
 {
 
 MultiObjectTrackerAlgorithm::MultiObjectTrackerAlgorithm()
-: m_multi_hypothesis_tracker(std::make_shared<Hypothesis3DFactory>())
+: m_multi_hypothesis_tracker(std::make_shared<HypothesisFactory>())
 	, m_last_prediction_time(0)
 {}
 

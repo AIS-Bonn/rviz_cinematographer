@@ -12,7 +12,7 @@
 #include <iostream>
 //#include <map>
 
-#include <multi_object_tracking/hypothesis_3D.h>
+#include <multi_object_tracking/hypothesis.h>
 
 
 // JS: a generic multi hypothesis tracker
