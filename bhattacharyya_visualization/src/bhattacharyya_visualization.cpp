@@ -118,31 +118,51 @@ void CostVis::load()
 
 void CostVis::update()
 {
-   Eigen::Vector3f mean_1(mean_1_x_(), mean_1_y_(), mean_1_z_());
-   Eigen::Matrix3f cov_1;
-   cov_1 << cov_1_xx_(), cov_1_xy_(), cov_1_xz_(),
+  // Set up means and covariance matrices from parameters
+  Eigen::Vector3f mean_1(mean_1_x_(), mean_1_y_(), mean_1_z_());
+  Eigen::Matrix3f cov_1;
+  cov_1 << cov_1_xx_(), cov_1_xy_(), cov_1_xz_(),
            cov_1_xy_(), cov_1_yy_(), cov_1_yz_(),
            cov_1_xz_(), cov_1_yz_(), cov_1_zz_();
 
-   Eigen::Vector3f mean_2(mean_2_x_(), mean_2_y_(), mean_2_z_());
-   Eigen::Matrix3f cov_2;
-   cov_2 << cov_2_xx_(), cov_2_xy_(), cov_2_xz_(),
+  Eigen::Vector3f mean_2(mean_2_x_(), mean_2_y_(), mean_2_z_());
+  Eigen::Matrix3f cov_2;
+  cov_2 << cov_2_xx_(), cov_2_xy_(), cov_2_xz_(),
            cov_2_xy_(), cov_2_yy_(), cov_2_yz_(),
            cov_2_xz_(), cov_2_yz_(), cov_2_zz_();
 
+  // Check if matrices are positive definite
+  Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(cov_1);
+  auto eigen_values = eigen_solver.eigenvalues();
+  if(eigen_values.col(0)[0].real() <= 0 || eigen_values.col(0)[1].real() <= 0 || eigen_values.col(0)[2].real() <= 0)
+    ROS_ERROR("Covariance matrix 1 is not positive definite.");
 
-	// compute entropy and plane variance
+  Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver_2(cov_2);
+  eigen_values = eigen_solver_2.eigenvalues();
+  if(eigen_values.col(0)[0].real() <= 0 || eigen_values.col(0)[1].real() <= 0 || eigen_values.col(0)[2].real() <= 0)
+    ROS_ERROR("Covariance matrix 2 is not positive definite.");
+
+	// compute distance
 	float dist = costs(mean_1, mean_2, cov_1, cov_2);
 
 	PointCloud::Ptr modified_cloud_1(new PointCloud());
 	PointCloud::Ptr modified_cloud_2(new PointCloud());
 
-	Eigen::Matrix4f rotation4f = Eigen::Matrix4f::Identity();
-	rotation4f.block<3,3>(0,0) = cov_1;
+	Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+//	LLT<MatrixXd> lltOfA(A); // compute the Cholesky decomposition of A
+//	MatrixXd L = lltOfA.matrixL(); // retrieve factor L  in the decomposition
+//	// The previous two lines can also be written as "L = A.llt().matrixL()"
 
-	pcl::transformPointCloud(*initial_cloud_1_, *modified_cloud_1, rotation4f);
-	rotation4f.block<3,3>(0,0) = cov_2;
-	pcl::transformPointCloud(*initial_cloud_2_, *modified_cloud_2, rotation4f);
+	Eigen::Matrix3f L = cov_1.llt().matrixL();
+	transform.block<3,3>(0,0) = L;
+  transform.block<3,1>(0,3) = mean_1;
+
+	pcl::transformPointCloud(*initial_cloud_1_, *modified_cloud_1, transform);
+
+  L = cov_2.llt().matrixL();
+	transform.block<3,3>(0,0) = L;
+  transform.block<3,1>(0,3) = mean_2;
+  pcl::transformPointCloud(*initial_cloud_2_, *modified_cloud_2, transform);
 
 	modified_cloud_1->header.frame_id = "base_link";
 	modified_cloud_2->header.frame_id = "base_link";
