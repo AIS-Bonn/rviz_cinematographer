@@ -10,9 +10,9 @@
 		<param name="robot_type" value="ROBOTTYPE" />
 	</node>
 
-	<node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" required="true" args="--perspective-file $(find bhattacharyya_visualization)/launch/cost_visualization.perspective"/>
+	<node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" required="true" args="--perspective-file $(find bhattacharyya_visualization)/launch/bhattacharyya_visualization.perspective"/>
 
-	<node name="rviz" pkg="rviz" type="rviz" output="screen" required="true" args="-d $(find bhattacharyya_visualization)/launch/cost_visualization.rviz"/>
+	<node name="rviz" pkg="rviz" type="rviz" output="screen" required="true" args="-d $(find bhattacharyya_visualization)/launch/bhattacharyya_visualization.rviz"/>
 
   	<node pkg="bhattacharyya_visualization" type="bhattacharyya_visualization" output="screen" name="bhattacharyya_visualization"/>
 

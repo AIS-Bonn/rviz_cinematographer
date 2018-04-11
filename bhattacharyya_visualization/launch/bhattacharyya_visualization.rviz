@@ -5,8 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /Marker1
-        - /PointCloud22
         - /Axes1
       Splitter Ratio: 0.5
     Tree Height: 509
@@ -49,14 +47,6 @@ Visualization Manager:
       Plane: XY
       Plane Cell Count: 100
       Reference Frame: <Fixed Frame>
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /bhattacharyya_visualization/visualization_marker
-      Name: Marker
-      Namespaces:
-        basic_shapes: true
-      Queue Size: 100
       Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
@@ -186,5 +176,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1279
-  X: 742
-  Y: 101
+  X: 738
+  Y: 72

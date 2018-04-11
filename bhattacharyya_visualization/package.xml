@@ -10,8 +10,7 @@
 	<buildtool_depend>catkin</buildtool_depend>
 	<depend>roscpp</depend>
 	<depend>config_server</depend>
-	<depend>visualization_msgs</depend>	
-	<depend>pcl_ros</depend>	
+	<depend>pcl_ros</depend>
 	<depend>pcl_conversions</depend>
 
 </package>

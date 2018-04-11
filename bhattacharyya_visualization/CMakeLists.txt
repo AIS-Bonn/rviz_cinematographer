@@ -3,7 +3,6 @@ project(bhattacharyya_visualization)
 
 find_package(catkin REQUIRED COMPONENTS
 	roscpp
-	visualization_msgs
 	config_server
 	pcl_ros
 	pcl_conversions
