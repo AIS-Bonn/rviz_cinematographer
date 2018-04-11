@@ -53,8 +53,7 @@ const TrackerParameters& Hypothesis::getParameters()
 }
 
 void Hypothesis::initialize(const Measurement& measurement,
-                            unsigned int id,
-                            const std::string& label)
+                            unsigned int id)
 {
   // TODO: merge with hyopthesis3d
 }

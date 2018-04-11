@@ -21,11 +21,9 @@ public:
    *
    * @param[in] measurement detection.
    * @param[in] id          id.
-   * @param[in] label       label.
    */
   virtual void initialize(const Measurement& measurement,
-                          unsigned int id,
-                          const std::string& label = "");
+                          unsigned int id);
 
   /**
    * @brief Computes the velocity decay.

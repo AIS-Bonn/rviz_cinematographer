@@ -42,8 +42,7 @@ const TrackerParameters& Hypothesis3D::getParameters()
 }
 
 void Hypothesis3D::initialize(const Measurement& measurement,
-                              unsigned int id,
-                              const std::string& label)
+                              unsigned int id)
 {
   m_mean(0) = measurement.pos(0);
   m_mean(1) = measurement.pos(1);
@@ -63,16 +62,6 @@ void Hypothesis3D::initialize(const Measurement& measurement,
   m_misdetection_rate = 0.5f;
 
   m_id = id;
-
-  // TODO: check what this is used for
-  if(label.length() > 0)
-    m_label = label;
-  else
-  {
-    std::stringstream ss;
-    ss << id;
-    ss >> m_label;
-  }
 }
 
 // TODO: at the very least replace magic numbers by parameters or members

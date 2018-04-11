@@ -67,10 +67,6 @@ public:
 
   inline unsigned int getID(){ return m_id; }
 
-  // TODO: delete? - used in tracker but is identical to ID
-  inline std::string getLabel(){ return m_label; }
-  inline void setLabel(const std::string& label){ m_label = label; }
-
   // TODO: delete? - never used, just set
   inline unsigned int getNumStateDimensions() { return m_numStateDimensions; }
 
@@ -79,7 +75,8 @@ public:
   inline uint8_t getColor(){ return m_color; }
   inline bool isStatic(){ return m_is_static; }
 
-  virtual void initialize(const Measurement& measurement, unsigned int id, const std::string& label = ""/*, const QColor& color = QColor( 0, 0, 0 )*/ );
+  virtual void initialize(const Measurement& measurement,
+                          unsigned int id);
 
   virtual bool isSpurious();
 
@@ -137,10 +134,6 @@ protected:
   float m_misdetection_rate;
 
   unsigned int m_id;
-
-  // for visualization
-  std::string m_label;
-// 		QColor m_color;
 
   unsigned int m_numStateDimensions;
 
