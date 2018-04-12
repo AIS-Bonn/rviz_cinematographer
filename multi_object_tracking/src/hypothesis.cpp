@@ -9,6 +9,7 @@ namespace MultiHypothesisTracker
 
 Hypothesis::Hypothesis()
 : m_last_correction_time(0.0)
+        , m_cap_velocity(false)
   , m_max_allowed_velocity(1.4) // 1.4m/s or 5km/h
   , m_max_tracked_velocity(0.0)
 {
@@ -96,7 +97,7 @@ void Hypothesis::undetected()
 bool Hypothesis::isSpurious(double current_time)
 {
   // TODO: magic numbers to parameters or members if this if clause is useful
-  if((current_time - m_born_time > 0.65) && m_times_measured <= 1)
+  if((current_time - m_born_time > 0.65) && m_times_measured <= 5)
     return true;
 
   // TODO: Jan: should be a parameter
@@ -181,8 +182,8 @@ void Hypothesis::correct(const Measurement& measurement)
 
   Eigen::Vector3f current_velocity = getVelocity();
   for(int i = 0; i < 3; i++)
-    current_velocity(i) = m_kalman.m_state(3+i);
-
+    current_velocity(i) = m_kalman.getState()(3+i);
+  
   if(m_cap_velocity)
   {
     if(current_velocity.norm() > m_max_allowed_velocity)
@@ -190,7 +191,7 @@ void Hypothesis::correct(const Measurement& measurement)
       current_velocity.normalize();
       current_velocity *= m_max_allowed_velocity;
       for(int i = 0; i < 3; i++)
-        m_kalman.m_state(3+i) = current_velocity(i);
+        m_kalman.getState()(3+i) = current_velocity(i);
     }
   }
 

@@ -63,8 +63,8 @@ public:
   // TODO: delete? - never used, just set
   inline unsigned int getNumStateDimensions() { return m_num_state_dimensions; }
 
-  inline Eigen::Vector3f getMean(){ return m_kalman.m_state.block<3,1>(0, 0); }
-  inline Eigen::Vector3f getVelocity(){ return m_kalman.m_state.block<3,1>(3, 0); }
+  inline Eigen::Vector3f getMean(){ return m_kalman.getState().block<3,1>(0, 0); }
+  inline Eigen::Vector3f getVelocity(){ return m_kalman.getState().block<3,1>(3, 0); }
   inline Eigen::Matrix3f getCovariance(){ return m_kalman.getErrorCovariance().block<3,3>(0,0); }
   inline bool isStatic(){ return m_is_static; }
 

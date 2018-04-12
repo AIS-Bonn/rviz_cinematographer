@@ -10,8 +10,6 @@ MultiObjectTrackerAlgorithm::MultiObjectTrackerAlgorithm()
 
 void MultiObjectTrackerAlgorithm::predict(double prediction_time)
 {
-//  double currentTime = getTimeHighRes();
-
 	if(m_last_prediction_time > 0)
     m_multi_hypothesis_tracker.predict(prediction_time - m_last_prediction_time);
 
@@ -27,16 +25,9 @@ void MultiObjectTrackerAlgorithm::objectDetectionDataReceived(const std::vector<
 
   predict(measurements.at(0).time);
 
-  std::cout << "MultiObjectTrackerAlgorithm::objectDetectionDataReceived: measurement.size " << (int)measurements.size() << " " << std::endl;
-
   m_multi_hypothesis_tracker.correct(measurements);
 
-  std::cout << "MultiObjectTrackerAlgorithm::objectDetectionDataReceived: hypotheses.size " << (int)m_multi_hypothesis_tracker.getHypotheses().size() << " " << std::endl;
-
   m_multi_hypothesis_tracker.mergeCloseHypotheses(m_merge_distance);
-
-  std::cout << "MultiObjectTrackerAlgorithm::objectDetectionDataReceived: hypotheses.size " << (int)m_multi_hypothesis_tracker.getHypotheses().size() << " " << std::endl;
-
 }
 
 const std::vector<std::shared_ptr<Hypothesis>>& MultiObjectTrackerAlgorithm::getHypotheses()

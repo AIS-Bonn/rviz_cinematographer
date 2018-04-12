@@ -30,6 +30,8 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
 {
   ROS_DEBUG_STREAM("Laser detection callback.");
 
+  double start = getTimeHighRes();
+
   std::vector<Measurement> measurements;
   convert(msg, measurements);
 
@@ -41,6 +43,7 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
 
   m_algorithm->objectDetectionDataReceived(measurements);
 
+  std::cout << std::setprecision(10) << "\n####time for one callback " << (getTimeHighRes() - start) << " " << std::endl;
   publish();
 }
 

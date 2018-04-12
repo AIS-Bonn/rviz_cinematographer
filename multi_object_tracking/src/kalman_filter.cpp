@@ -63,7 +63,7 @@ void KalmanFilter::predict(float dt,
   // TODO: check if approx correct
   // set up process_noise_covariance
   float covariance_per_second = 0.001;
-  for(int i = 0; i < m_state_dimensions; i++)
+  for(size_t i = 0; i < m_state_dimensions; i++)
     m_process_noise_covariance(i, i) = dt * covariance_per_second;
 
   // update error covariance
@@ -82,9 +82,9 @@ void KalmanFilter::correct(const Eigen::VectorXf& measurement,
 {
   assert(measurement.size() == m_state_dimensions);
 
-  // set up measurement model //TODO: move set ups for fixed matrices to constructor?
+  // set up measurement model
   m_observation_model.setZero();
-  for(int i = 0; i < m_state_dimensions; i++)
+  for(size_t i = 0; i < m_state_dimensions; i++)
     m_observation_model(i, i) = 1.f;
 
   // set up observation noise covariance
