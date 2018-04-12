@@ -21,10 +21,8 @@ class KalmanFilter
 {
 public:
 
-  KalmanFilter();
+  KalmanFilter(const Eigen::VectorXf& state);
   virtual ~KalmanFilter(){};
-
-  void initialize(const Eigen::VectorXf& state);
 
   void predict(float dt);
   void predict(float dt,

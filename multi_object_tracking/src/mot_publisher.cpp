@@ -263,7 +263,8 @@ void MOTPublisher::publishStaticHypothesesPositions(const std::vector<std::share
 
   visualization_msgs::Marker static_objects_marker = createMarker(0.0, 1.0, 0.0, "mot_static_hypotheses_positions");
   static_objects_marker.type = visualization_msgs::Marker::LINE_LIST;
-  static_objects_marker.color.a = 0.5;
+  static_objects_marker.color.a = 1;
+  static_objects_marker.scale.x = 1.0;
   double current_time = getTimeHighRes();
 
   for(size_t i = 0; i < hypotheses.size(); ++i)
@@ -280,7 +281,7 @@ void MOTPublisher::publishStaticHypothesesPositions(const std::vector<std::share
       static_objects_marker.points.push_back(p);
 
       //push another point for the second point of the line
-      p.z += 3;
+      p.z += 15;
       static_objects_marker.points.push_back(p);
     }
   }
@@ -294,7 +295,8 @@ void MOTPublisher::publishDynamicHypothesesPositions(const std::vector<std::shar
 
   visualization_msgs::Marker dynamic_objects_marker = createMarker(0.0, 0.5, 0.5, "mot_dynamic_hypotheses_positions");
   dynamic_objects_marker.type = visualization_msgs::Marker::LINE_LIST;
-  dynamic_objects_marker.color.a = 0.5;
+  dynamic_objects_marker.color.a = 1.0;
+  dynamic_objects_marker.scale.x = 0.5;
   double current_time = getTimeHighRes();
 
   // Publish tracks
@@ -312,7 +314,7 @@ void MOTPublisher::publishDynamicHypothesesPositions(const std::vector<std::shar
       dynamic_objects_marker.points.push_back(p);
 
       //push another point for the second point of the line
-      p.z += 1.5;
+      p.z += 20;
       dynamic_objects_marker.points.push_back(p);
     }
   }

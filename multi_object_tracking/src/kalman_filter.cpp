@@ -3,12 +3,8 @@
 namespace MultiHypothesisTracker
 {
 
-KalmanFilter::KalmanFilter()
+KalmanFilter::KalmanFilter(const Eigen::VectorXf& state)
 : m_control_dimensions(1)
-{
-}
-
-void KalmanFilter::initialize(const Eigen::VectorXf& state)
 {
   m_state_dimensions = state.size();
   m_state = state;

@@ -7,15 +7,36 @@
 namespace MultiHypothesisTracker
 {
 
-Hypothesis::Hypothesis()
+Hypothesis::Hypothesis(const Measurement& measurement,
+                       unsigned int id)
 : m_last_correction_time(0.0)
-        , m_cap_velocity(false)
+        , m_cap_velocity(true)
   , m_max_allowed_velocity(1.4) // 1.4m/s or 5km/h
   , m_max_tracked_velocity(0.0)
 {
+  m_num_state_dimensions = 6;
 
-  m_born_time = 0;
-  m_times_measured = 0;
+  Eigen::VectorXf meas(m_num_state_dimensions);
+  meas.setZero();
+  for(int i = 0; i < 3; i++)
+    meas(i) = measurement.pos(i);
+
+  m_kalman = std::make_shared<KalmanFilter>(meas);
+
+  m_last_correction_time = measurement.time;
+  // TODO: init error_covariance in kalman filter?
+
+  m_first_position_in_track = getMean();
+
+  m_born_time = measurement.time;
+  m_times_measured = 1;
+
+
+  // TODO: should that be 1?
+  m_detection_rate = 0.5f;
+  m_misdetection_rate = 0.5f;
+
+  m_id = id;
 
   m_static_distance_threshold = 0.25;
 }
@@ -46,35 +67,6 @@ const TrackerParameters& Hypothesis::getParameters()
           13.3*sqrt(2.204)
   };
   return params;
-}
-
-void Hypothesis::initialize(const Measurement& measurement,
-                            unsigned int id)
-{
-  //TODO: merge into constructor
-  m_num_state_dimensions = 6;
-
-  Eigen::VectorXf meas(m_num_state_dimensions);
-  meas.setZero();
-  for(int i = 0; i < 3; i++)
-    meas(i) = measurement.pos(i);
-
-  m_kalman.initialize(meas);
-
-  m_last_correction_time = measurement.time;
-  // TODO: init error_covariance in kalman filter?
-
-  m_first_position_in_track = getMean();
-
-  m_born_time = measurement.time;
-  m_times_measured = 1;
-
-
-  // TODO: should that be 1?
-  m_detection_rate = 0.5f;
-  m_misdetection_rate = 0.5f;
-
-  m_id = id;
 }
 
 // TODO: check if this is correct: if not replace by running average
@@ -139,7 +131,7 @@ void Hypothesis::predict(float dt)
 void Hypothesis::predict(float dt,
                          Eigen::Vector3f& control)
 {
-  m_kalman.predict(static_cast<float>(dt));
+  m_kalman->predict(static_cast<float>(dt));
 
   verify_static();
 
@@ -171,7 +163,7 @@ void Hypothesis::correct(const Measurement& measurement)
   for(int i = 0; i < 3; i++)
     meas(i+3) = (measurement.pos(i) - m_state_after_last_correction(i)) / dt;
 
-  m_kalman.correct(meas, measurement.cov);
+  m_kalman->correct(meas, measurement.cov);
 
   m_state_after_last_correction = getMean();
 
@@ -182,8 +174,8 @@ void Hypothesis::correct(const Measurement& measurement)
 
   Eigen::Vector3f current_velocity = getVelocity();
   for(int i = 0; i < 3; i++)
-    current_velocity(i) = m_kalman.getState()(3+i);
-  
+    current_velocity(i) = m_kalman->getState()(3+i);
+
   if(m_cap_velocity)
   {
     if(current_velocity.norm() > m_max_allowed_velocity)
@@ -191,7 +183,7 @@ void Hypothesis::correct(const Measurement& measurement)
       current_velocity.normalize();
       current_velocity *= m_max_allowed_velocity;
       for(int i = 0; i < 3; i++)
-        m_kalman.getState()(3+i) = current_velocity(i);
+        m_kalman->getState()(3+i) = current_velocity(i);
     }
   }
 
@@ -204,9 +196,10 @@ void Hypothesis::correct(const Measurement& measurement)
 }
 
 
-std::shared_ptr<Hypothesis> HypothesisFactory::createHypothesis()
+std::shared_ptr<Hypothesis> HypothesisFactory::createHypothesis(const Measurement& measurement,
+                                                                unsigned int id)
 {
-  return std::make_shared<Hypothesis>();
+  return std::make_shared<Hypothesis>(measurement, id);
 }
 
 };

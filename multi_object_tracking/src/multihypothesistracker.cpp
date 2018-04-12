@@ -196,8 +196,7 @@ void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
 //          }
 
           // create new hypothesis for observation
-          std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis();
-          hypothesis->initialize(measurements[j], m_lastHypothesisID++);
+          std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis(measurements[j], m_lastHypothesisID++);
           m_hypotheses.push_back(hypothesis);
         }
       }
@@ -213,8 +212,7 @@ void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
         if(!associated)
         {
           std::cout << " creating hypothesis " << std::endl;
-          std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis();
-          hypothesis->initialize(measurements[j], m_lastHypothesisID++);
+          std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis(measurements[j], m_lastHypothesisID++);
           m_hypotheses.push_back(hypothesis);
         }
       }

@@ -53,7 +53,8 @@ class Hypothesis
 {
 public:
 
-  Hypothesis();
+  Hypothesis(const Measurement& measurement,
+             unsigned int id);
   virtual ~Hypothesis(){};
 
   virtual const TrackerParameters& getParameters();
@@ -63,13 +64,10 @@ public:
   // TODO: delete? - never used, just set
   inline unsigned int getNumStateDimensions() { return m_num_state_dimensions; }
 
-  inline Eigen::Vector3f getMean(){ return m_kalman.getState().block<3,1>(0, 0); }
-  inline Eigen::Vector3f getVelocity(){ return m_kalman.getState().block<3,1>(3, 0); }
-  inline Eigen::Matrix3f getCovariance(){ return m_kalman.getErrorCovariance().block<3,3>(0,0); }
+  inline Eigen::Vector3f getMean(){ return m_kalman->getState().block<3,1>(0, 0); }
+  inline Eigen::Vector3f getVelocity(){ return m_kalman->getState().block<3,1>(3, 0); }
+  inline Eigen::Matrix3f getCovariance(){ return m_kalman->getErrorCovariance().block<3,3>(0,0); }
   inline bool isStatic(){ return m_is_static; }
-
-  virtual void initialize(const Measurement& measurement,
-                          unsigned int id);
 
   virtual bool isSpurious(double current_time);
 
@@ -86,7 +84,7 @@ public:
   inline double get_born_time(){return m_born_time;}
   inline void detected_absolute(){m_times_measured++;}  //total number of times that hypothesis had a measurement
 
-  KalmanFilter m_kalman;
+  std::shared_ptr<KalmanFilter> m_kalman;
 
 protected:
 
@@ -122,7 +120,8 @@ public:
   HypothesisFactory(){}
   virtual ~HypothesisFactory(){}
 
-  virtual std::shared_ptr<Hypothesis> createHypothesis();
+  virtual std::shared_ptr<Hypothesis> createHypothesis(const Measurement& measurement,
+                                                       unsigned int id);
 };
 
 };
