@@ -155,9 +155,9 @@ void MOTPublisher::publishHypothesesPositions(const std::vector<std::shared_ptr<
 
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
-    std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[i]);
+    std::shared_ptr<Hypothesis> hypothesis = std::static_pointer_cast<Hypothesis>(hypotheses[i]);
 
-    const Eigen::Vector3d& mean = hypothesis->getMean();
+    const Eigen::Vector3f& mean = hypothesis->getMean();
     geometry_msgs::Point p;
     p.x = mean(0);
     p.y = mean(1);
@@ -184,9 +184,9 @@ void MOTPublisher::publishHypothesesFull(const std::vector<std::shared_ptr<Hypot
 //  // Publish tracks
 //  for(size_t i = 0; i < hypotheses.size(); ++i)
 //  {
-//    std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[i]);
+//    std::shared_ptr<Hypothesis> hypothesis = std::static_pointer_cast<Hypothesis>(hypotheses[i]);
 //
-//    const Eigen::Vector3d& mean = hypothesis->getMean();
+//    const Eigen::Vector3f& mean = hypothesis->getMean();
 //    object.position.x = mean(0);
 //    object.position.y = mean(1);
 //    object.position.z = mean(2);
@@ -212,16 +212,16 @@ void MOTPublisher::publishHypothesesPredictions(const std::vector<std::shared_pt
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
-    std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[i]);
-    Eigen::Vector3d mean = hypothesis->getMean();
+    std::shared_ptr<Hypothesis> hypothesis = std::static_pointer_cast<Hypothesis>(hypotheses[i]);
+    Eigen::Vector3f mean = hypothesis->getMean();
 
     //Predict a little bit into the future
-    mean += hypothesis->get_velocity() * m_future_time;
+    mean += hypothesis->getVelocity() * m_future_time;
 
     object.position.x = mean(0);
     object.position.y = mean(1);
     object.position.z = mean(2);
-    object.color = hypothesis->getColor();
+//    object.color = hypothesis->getColor();
 
     if(current_time - hypothesis->get_born_time() > m_born_time_threshold)
       object_detecions.object_detections.push_back(object);
@@ -239,11 +239,11 @@ void MOTPublisher::publishHypothesesPredictedPositions(const std::vector<std::sh
 
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
-    std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[i]);
+    std::shared_ptr<Hypothesis> hypothesis = std::static_pointer_cast<Hypothesis>(hypotheses[i]);
 
     //Predict a little bit into the future
-    Eigen::Vector3d mean = hypothesis->getMean();
-    mean += hypothesis->get_velocity() * m_future_time;
+    Eigen::Vector3f mean = hypothesis->getMean();
+    mean += hypothesis->getVelocity() * m_future_time;
 
     geometry_msgs::Point p;
     p.x = mean(0);
@@ -268,11 +268,11 @@ void MOTPublisher::publishStaticHypothesesPositions(const std::vector<std::share
 
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
-    std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[i]);
+    std::shared_ptr<Hypothesis> hypothesis = std::static_pointer_cast<Hypothesis>(hypotheses[i]);
 
     if(hypothesis->isStatic() && current_time - hypothesis->get_born_time() > m_born_time_threshold)
     {
-      const Eigen::Vector3d& mean = hypothesis->getMean();
+      const Eigen::Vector3f& mean = hypothesis->getMean();
       geometry_msgs::Point p;
       p.x = mean(0);
       p.y = mean(1);
@@ -300,11 +300,11 @@ void MOTPublisher::publishDynamicHypothesesPositions(const std::vector<std::shar
   // Publish tracks
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
-    std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[i]);
+    std::shared_ptr<Hypothesis> hypothesis = std::static_pointer_cast<Hypothesis>(hypotheses[i]);
 
     if(!hypothesis->isStatic() && current_time - hypothesis->get_born_time() > m_born_time_threshold)
     {
-      const Eigen::Vector3d& mean = hypothesis->getMean();
+      const Eigen::Vector3f& mean = hypothesis->getMean();
       geometry_msgs::Point p;
       p.x = mean(0);
       p.y = mean(1);
@@ -327,8 +327,8 @@ void MOTPublisher::publishFullTracks(const std::vector<std::shared_ptr<Hypothesi
 
   //Full track for first hypothesis
   // std::vector<Hypothesis*> hypotheses = m_algorithm->getHypotheses();
-  // Hypothesis3D *hypothesis = (Hypothesis3D *) hypotheses[0];
-  // const Eigen::Vector3d& mean = hypothesis->getMean();
+  // Hypothesis *hypothesis = (Hypothesis *) hypotheses[0];
+  // const Eigen::Vector3f& mean = hypothesis->getMean();
   // geometry_msgs::Point p;
   // p.x=mean(0);
   // p.y=mean(1);
@@ -344,20 +344,17 @@ void MOTPublisher::publishDebug(const std::vector<std::shared_ptr<Hypothesis>>& 
   if(m_debug_publisher.getNumSubscribers() == 0 || hypotheses.empty())
     return;
 
-  if(hypotheses[0]->get_latest_measurement_time() == 0)
-    return;
-
-  std::shared_ptr<Hypothesis3D> hypothesis = std::static_pointer_cast<Hypothesis3D>(hypotheses[0]);
+  std::shared_ptr<Hypothesis> hypothesis = std::static_pointer_cast<Hypothesis>(hypotheses[0]);
 
   multi_object_tracking::DebugTracking debug_msg;
   debug_msg.header.seq = m_debug_counter++;
   debug_msg.header.stamp = ros::Time::now();
   debug_msg.header.frame_id = m_world_frame;
 
-  debug_msg.velocity.x = hypothesis->get_velocity()(0);
-  debug_msg.velocity.y = hypothesis->get_velocity()(1);
-  debug_msg.velocity.z = hypothesis->get_velocity()(2);
-  debug_msg.velocity_norm = hypothesis->get_velocity().norm();
+  debug_msg.velocity.x = hypothesis->getVelocity()(0);
+  debug_msg.velocity.y = hypothesis->getVelocity()(1);
+  debug_msg.velocity.z = hypothesis->getVelocity()(2);
+  debug_msg.velocity_norm = hypothesis->getVelocity().norm();
   debug_msg.position.x = hypothesis->getMean()(0);
   debug_msg.position.y = hypothesis->getMean()(1);
   debug_msg.position.z = hypothesis->getMean()(2);

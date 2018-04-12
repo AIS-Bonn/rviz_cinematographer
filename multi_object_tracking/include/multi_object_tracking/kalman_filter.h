@@ -6,7 +6,6 @@
 
 #include <vector>
 #include <algorithm>
-#include <memory> // std::shared_ptr
 #include <iostream>
 
 #include <multi_object_tracking/utils.h>
@@ -18,36 +17,14 @@
 namespace MultiHypothesisTracker
 {
 
-struct TrackerParameters
-{
-  double cov_x_per_sec;
-  double cov_y_per_sec;
-  double cov_z_per_sec;
-  double cov_vx_per_sec;
-  double cov_vy_per_sec;
-  double cov_vz_per_sec;
-  double alpha_vx_vx_per_sec;
-  double alpha_vx_vy_per_sec;
-  double alpha_vy_vy_per_sec;
-  double alpha_vz_vz_per_sec;
-
-  double init_cov;
-  double max_cov;
-
-  double measurementStd;
-
-  double ambiguous_dist;
-};
-
-
 class KalmanFilter
 {
 public:
 
-  KalmanFilter(const Eigen::VectorXf& state);
+  KalmanFilter();
   virtual ~KalmanFilter(){};
 
-  void initialize();
+  void initialize(const Eigen::VectorXf& state);
 
   void predict(float dt);
   void predict(float dt,
@@ -58,7 +35,11 @@ public:
 
   bool isSymmetric(const Eigen::MatrixXf& covariance);
 
+  Eigen::MatrixXf getErrorCovariance(){ return m_error_covariance; };
+
+  // TODO getter
   Eigen::VectorXf m_state;
+  int m_state_dimensions;
 
 protected:
   Eigen::MatrixXf m_state_transition_model;
@@ -69,9 +50,7 @@ protected:
   Eigen::MatrixXf m_process_noise_covariance;
   Eigen::MatrixXf m_observation_noise_covariance;
 
-  int m_state_dimensions;
-  int m_control_dimensions;
-  int m_measurement_dimensions;
+  size_t m_control_dimensions;
 };
 
 };

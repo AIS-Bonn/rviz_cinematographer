@@ -8,17 +8,11 @@ namespace MultiHypothesisTracker
 {
 
 Hypothesis::Hypothesis()
+: m_last_correction_time(0.0)
+  , m_max_allowed_velocity(1.4) // 1.4m/s or 5km/h
+  , m_max_tracked_velocity(0.0)
 {
-  // NOTE: was dimensionality of 6
-  m_mean.setZero();
-  m_covariance.setIdentity();
-  m_numStateDimensions = 3;
 
-  m_last_measurement_time = 0;
-  m_last_mean_with_measurement.setZero();
-  m_is_first_position = true;
-  m_velocity.setZero();
-  m_max_velocity_in_track.setZero();
   m_born_time = 0;
   m_times_measured = 0;
 
@@ -56,18 +50,24 @@ const TrackerParameters& Hypothesis::getParameters()
 void Hypothesis::initialize(const Measurement& measurement,
                             unsigned int id)
 {
-  m_mean(0) = measurement.pos(0);
-  m_mean(1) = measurement.pos(1);
-  m_mean(2) = measurement.pos(2);
+  //TODO: merge into constructor
+  m_num_state_dimensions = 6;
 
-  m_covariance = measurement.cov;
+  Eigen::VectorXf meas(m_num_state_dimensions);
+  meas.setZero();
+  for(int i = 0; i < 3; i++)
+    meas(i) = measurement.pos(i);
 
-  m_color = measurement.color;
-  m_first_position_in_track = m_mean;
-  m_born_time = getTimeHighRes();
+  m_kalman.initialize(meas);
+
+  m_last_correction_time = measurement.time;
+  // TODO: init error_covariance in kalman filter?
+
+  m_first_position_in_track = getMean();
+
+  m_born_time = measurement.time;
   m_times_measured = 1;
 
-  m_last_measurement_time = getTimeHighRes();
 
   // TODO: should that be 1?
   m_detection_rate = 0.5f;
@@ -76,6 +76,7 @@ void Hypothesis::initialize(const Measurement& measurement,
   m_id = id;
 }
 
+// TODO: check if this is correct: if not replace by running average
 void Hypothesis::detected()
 {
   m_detection_rate += DETECTION_RATE_INCREMENT;
@@ -92,16 +93,14 @@ void Hypothesis::undetected()
   m_misdetection_rate /= sumDetectionRate;
 }
 
-bool Hypothesis::isSpurious()
+bool Hypothesis::isSpurious(double current_time)
 {
-  double current_time = getTimeHighRes();
-
   // TODO: magic numbers to parameters or members if this if clause is useful
-  if((current_time - m_born_time > 0.65) && m_times_measured <=1)
+  if((current_time - m_born_time > 0.65) && m_times_measured <= 1)
     return true;
 
   // TODO: Jan: should be a parameter
-  if(current_time - m_last_measurement_time > 90)
+  if(current_time - m_last_correction_time > 90)
   {
     return true;
   }
@@ -110,7 +109,7 @@ bool Hypothesis::isSpurious()
     // TODO: reenable but test effects and tune parameter
     double max_position_cov = getParameters().max_cov;
 
-    Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(m_covariance);
+    Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(getCovariance());
 //     if( eigen_solver.eigenvalues().col(0)[0] > max_position_cov || eigen_solver.eigenvalues().col(0)[1] > max_position_cov || eigen_solver.eigenvalues().col(0)[2] > max_position_cov ) {
 //     	return true;
 //     }
@@ -123,11 +122,17 @@ void Hypothesis::verify_static()
 {
   if(m_is_static)
   {
-    double distance_from_origin = (m_mean - m_first_position_in_track).norm();
+    double distance_from_origin = (getMean() - m_first_position_in_track).norm();
     // TODO: test if check for max velocity only is better. or dist fram origin with a larger distance + check for max velocity to account for registration mistakes that statistically should keep the object position in a range around the origin
     if(distance_from_origin > m_static_distance_threshold /*&& (m_max_velocity_in_track.norm() > 0.85)*/)
       m_is_static = false;
   }
+}
+
+void Hypothesis::predict(float dt)
+{
+  Eigen::Vector3f control;
+  predict(dt, control);
 }
 
 void Hypothesis::predict(float dt,
@@ -156,62 +161,45 @@ void Hypothesis::predict(float dt,
 
 void Hypothesis::correct(const Measurement& measurement)
 {
-  m_kalman.correct(measurement.pos, measurement.cov);
+  Eigen::VectorXf meas(6);
+  for(int i = 0; i < 3; i++)
+    meas(i) = measurement.pos(i);
+
+  // JAN: test this: generate velocity for measurement using old state
+  double dt = measurement.time - m_last_correction_time;
+  for(int i = 0; i < 3; i++)
+    meas(i+3) = (measurement.pos(i) - m_state_after_last_correction(i)) / dt;
+
+  m_kalman.correct(meas, measurement.cov);
+
+  m_state_after_last_correction = getMean();
+
+  m_last_correction_time = measurement.time;
 
 
+  // additional stuff and workarounds
 
+  Eigen::Vector3f current_velocity = getVelocity();
+  for(int i = 0; i < 3; i++)
+    current_velocity(i) = m_kalman.m_state(3+i);
 
-
-  double curr_time = getTimeHighRes(); // TODO: unused - delete?
-  double time_dif = measurement.time - m_previous_measurement.time;
-
-
-  //Running average
-  Eigen::Vector3f new_velocity;
-  new_velocity = (m_mean - m_last_mean_with_measurement) / time_dif;
-  new_velocity(2) = 0;
-  double alpha=0.80;
-  if(m_velocity(0)==0 && m_velocity(1)==0 && m_velocity(2)==0)
-  {  //If it's the first velocity just integrate it so we don0t have this retency to movement
-    m_velocity = (m_mean - m_last_mean_with_measurement) / time_dif;
-    m_velocity(2) = 0;
-  }
-  else
+  if(m_cap_velocity)
   {
-    m_velocity = m_velocity + alpha * (new_velocity - m_velocity);
+    if(current_velocity.norm() > m_max_allowed_velocity)
+    {
+      current_velocity.normalize();
+      current_velocity *= m_max_allowed_velocity;
+      for(int i = 0; i < 3; i++)
+        m_kalman.m_state(3+i) = current_velocity(i);
+    }
   }
 
-
-  //CAP
-  double max_velocity = 1.4;   //1.4ms or 5kmh
-  double slack = 1;
-  if(m_velocity.norm() > max_velocity + slack){
-    m_velocity.normalize();
-    m_velocity *= (max_velocity + slack);
+  // keep track of maximal recorded velocity
+  double current_velocity_magnitude = current_velocity.norm();
+  if(current_velocity_magnitude > m_max_tracked_velocity)
+  {
+    m_max_tracked_velocity = current_velocity_magnitude;
   }
-  m_velocity(2)=0;
-
-  //OBJECT ARE WAY TOO SLOW JUT MAKE THE VELOCITY 0
-  m_velocity.fill(0);
-
-  // std::cout << "---------velocity norm is ------------"<< m_velocity.two_norm() << '\n';
-  if (m_velocity.norm() > m_max_velocity_in_track.norm()){
-    m_max_velocity_in_track=m_velocity;
-  }
-
-
-  // TODO: check if necessary. correction should not happen for first position, as it is just initiated
-  if (m_is_first_position){		//If this was the first position then the velocity which requiers a previous state is not valid
-    m_velocity(0)=0;
-    m_velocity(1)=0;
-    m_velocity(2)=0;
-  }
-
-  m_last_mean_with_measurement = m_mean;
-  m_is_first_position = false;
-  m_previous_measurement = measurement;
-  m_latest_measurement = measurement;
-  m_last_measurement_time = getTimeHighRes();
 }
 
 

@@ -2,6 +2,8 @@
 #define __MULTI_OBJECT_TRACKER_H__
 
 #include <ros/ros.h>
+#include <ros/console.h>
+
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/PoseArray.h>
@@ -23,8 +25,6 @@ class Tracker
 public:
   Tracker();
   ~Tracker(){};
-
-  void update();
 
   /**
    * @brief Publishes the hypothesis in several versions.

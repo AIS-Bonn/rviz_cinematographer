@@ -15,7 +15,7 @@ public:
   /**
    * @brief Calls prediction method of the hypotheses and deletes spurious hypothesis afterwards.
    */
-  void predict();
+  void predict(double prediction_time);
 
   /**
    * @brief Predicts and corrects the hypotheses based on the new measurements.
@@ -28,7 +28,7 @@ public:
 
   const std::vector<std::shared_ptr<Hypothesis>>& getHypotheses();
 
-  std::shared_ptr<Hypothesis3D> getHypothesisByID(unsigned int id);
+  std::shared_ptr<Hypothesis> getHypothesisByID(unsigned int id);
 
   void setMergeDistance(double distance){ m_merge_distance = distance; }
 

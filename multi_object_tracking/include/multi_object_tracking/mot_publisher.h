@@ -19,7 +19,7 @@
 #include <object_detection/ObjectDetections.h>
 #include <multi_object_tracking/DebugTracking.h>
 
-#include <multi_object_tracking/hypothesis_3D.h>
+#include <multi_object_tracking/hypothesis.h>
 
 
 namespace MultiHypothesisTracker

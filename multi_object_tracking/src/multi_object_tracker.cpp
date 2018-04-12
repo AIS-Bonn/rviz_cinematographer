@@ -26,11 +26,6 @@ void Tracker::publish()
   m_mot_publisher.publishAll(m_algorithm->getHypotheses());
 }
 
-void Tracker::update()
-{
-  m_algorithm->predict();
-}
-
 void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
 {
   ROS_DEBUG_STREAM("Laser detection callback.");
@@ -45,6 +40,8 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
   m_mot_publisher.publishMeasurementsCovariances(measurements);
 
   m_algorithm->objectDetectionDataReceived(measurements);
+
+  publish();
 }
 
 void Tracker::convert(const geometry_msgs::PoseArray::ConstPtr &msg,
@@ -54,18 +51,19 @@ void Tracker::convert(const geometry_msgs::PoseArray::ConstPtr &msg,
 
   for(size_t i = 0; i < msg->poses.size(); i++)
   {
+    measurement.pos = Eigen::VectorXf(6,1);
     measurement.pos(0) = msg->poses[i].position.x;
     measurement.pos(1) = msg->poses[i].position.y;
     measurement.pos(2) = msg->poses[i].position.z;
 
     //TODO: radu: set covariance for the measurement to be dyamic depending on the altitude of the drone
     double measurementStd = 0.03;
+    measurement.cov = Eigen::MatrixXf(6, 6);
     measurement.cov.setIdentity();
     measurement.cov(0, 0) = measurementStd * measurementStd;
     measurement.cov(1, 1) = measurementStd * measurementStd;
     measurement.cov(2, 2) = measurementStd * measurementStd;
 
-    measurement.color = 'U'; // for unknown
     measurement.frame = msg->header.frame_id;
     measurement.time = msg->header.stamp.toSec();
 
@@ -112,21 +110,13 @@ bool Tracker::transformToFrame(std::vector<Measurement>& measurements,
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "multi_object_tracking");
-  ros::NodeHandle n;
 
-  // TODO: no constant loop rate but rather one update with each detection callback... is on one hand more efficient. on the other hand the tracker would keep predicting for a short time even if the detector or some other node fails.
-  // TODO: test how long it would take for the hypotheses to be deleted when the detection crashes.
-  ros::Rate loopRate(30);
+  if(ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
+    ros::console::notifyLoggerLevelsChanged();
 
   MultiHypothesisTracker::Tracker tracker;
 
-  while(n.ok())
-  {
-    tracker.update();
-    ros::spinOnce();
-    tracker.publish();
-    loopRate.sleep();
-  }
+  ros::spin();
 
   return 0;
 }

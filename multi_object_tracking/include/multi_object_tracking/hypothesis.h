@@ -1,20 +1,13 @@
 #ifndef __HYPOTHESIS_H__
 #define __HYPOTHESIS_H__
 
-#include <Eigen/Eigenvalues>
-
 #include <vector>
 #include <string>
 #include <algorithm>
 #include <chrono>
 #include <memory> // std::shared_ptr
 
-#include <multi_object_tracking/hungarian.h>
-#include <limits.h> // for INT_MAX
-
-#include <sys/time.h>
 #include <iostream>
-#include <map>
 
 #include <multi_object_tracking/kalman_filter.h>
 #include <multi_object_tracking/utils.h>
@@ -24,9 +17,8 @@
  */
 struct Measurement
 {
-  Eigen::Vector3f pos;      ///< position of detection
-  Eigen::Matrix3f cov;      ///< covariance of detection
-  uint8_t color;            ///< TODO: adapt description - ascii code of the first letter of the color of the detected object ('r'ed, 'b'lue, 'g'reen, 'y'ellow, 'o'range, 'u'nknown)
+  Eigen::VectorXf pos;      ///< position of detection
+  Eigen::MatrixXf cov;      ///< covariance of detection
   std::string frame;        ///< frame_id of detection
   double time;              ///< time_stamp of the detection - in time of day
 };
@@ -69,17 +61,17 @@ public:
   inline unsigned int getID(){ return m_id; }
 
   // TODO: delete? - never used, just set
-  inline unsigned int getNumStateDimensions() { return m_numStateDimensions; }
+  inline unsigned int getNumStateDimensions() { return m_num_state_dimensions; }
 
-  inline Eigen::Vector3f& getMean(){ return m_kalman.m_state.block<3,1>(0, 0); }
-  inline Eigen::Matrix3f& getCovariance(){ return m_covariance; }
-  inline uint8_t getColor(){ return m_color; }
+  inline Eigen::Vector3f getMean(){ return m_kalman.m_state.block<3,1>(0, 0); }
+  inline Eigen::Vector3f getVelocity(){ return m_kalman.m_state.block<3,1>(3, 0); }
+  inline Eigen::Matrix3f getCovariance(){ return m_kalman.getErrorCovariance().block<3,3>(0,0); }
   inline bool isStatic(){ return m_is_static; }
 
   virtual void initialize(const Measurement& measurement,
                           unsigned int id);
 
-  virtual bool isSpurious();
+  virtual bool isSpurious(double current_time);
 
   virtual void detected();
   virtual void undetected();
@@ -87,48 +79,41 @@ public:
   inline float getDetectionRate() { return m_detection_rate; }
   inline float getMisdetectionRate() { return m_misdetection_rate; }
 
-  virtual void predict( float dt, Eigen::Vector3f& control );
+  virtual void predict(float dt);
+  virtual void predict(float dt, Eigen::Vector3f& control);
   virtual void correct( const Measurement& measurement );
 
   inline double get_born_time(){return m_born_time;}
   inline void detected_absolute(){m_times_measured++;}  //total number of times that hypothesis had a measurement
-  inline Eigen::Vector3f get_velocity(){ return m_velocity;}
-  inline Measurement get_latest_measurement(){ return m_latest_measurement;}
-  inline double get_latest_measurement_time(){ return m_last_measurement_time;}
 
   KalmanFilter m_kalman;
 
 protected:
 
-  Eigen::Vector3f m_last_mean_with_measurement;
-  // double m_last_prediction_time;
-  bool m_is_first_position;
-  Eigen::Vector3f m_velocity;
-  Measurement m_previous_measurement;
-  Measurement m_latest_measurement;
-  void velocity_decay();
   void verify_static();
+
   bool m_is_static;
-  Eigen::Vector3f m_first_position_in_track;
-  Eigen::Vector3f m_max_velocity_in_track;
-  double m_born_time;
-  int m_times_measured;
 
-
-
-
-  Eigen::Vector3f m_mean;
-  Eigen::Matrix3f m_covariance;
-  uint8_t m_color;
-  double m_last_measurement_time;    //needed to calculate if it's spurious or not.
   float m_detection_rate;
   float m_misdetection_rate;
 
   unsigned int m_id;
 
-  unsigned int m_numStateDimensions;
+  size_t m_num_state_dimensions;
+
+  Eigen::Vector3f m_first_position_in_track;
+  double m_born_time;
+  int m_times_measured;
 
   double m_static_distance_threshold;
+  Eigen::Vector3f m_state_after_last_correction;
+  double m_last_correction_time;
+
+  bool m_cap_velocity;
+  double m_max_allowed_velocity;
+
+  double m_max_tracked_velocity;
+
 };
 
 class HypothesisFactory

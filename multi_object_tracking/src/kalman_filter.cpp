@@ -3,13 +3,19 @@
 namespace MultiHypothesisTracker
 {
 
-KalmanFilter::KalmanFilter(const Eigen::VectorXf& state)
-: m_state_dimensions(state.size())
-  , m_control_dimensions(1) // TODO: parameter?
-  , m_measurement_dimensions(3)
+KalmanFilter::KalmanFilter()
+: m_control_dimensions(1)
 {
+}
+
+void KalmanFilter::initialize(const Eigen::VectorXf& state)
+{
+  m_state_dimensions = state.size();
+  m_state = state;
+
+
   // next_state = m_state_transition_model * m_state + m_control_input_model * control + process_noise  with process_noise ~ N(0,m_process_noise_covariance)
-  m_state_transition_model = Eigen::MatrixXf(m_state_dimensions, m_state_dimensions);
+  m_state_transition_model.resize(m_state_dimensions, m_state_dimensions);
   m_state_transition_model.setIdentity();
 
   m_control_input_model = Eigen::MatrixXf(m_state_dimensions, m_control_dimensions);
@@ -20,48 +26,15 @@ KalmanFilter::KalmanFilter(const Eigen::VectorXf& state)
 
 
   // measurement = m_observation_model * current_state + observation_noise  with observation_noise ~ N(0,m_observation_noise_covariance)
-  m_observation_model = Eigen::MatrixXf(m_measurement_dimensions, m_state_dimensions);
+  m_observation_model = Eigen::MatrixXf(m_state_dimensions, m_state_dimensions);
   m_observation_model.setZero();
 
-  m_observation_noise_covariance = Eigen::MatrixXf(m_measurement_dimensions, m_measurement_dimensions);
+  m_observation_noise_covariance = Eigen::MatrixXf(m_state_dimensions, m_state_dimensions);
   m_observation_noise_covariance.setIdentity();
 
 
   m_error_covariance = Eigen::MatrixXf(m_state_dimensions, m_state_dimensions);
   m_error_covariance.setIdentity();
-
-  m_state = state;
-}
-
-const TrackerParameters& KalmanFilter::getParameters()
-{
-  static TrackerParameters params = {
-    0.001,	// cov_x_per_sec
-    0.001,	// cov_y_per_sec
-    0.001,	// cov_z_per_sec
-
-    0.001,	// cov_vx_per_sec (independent of |vx|)
-    0.001,	// cov_vy_per_sec (independent of |vy|)
-    0.001,	// cov_vz_per_sec (independent of |vz|)
-
-    0,	// alpha_vx_vx_per_sec
-    0,	// alpha_vx_vy_per_sec
-    0,	// alpha_vy_vy_per_sec
-    0,	// alpha_vz_vz_per_sec
-
-    0.05*0.05, // init_cov
-    0.05*0.05, // max_cov
-
-    0.1, // measurementStd
-
-    0.4, // ambiguous_dist
-
-    };
-  return params;
-}
-
-void KalmanFilter::initialize()
-{
 }
 
 void KalmanFilter::predict(float dt)
@@ -107,11 +80,11 @@ void KalmanFilter::predict(float dt,
 void KalmanFilter::correct(const Eigen::VectorXf& measurement,
                            const Eigen::MatrixXf& measurement_covariance)
 {
-  assert(measurement.size() == m_measurement_dimensions);
+  assert(measurement.size() == m_state_dimensions);
 
   // set up measurement model //TODO: move set ups for fixed matrices to constructor?
   m_observation_model.setZero();
-  for(int i = 0; i < m_measurement_dimensions; i++)
+  for(int i = 0; i < m_state_dimensions; i++)
     m_observation_model(i, i) = 1.f;
 
   // set up observation noise covariance

@@ -24,19 +24,25 @@ std::shared_ptr<Hypothesis> MultiHypothesisTracker::getHypothesisByID(unsigned i
 	return nullptr;
 }
 
+void MultiHypothesisTracker::predict(double time_diff)
+{
+  for(auto& hypothesis : m_hypotheses)
+    hypothesis->predict(time_diff);
+}
+
 void MultiHypothesisTracker::predict(double time_diff,
-                                     Eigen::Vector3d& control)
+                                     Eigen::Vector3f& control)
 {
   for(auto& hypothesis : m_hypotheses)
     hypothesis->predict(time_diff, control);
 }
 
-void MultiHypothesisTracker::deleteSpuriosHypotheses()
+void MultiHypothesisTracker::deleteSpuriosHypotheses(double current_time)
 {
   auto it = m_hypotheses.begin();
   while(it != m_hypotheses.end())
   {
-    if((*it)->isSpurious())
+    if((*it)->isSpurious(current_time))
     {
       it = m_hypotheses.erase(it);
       continue;
@@ -47,6 +53,14 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses()
 
 void MultiHypothesisTracker::correct(const std::vector<Measurement>& measurements)
 {
+  if(measurements.empty())
+  {
+    for(auto& hypothesis : m_hypotheses)
+      hypothesis->undetected();
+
+    return;
+  }
+
   int **cost_matrix;
   setupCostMatrix(measurements, m_hypotheses, cost_matrix);
 
@@ -65,7 +79,7 @@ void MultiHypothesisTracker::correct(const std::vector<Measurement>& measurement
   delete[] cost_matrix;
   hungarian_free(&hung);
 
-  deleteSpuriosHypotheses();
+  deleteSpuriosHypotheses(measurements.at(0).time);
 }
 
 void MultiHypothesisTracker::setupCostMatrix(const std::vector<Measurement>& measurements,
@@ -102,12 +116,12 @@ void MultiHypothesisTracker::setupCostMatrix(const std::vector<Measurement>& mea
         // an observation with a corresponding hypothesis
 
         //Calculate the inverse correction covariance
-        Eigen::Matrix3d measurementMatrix;
+        Eigen::Matrix3f measurementMatrix;
         measurementMatrix.setIdentity();
-        Eigen::Matrix3d correctionCovariance;
+        Eigen::Matrix3f correctionCovariance;
         correctionCovariance = measurementMatrix * m_hypotheses[i]->getCovariance() * measurementMatrix.transpose() + measurements[j].cov;
 
-        Eigen::Vector3d diff_hyp_meas = measurements[j].pos - m_hypotheses[i]->getMean();
+        Eigen::Vector3f diff_hyp_meas = measurements[j].pos - m_hypotheses[i]->getMean();
 
         auto mahalanobis_distance_squared = diff_hyp_meas.transpose()
                          * correctionCovariance.inverse()
@@ -198,6 +212,7 @@ void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
         // an observation with no corresponding hypothesis -> add
         if(!associated)
         {
+          std::cout << " creating hypothesis " << std::endl;
           std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis();
           hypothesis->initialize(measurements[j], m_lastHypothesisID++);
           m_hypotheses.push_back(hypothesis);

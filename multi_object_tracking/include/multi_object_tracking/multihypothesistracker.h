@@ -39,10 +39,17 @@ public:
    * @brief Calls predict for each hypothesis.
    *
    * @param[in] time_diff   time difference between last and current prediction
+   */
+  virtual void predict(double time_diff);
+
+  /**
+   * @brief Calls predict for each hypothesis.
+   *
+   * @param[in] time_diff   time difference between last and current prediction
    * @param[in] control     for state transition model //TODO: better description
    */
   virtual void predict(double time_diff,
-                       Eigen::Vector3d& control);
+                       Eigen::Vector3f& control);
 
   // returns vector of assignments
   void correct(const std::vector<Measurement>& measurements);
@@ -67,7 +74,7 @@ public:
    * @see isVisible()
    * @see isSpurious()
    */
-  void deleteSpuriosHypotheses();
+  void deleteSpuriosHypotheses(double current_time);
 
   inline void setMaxMahalanobisDistance(double distance){ m_max_mahalanobis_distance = distance; }
 
