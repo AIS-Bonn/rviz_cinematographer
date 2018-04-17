@@ -183,7 +183,6 @@ void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
         {
           m_hypotheses[i]->correct(measurements[j]);
           m_hypotheses[i]->detected();
-          m_hypotheses[i]->detected_absolute(); // Jan: this was added by radu
         }
         else if(hung.assignment[i][j] == HUNGARIAN_ASSIGNED)
         {
