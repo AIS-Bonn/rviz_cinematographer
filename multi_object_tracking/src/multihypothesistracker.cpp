@@ -196,8 +196,7 @@ void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
 //          }
 
           // create new hypothesis for observation
-          std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis(measurements[j], m_lastHypothesisID++);
-          m_hypotheses.push_back(hypothesis);
+          m_hypotheses.emplace_back(m_hypothesisFactory->createHypothesis(measurements[j], m_lastHypothesisID++));
         }
       }
       else if(i < hyp_size && j >= meas_size)
@@ -211,9 +210,7 @@ void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
         // an observation with no corresponding hypothesis -> add
         if(!associated)
         {
-          std::cout << " creating hypothesis " << std::endl;
-          std::shared_ptr<Hypothesis> hypothesis = m_hypothesisFactory->createHypothesis(measurements[j], m_lastHypothesisID++);
-          m_hypotheses.push_back(hypothesis);
+          m_hypotheses.emplace_back(m_hypothesisFactory->createHypothesis(measurements[j], m_lastHypothesisID++));
         }
       }
       else if(i >= hyp_size && j >= meas_size)
