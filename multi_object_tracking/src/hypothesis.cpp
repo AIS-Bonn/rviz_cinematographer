@@ -9,7 +9,8 @@ namespace MultiHypothesisTracker
 
 Hypothesis::Hypothesis(const Measurement& measurement,
                        unsigned int id)
-: m_last_correction_time(0.0)
+: m_is_static(true)
+  , m_last_correction_time(0.0)
   , m_cap_velocity(true)
   , m_max_allowed_velocity(1.4) // 1.4m/s or 5km/h
   , m_max_tracked_velocity(0.0)
@@ -26,7 +27,7 @@ Hypothesis::Hypothesis(const Measurement& measurement,
   m_last_correction_time = measurement.time;
   // TODO: init error_covariance in kalman filter?
 
-  m_first_position_in_track = getMean();
+  m_first_position_in_track = getPosition();
 
   m_born_time = measurement.time;
   m_times_measured = 1;
@@ -38,7 +39,7 @@ Hypothesis::Hypothesis(const Measurement& measurement,
 
   m_id = id;
 
-  m_static_distance_threshold = 0.25;
+  m_static_distance_threshold = 1.f;
 }
 
 const TrackerParameters& Hypothesis::getParameters()
@@ -115,7 +116,7 @@ void Hypothesis::verify_static()
 {
   if(m_is_static)
   {
-    double distance_from_origin = (getMean() - m_first_position_in_track).norm();
+    double distance_from_origin = (getPosition() - m_first_position_in_track).norm();
     // TODO: test if check for max velocity only is better. or dist fram origin with a larger distance + check for max velocity to account for registration mistakes that statistically should keep the object position in a range around the origin
     if(distance_from_origin > m_static_distance_threshold /*&& (m_max_velocity_in_track.norm() > 0.85)*/)
       m_is_static = false;
@@ -131,7 +132,7 @@ void Hypothesis::predict(float dt)
 void Hypothesis::predict(float dt,
                          Eigen::Vector3f& control)
 {
-  m_kalman->predict(static_cast<float>(dt));
+  m_kalman->predict(dt);
 
   verify_static();
 

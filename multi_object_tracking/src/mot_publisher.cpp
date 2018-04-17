@@ -130,9 +130,9 @@ void MOTPublisher::publishHypothesesCovariances(const std::vector<std::shared_pt
   for(size_t i = 0; i < hypotheses.size(); i++)
   {
     hyp_covariance_marker.id                 = (int)i;
-    hyp_covariance_marker.pose.position.x    = hypotheses[i]->getMean()(0);
-    hyp_covariance_marker.pose.position.y    = hypotheses[i]->getMean()(1);
-    hyp_covariance_marker.pose.position.z    = hypotheses[i]->getMean()(2);
+    hyp_covariance_marker.pose.position.x    = hypotheses[i]->getPosition()(0);
+    hyp_covariance_marker.pose.position.y    = hypotheses[i]->getPosition()(1);
+    hyp_covariance_marker.pose.position.z    = hypotheses[i]->getPosition()(2);
 
     hyp_covariance_marker.scale.x            = sqrt( 4.204 ) * sqrt(hypotheses[i]->getCovariance()(0, 0));
     hyp_covariance_marker.scale.y            = sqrt( 4.204 ) * sqrt(hypotheses[i]->getCovariance()(1, 1));
@@ -157,7 +157,7 @@ void MOTPublisher::publishHypothesesPositions(const std::vector<std::shared_ptr<
   {
     std::shared_ptr<Hypothesis> hypothesis = std::static_pointer_cast<Hypothesis>(hypotheses[i]);
 
-    const Eigen::Vector3f& mean = hypothesis->getMean();
+    const Eigen::Vector3f& mean = hypothesis->getPosition();
     geometry_msgs::Point p;
     p.x = mean(0);
     p.y = mean(1);
@@ -186,7 +186,7 @@ void MOTPublisher::publishHypothesesFull(const std::vector<std::shared_ptr<Hypot
 //  {
 //    std::shared_ptr<Hypothesis> hypothesis = std::static_pointer_cast<Hypothesis>(hypotheses[i]);
 //
-//    const Eigen::Vector3f& mean = hypothesis->getMean();
+//    const Eigen::Vector3f& mean = hypothesis->getPosition();
 //    object.position.x = mean(0);
 //    object.position.y = mean(1);
 //    object.position.z = mean(2);
@@ -213,7 +213,7 @@ void MOTPublisher::publishHypothesesPredictions(const std::vector<std::shared_pt
   for(size_t i = 0; i < hypotheses.size(); ++i)
   {
     std::shared_ptr<Hypothesis> hypothesis = std::static_pointer_cast<Hypothesis>(hypotheses[i]);
-    Eigen::Vector3f mean = hypothesis->getMean();
+    Eigen::Vector3f mean = hypothesis->getPosition();
 
     //Predict a little bit into the future
     mean += hypothesis->getVelocity() * m_future_time;
@@ -242,7 +242,7 @@ void MOTPublisher::publishHypothesesPredictedPositions(const std::vector<std::sh
     std::shared_ptr<Hypothesis> hypothesis = std::static_pointer_cast<Hypothesis>(hypotheses[i]);
 
     //Predict a little bit into the future
-    Eigen::Vector3f mean = hypothesis->getMean();
+    Eigen::Vector3f mean = hypothesis->getPosition();
     mean += hypothesis->getVelocity() * m_future_time;
 
     geometry_msgs::Point p;
@@ -273,7 +273,7 @@ void MOTPublisher::publishStaticHypothesesPositions(const std::vector<std::share
 
     if(hypothesis->isStatic() && current_time - hypothesis->get_born_time() > m_born_time_threshold)
     {
-      const Eigen::Vector3f& mean = hypothesis->getMean();
+      const Eigen::Vector3f& mean = hypothesis->getPosition();
       geometry_msgs::Point p;
       p.x = mean(0);
       p.y = mean(1);
@@ -306,7 +306,7 @@ void MOTPublisher::publishDynamicHypothesesPositions(const std::vector<std::shar
 
     if(!hypothesis->isStatic() && current_time - hypothesis->get_born_time() > m_born_time_threshold)
     {
-      const Eigen::Vector3f& mean = hypothesis->getMean();
+      const Eigen::Vector3f& mean = hypothesis->getPosition();
       geometry_msgs::Point p;
       p.x = mean(0);
       p.y = mean(1);
@@ -330,7 +330,7 @@ void MOTPublisher::publishFullTracks(const std::vector<std::shared_ptr<Hypothesi
   //Full track for first hypothesis
   // std::vector<Hypothesis*> hypotheses = m_algorithm->getHypotheses();
   // Hypothesis *hypothesis = (Hypothesis *) hypotheses[0];
-  // const Eigen::Vector3f& mean = hypothesis->getMean();
+  // const Eigen::Vector3f& mean = hypothesis->getPosition();
   // geometry_msgs::Point p;
   // p.x=mean(0);
   // p.y=mean(1);
@@ -357,9 +357,9 @@ void MOTPublisher::publishDebug(const std::vector<std::shared_ptr<Hypothesis>>& 
   debug_msg.velocity.y = hypothesis->getVelocity()(1);
   debug_msg.velocity.z = hypothesis->getVelocity()(2);
   debug_msg.velocity_norm = hypothesis->getVelocity().norm();
-  debug_msg.position.x = hypothesis->getMean()(0);
-  debug_msg.position.y = hypothesis->getMean()(1);
-  debug_msg.position.z = hypothesis->getMean()(2);
+  debug_msg.position.x = hypothesis->getPosition()(0);
+  debug_msg.position.y = hypothesis->getPosition()(1);
+  debug_msg.position.z = hypothesis->getPosition()(2);
 //  debug_msg.drone_tilt_angle = hypothesis->get_latest_measurement().rotation_angle;
 
   m_debug_publisher.publish(debug_msg);

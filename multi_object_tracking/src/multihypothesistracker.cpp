@@ -99,7 +99,7 @@ void MultiHypothesisTracker::setupCostMatrix(const std::vector<Measurement>& mea
     // vnl_matrix< double > measurementMatrix, measurementCovariance, kalmanGain;
     // vnl_vector< double > expectedMeasurement;
     // if( i < hyp_size )
-    // 	m_hypotheses[i]->measurementModel( expectedMeasurement, measurementMatrix, measurementCovariance, m_hypotheses[i]->getMean() );
+    // 	m_hypotheses[i]->measurementModel( expectedMeasurement, measurementMatrix, measurementCovariance, m_hypotheses[i]->getPosition() );
     //
     // vnl_matrix< double > correctionCovariance;
     // vnl_matrix< double > invCorrectionCovariance;
@@ -121,7 +121,7 @@ void MultiHypothesisTracker::setupCostMatrix(const std::vector<Measurement>& mea
         Eigen::Matrix3f correctionCovariance;
         correctionCovariance = measurementMatrix * m_hypotheses[i]->getCovariance() * measurementMatrix.transpose() + measurements[j].cov;
 
-        Eigen::Vector3f diff_hyp_meas = measurements[j].pos - m_hypotheses[i]->getMean();
+        Eigen::Vector3f diff_hyp_meas = measurements[j].pos - m_hypotheses[i]->getPosition();
 
         auto mahalanobis_distance_squared = diff_hyp_meas.transpose()
                          * correctionCovariance.inverse()
@@ -229,7 +229,7 @@ void MultiHypothesisTracker::mergeCloseHypotheses(double distance_threshold)
 		auto it2 = it1 + 1;
 		while(it2 != m_hypotheses.end())
 		{
-			double distance = ((*it1)->getMean() - (*it2)->getMean()).norm();
+			double distance = ((*it1)->getPosition() - (*it2)->getPosition()).norm();
 
 			if(distance < distance_threshold)
 			{
