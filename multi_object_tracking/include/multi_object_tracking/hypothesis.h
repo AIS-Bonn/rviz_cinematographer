@@ -1,16 +1,10 @@
 #ifndef __HYPOTHESIS_H__
 #define __HYPOTHESIS_H__
 
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <chrono>
 #include <memory> // std::shared_ptr
-
 #include <iostream>
 
 #include <multi_object_tracking/kalman_filter.h>
-#include <multi_object_tracking/utils.h>
 
 /**
  * @brief Description of detection //TODO: rename
@@ -104,7 +98,6 @@ protected:
   int m_times_measured;
 
   double m_static_distance_threshold;
-  Eigen::Vector3f m_state_after_last_correction;
   double m_last_correction_time;
 
   bool m_cap_velocity;

@@ -30,7 +30,7 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
 {
   ROS_DEBUG_STREAM("Laser detection callback.");
 
-  double start = getTimeHighRes();
+//  double start = getTimeHighRes();
 
   std::vector<Measurement> measurements;
   convert(msg, measurements);
@@ -43,7 +43,7 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
 
   m_algorithm->objectDetectionDataReceived(measurements);
 
-  std::cout << std::setprecision(10) << "\n####time for one callback " << (getTimeHighRes() - start) << " " << std::endl;
+//  std::cout << std::setprecision(10) << "\n####time for one callback " << (getTimeHighRes() - start) << " " << std::endl;
   publish();
 }
 
@@ -54,14 +54,14 @@ void Tracker::convert(const geometry_msgs::PoseArray::ConstPtr &msg,
 
   for(size_t i = 0; i < msg->poses.size(); i++)
   {
-    measurement.pos = Eigen::VectorXf(6,1);
-    measurement.pos(0) = msg->poses[i].position.x;
-    measurement.pos(1) = msg->poses[i].position.y;
-    measurement.pos(2) = msg->poses[i].position.z;
+    measurement.pos = Eigen::VectorXf(3,1);
+    measurement.pos(0) = static_cast<float>(msg->poses[i].position.x);
+    measurement.pos(1) = static_cast<float>(msg->poses[i].position.y);
+    measurement.pos(2) = static_cast<float>(msg->poses[i].position.z);
 
     //TODO: radu: set covariance for the measurement to be dyamic depending on the altitude of the drone
-    double measurementStd = 0.03;
-    measurement.cov = Eigen::MatrixXf(6, 6);
+    float measurementStd = 0.03f;
+    measurement.cov = Eigen::MatrixXf(3, 3);
     measurement.cov.setIdentity();
     measurement.cov(0, 0) = measurementStd * measurementStd;
     measurement.cov(1, 1) = measurementStd * measurementStd;
@@ -114,7 +114,7 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "multi_object_tracking");
 
-  if(ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
+  if(ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info))
     ros::console::notifyLoggerLevelsChanged();
 
   MultiHypothesisTracker::Tracker tracker;

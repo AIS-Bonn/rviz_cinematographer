@@ -10,7 +10,7 @@ namespace MultiHypothesisTracker
 Hypothesis::Hypothesis(const Measurement& measurement,
                        unsigned int id)
 : m_last_correction_time(0.0)
-        , m_cap_velocity(true)
+  , m_cap_velocity(true)
   , m_max_allowed_velocity(1.4) // 1.4m/s or 5km/h
   , m_max_tracked_velocity(0.0)
 {
@@ -154,18 +154,7 @@ void Hypothesis::predict(float dt,
 
 void Hypothesis::correct(const Measurement& measurement)
 {
-  Eigen::VectorXf meas(6);
-  for(int i = 0; i < 3; i++)
-    meas(i) = measurement.pos(i);
-
-  // JAN: test this: generate velocity for measurement using old state
-  double dt = measurement.time - m_last_correction_time;
-  for(int i = 0; i < 3; i++)
-    meas(i+3) = (measurement.pos(i) - m_state_after_last_correction(i)) / dt;
-
-  m_kalman->correct(meas, measurement.cov);
-
-  m_state_after_last_correction = getMean();
+  m_kalman->correct(measurement.pos, measurement.cov);
 
   m_last_correction_time = measurement.time;
 

@@ -4,11 +4,7 @@
 #include <Eigen/Eigenvalues>
 #include <Eigen/Cholesky>
 
-#include <vector>
-#include <algorithm>
 #include <iostream>
-
-#include <multi_object_tracking/utils.h>
 
 // uncomment to disable assert()
 // #define NDEBUG
@@ -49,6 +45,7 @@ protected:
   Eigen::MatrixXf m_observation_noise_covariance;
 
   size_t m_state_dimensions;
+  size_t m_measurement_dimensions;
   size_t m_control_dimensions;
 };
 

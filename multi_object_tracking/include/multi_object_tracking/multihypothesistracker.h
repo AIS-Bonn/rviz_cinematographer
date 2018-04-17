@@ -10,7 +10,6 @@
 #include <limits.h> // for INT_MAX
 
 #include <iostream>
-//#include <map>
 
 #include <multi_object_tracking/hypothesis.h>
 

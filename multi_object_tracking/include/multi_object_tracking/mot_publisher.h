@@ -20,6 +20,7 @@
 #include <multi_object_tracking/DebugTracking.h>
 
 #include <multi_object_tracking/hypothesis.h>
+#include <multi_object_tracking/utils.h>
 
 
 namespace MultiHypothesisTracker
