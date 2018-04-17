@@ -82,11 +82,10 @@ bool Tracker::transformToFrame(std::vector<Measurement>& measurements,
     geometry_msgs::PointStamped mes_in_origin_frame;
     geometry_msgs::PointStamped mes_in_target_frame;
     mes_in_origin_frame.header.frame_id = measurement.frame;
+    mes_in_origin_frame.header.stamp.fromSec(measurement.time);
     mes_in_origin_frame.point.x = measurement.pos(0);
     mes_in_origin_frame.point.y = measurement.pos(1);
     mes_in_origin_frame.point.z = measurement.pos(2);
-
-    // TODO:: add stamp for getting right transform?!
 
     try
     {
