@@ -70,6 +70,17 @@ public:
   void correct(const Measurement& measurement);
 
   /**
+   * @brief Checks if covariance exceeds max_covariance.
+   *
+   * @param covariance      covariance matrix that is checked.
+   * @param max_covariance  covariance threshold.
+   *
+   * @return true if exceeds, false otherwise
+   */
+  bool exceedsMaxCovariance(const Eigen::Matrix3f& covariance,
+                            float max_covariance);
+
+  /**
    * @brief Checks if hypothesis is spurious.
    *
    * //TODO: rename? + more description
@@ -150,7 +161,7 @@ protected:
   double m_max_tracked_velocity;
 
   /** @brief Bound for covariance. */
-  float max_covariance;
+  float m_max_covariance;
 };
 
 /**
