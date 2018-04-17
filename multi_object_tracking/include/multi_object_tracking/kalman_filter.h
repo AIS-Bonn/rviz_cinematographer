@@ -35,7 +35,8 @@ public:
   Eigen::MatrixXf& getErrorCovariance(){ return m_error_covariance; };
 
 protected:
-  bool isSymmetric(const Eigen::MatrixXf& covariance);
+  bool isAlmostSymmetric(const Eigen::MatrixXf& covariance,
+                         float epsilon = 0.001f);
 
   Eigen::VectorXf m_state;
 

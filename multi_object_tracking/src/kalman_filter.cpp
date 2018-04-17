@@ -67,7 +67,7 @@ void KalmanFilter::predict(float dt,
 
 
   // check if cov matrix is symmetric as is should be
-  if(!isSymmetric(m_error_covariance))
+  if(!isAlmostSymmetric(m_error_covariance))
     std::cout << "KalmanFilter::predict: m_error_covariance is not symmetric!!!!!" << std::endl;
 
   // TODO: check if matrix is positive definite ?!?
@@ -101,17 +101,19 @@ void KalmanFilter::correct(const Eigen::VectorXf& measurement,
   m_error_covariance = (identity - kalman_gain * m_observation_model) * m_error_covariance;
 
 
-  // check if cov matrix is symmetric as is should be
-  if(!isSymmetric(m_error_covariance))
-    std::cout << "KalmanFilter::correct: m_error_covariance is not symmetric!!!!!" << std::endl;
+  // TODO: check if calculations are responsible for need for epsilon
+  // check if cov matrix is symmetric as it should be
+  if(!isAlmostSymmetric(m_error_covariance))
+    std::cout << "KalmanFilter::correct: m_error_covariance is not symmetric!!!!!\n" << m_error_covariance << std::endl;
 }
 
-bool KalmanFilter::isSymmetric(const Eigen::MatrixXf& covariance)
+bool KalmanFilter::isAlmostSymmetric(const Eigen::MatrixXf& covariance,
+                                     float epsilon)
 {
   bool is_symmetric = true;
-  for(int i = 0; i < (int)covariance.rows(); i++)
-    for(int j = i; j < (int)covariance.cols(); j++)
-      if(covariance(i, j) != covariance(j, i))
+  for(int i = 1; i < covariance.rows(); i++)
+    for(int j = i; j < covariance.cols(); j++)
+      if(fabs(covariance(i, j) - covariance(j, i)) > epsilon)
         is_symmetric = false;
 
   return is_symmetric;
