@@ -9,37 +9,27 @@ namespace MultiHypothesisTracker
 
 Hypothesis::Hypothesis(const Measurement& measurement,
                        unsigned int id)
-: m_is_static(true)
-  , m_last_correction_time(0.0)
+: m_id(id)
+  , m_born_time(measurement.time)
+  , m_last_correction_time(measurement.time)
+  , m_times_measured(1)
+  , m_detection_rate(0.5f) // TODO: should those be 1?
+  , m_misdetection_rate(0.5f)
+  , m_is_static(true)
+  , m_static_distance_threshold(1.f)
   , m_cap_velocity(true)
   , m_max_allowed_velocity(1.4) // 1.4m/s or 5km/h
   , m_max_tracked_velocity(0.0)
 {
-  m_num_state_dimensions = 6;
-
-  Eigen::VectorXf meas(m_num_state_dimensions);
+  int number_of_state_dimensions = 6;
+  Eigen::VectorXf meas(number_of_state_dimensions);
   meas.setZero();
   for(int i = 0; i < 3; i++)
     meas(i) = measurement.pos(i);
 
   m_kalman = std::make_shared<KalmanFilter>(meas);
 
-  m_last_correction_time = measurement.time;
-  // TODO: init error_covariance in kalman filter?
-
   m_first_position_in_track = getPosition();
-
-  m_born_time = measurement.time;
-  m_times_measured = 1;
-
-
-  // TODO: should that be 1?
-  m_detection_rate = 0.5f;
-  m_misdetection_rate = 0.5f;
-
-  m_id = id;
-
-  m_static_distance_threshold = 1.f;
 }
 
 const TrackerParameters& Hypothesis::getParameters()

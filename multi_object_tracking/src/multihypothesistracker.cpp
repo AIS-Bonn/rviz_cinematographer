@@ -5,7 +5,6 @@ namespace MultiHypothesisTracker
 
 MultiHypothesisTracker::MultiHypothesisTracker(std::shared_ptr<HypothesisFactory> hypothesis_factory = std::make_shared<HypothesisFactory>())
 :	m_lastHypothesisID(1)
-	,	m_numStateDimensions(6)
 	,	m_hypothesisFactory(hypothesis_factory)
   , m_cost_factor(10000)
 {

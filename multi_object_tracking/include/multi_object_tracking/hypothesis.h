@@ -55,12 +55,10 @@ public:
 
   inline unsigned int getID(){ return m_id; }
 
-  // TODO: delete? - never used, just set
-  inline unsigned int getNumStateDimensions() { return m_num_state_dimensions; }
-
   inline Eigen::Vector3f getPosition(){ return m_kalman->getState().block<3,1>(0, 0); }
   inline Eigen::Vector3f getVelocity(){ return m_kalman->getState().block<3,1>(3, 0); }
   inline Eigen::Matrix3f getCovariance(){ return m_kalman->getErrorCovariance().block<3,3>(0,0); }
+
   inline bool isStatic(){ return m_is_static; }
 
   virtual bool isSpurious(double current_time);
@@ -84,27 +82,24 @@ protected:
 
   void verify_static();
 
-  bool m_is_static;
+  unsigned int m_id;
+
+  Eigen::Vector3f m_first_position_in_track;
+
+  double m_born_time;
+  double m_last_correction_time;
+
+  int m_times_measured;
 
   float m_detection_rate;
   float m_misdetection_rate;
 
-  unsigned int m_id;
-
-  size_t m_num_state_dimensions;
-
-  Eigen::Vector3f m_first_position_in_track;
-  double m_born_time;
-  int m_times_measured;
-
+  bool m_is_static;
   double m_static_distance_threshold;
-  double m_last_correction_time;
 
   bool m_cap_velocity;
   double m_max_allowed_velocity;
-
   double m_max_tracked_velocity;
-
 };
 
 class HypothesisFactory

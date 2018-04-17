@@ -32,8 +32,6 @@ public:
   MultiHypothesisTracker(std::shared_ptr<HypothesisFactory> hypothesis_factory);
   ~MultiHypothesisTracker();
 
-  inline unsigned int getNumStateDimensions() { return m_numStateDimensions; }
-
   /**
    * @brief Calls predict for each hypothesis.
    *
@@ -80,7 +78,6 @@ public:
 protected:
   std::vector<std::shared_ptr<Hypothesis>> m_hypotheses;
   unsigned int m_lastHypothesisID;
-  unsigned int m_numStateDimensions;
   std::shared_ptr<HypothesisFactory> m_hypothesisFactory;
 
   int m_cost_factor;
