@@ -2,6 +2,8 @@
 /** @file
  *
  * This class segments objects of a specified width in laser point clouds
+ *
+ * @author Jan Razlaw
  */
 
 #ifndef _SEGMENTER_H_

@@ -126,9 +126,9 @@
           output="screen">
       <remap from="/object_poses" to="/object_detection_poses" />
 
-      <param name="m_merge_close_hypotheses_distance" value="0.60" />
+      <param name="m_merge_close_hypotheses_distance" value="2.0" />
       <param name="m_max_mahalanobis_distance" value="10.0" />
-      <param name="m_world_frame" value="odom" />
+      <param name="m_world_frame" value="world_corrected" />
       <param name="m_born_time_threshold" value="0.65" />
       <param name="m_future_time" value="0.05" />
     </node>

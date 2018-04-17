@@ -1,6 +1,8 @@
 /** @file
  *
  * This class segments objects of a specified width in laser point clouds
+ *
+ * @author Jan Razlaw
  */
 
 #include <laser_segmentation/segmenter.h>
