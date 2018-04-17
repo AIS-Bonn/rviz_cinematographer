@@ -1,3 +1,10 @@
+/** @file
+ *
+ * Kalman filter implementation
+ *
+ * @author Jan Razlaw
+ */
+
 #include "multi_object_tracking/kalman_filter.h"
 
 namespace MultiHypothesisTracker
@@ -110,13 +117,13 @@ void KalmanFilter::correct(const Eigen::VectorXf& measurement,
     std::cout << "KalmanFilter::correct: m_error_covariance is not symmetric!!!!!\n" << m_error_covariance << std::endl;
 }
 
-bool KalmanFilter::isAlmostSymmetric(const Eigen::MatrixXf& covariance,
+bool KalmanFilter::isAlmostSymmetric(const Eigen::MatrixXf& matrix,
                                      float epsilon)
 {
   bool is_symmetric = true;
-  for(int i = 1; i < covariance.rows(); i++)
-    for(int j = i; j < covariance.cols(); j++)
-      if(fabs(covariance(i, j) - covariance(j, i)) > epsilon)
+  for(int i = 1; i < matrix.rows(); i++)
+    for(int j = i; j < matrix.cols(); j++)
+      if(fabs(matrix(i, j) - matrix(j, i)) > epsilon)
         is_symmetric = false;
 
   return is_symmetric;
