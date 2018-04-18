@@ -2,16 +2,11 @@
 #define __MULTI_HYPOTHESIS_TRACKER_H__
 
 #include <vector>
-#include <string>
-#include <algorithm>
-#include <chrono>
-
-#include <multi_object_tracking/hungarian.h>
+#include <iostream>
 #include <limits.h> // for INT_MAX
 
-#include <iostream>
-
 #include <multi_object_tracking/hypothesis.h>
+#include <multi_object_tracking/hungarian.h>
 
 
 namespace MultiHypothesisTracker
@@ -36,7 +31,7 @@ public:
    * @brief Calls predict for each hypothesis.
    *
    * @param[in] time_diff   time difference between last and current prediction
-   * @param[in] control     for state transition model //TODO: better description
+   * @param[in] control     control input for state prediction
    */
   virtual void predict(double time_diff,
                        Eigen::Vector3f& control);
@@ -84,6 +79,23 @@ protected:
                        int**& cost_matrix);
 
   /**
+   * @brief Calculates distance between hypothesis and measurement.
+   *
+   * //TODO: decide which distance to take and adapt return tag
+   *
+   * @param[in] hyp_position        hypothesis position.
+   * @param[in] hyp_covariance      hypothesis covariance.
+   * @param[in] meas_position       measurement position.
+   * @param[in] meas_covariance     measurement covariance.
+   *
+   * @return Some kind of Mahalanobis distance.
+   */
+  double distance(const Eigen::Vector3f& hyp_position,
+                  const Eigen::Matrix3f& hyp_covariance,
+                  const Eigen::Vector3f& meas_position,
+                  const Eigen::Matrix3f& meas_covariance);
+
+  /**
    * @brief Use assignments to correct each hypothesis with assigned measurement.
    *
    * //TODO: description
@@ -97,10 +109,10 @@ protected:
               std::vector<std::shared_ptr<Hypothesis>>& hypotheses);
 
 
-  std::shared_ptr<HypothesisFactory> m_hypothesisFactory;
+  std::shared_ptr<HypothesisFactory> m_hypothesis_factory;
   std::vector<std::shared_ptr<Hypothesis>> m_hypotheses;
 
-  unsigned int m_lastHypothesisID;
+  unsigned int m_current_hypothesis_id;
 
   int m_cost_factor;
   double m_max_mahalanobis_distance;

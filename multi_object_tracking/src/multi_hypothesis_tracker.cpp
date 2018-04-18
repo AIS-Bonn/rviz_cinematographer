@@ -4,8 +4,8 @@ namespace MultiHypothesisTracker
 {
 
 MultiHypothesisTracker::MultiHypothesisTracker(std::shared_ptr<HypothesisFactory> hypothesis_factory)
-:	m_hypothesisFactory(hypothesis_factory)
- , m_lastHypothesisID(1)
+:	m_hypothesis_factory(hypothesis_factory)
+ , m_current_hypothesis_id(1)
  , m_cost_factor(10000)
  , m_max_mahalanobis_distance(20.0)
 {
@@ -55,6 +55,26 @@ void MultiHypothesisTracker::correct(const std::vector<Measurement>& measurement
   deleteSpuriosHypotheses(measurements.at(0).time);
 }
 
+double MultiHypothesisTracker::distance(const Eigen::Vector3f& hyp_position,
+                                        const Eigen::Matrix3f& hyp_covariance,
+                                        const Eigen::Vector3f& meas_position,
+                                        const Eigen::Matrix3f& meas_covariance)
+{
+  // Calculate the inverse correction covariance
+  Eigen::Matrix3f measurementMatrix;
+  measurementMatrix.setIdentity();
+  Eigen::Matrix3f correctionCovariance;
+  correctionCovariance = measurementMatrix * hyp_covariance * measurementMatrix.transpose() + meas_covariance;
+
+  Eigen::Vector3f diff_hyp_meas = meas_position - hyp_position;
+
+  auto mahalanobis_distance_squared = diff_hyp_meas.transpose()
+                                      * correctionCovariance.inverse()
+                                      * diff_hyp_meas;
+
+  return sqrt(mahalanobis_distance_squared);
+}
+
 void MultiHypothesisTracker::setupCostMatrix(const std::vector<Measurement>& measurements,
                                              std::vector<std::shared_ptr<Hypothesis>>& hypotheses,
                                              int**& cost_matrix)
@@ -69,38 +89,17 @@ void MultiHypothesisTracker::setupCostMatrix(const std::vector<Measurement>& mea
   {
     cost_matrix[i] = new int[dim];
 
-    // vnl_matrix< double > measurementMatrix, measurementCovariance, kalmanGain;
-    // vnl_vector< double > expectedMeasurement;
-    // if( i < hyp_size )
-    // 	m_hypotheses[i]->measurementModel( expectedMeasurement, measurementMatrix, measurementCovariance, m_hypotheses[i]->getPosition() );
-    //
-    // vnl_matrix< double > correctionCovariance;
-    // vnl_matrix< double > invCorrectionCovariance;
-    // if( i < hyp_size ) {
-    // 	correctionCovariance = measurementMatrix * m_hypotheses[i]->getCovariance() * measurementMatrix.transpose() + measurementCovariance;
-    // 	vnl_svd< double > svdCorrectionCovariance( correctionCovariance );
-    // 	invCorrectionCovariance= svdCorrectionCovariance.pinverse();
-    // }
-
     for(size_t j=0; j < dim; j++)
     {
       if(i < hyp_size && j < meas_size)
       {
         // an observation with a corresponding hypothesis
 
-        //Calculate the inverse correction covariance
-        Eigen::Matrix3f measurementMatrix;
-        measurementMatrix.setIdentity();
-        Eigen::Matrix3f correctionCovariance;
-        correctionCovariance = measurementMatrix * m_hypotheses[i]->getCovariance() * measurementMatrix.transpose() + measurements[j].cov;
-
-        Eigen::Vector3f diff_hyp_meas = measurements[j].pos - m_hypotheses[i]->getPosition();
-
-        auto mahalanobis_distance_squared = diff_hyp_meas.transpose()
-                         * correctionCovariance.inverse()
-                         * diff_hyp_meas;
-
-        double mahalanobis_distance = sqrt(mahalanobis_distance_squared);
+        // Calculate distance between hypothesis and measurement
+        double mahalanobis_distance = distance(m_hypotheses[i]->getPosition(),
+                                               m_hypotheses[i]->getCovariance(),
+                                               measurements[j].pos.block<3,1>(0, 0),
+                                               measurements[j].cov.block<3,3>(0,0));
 
         if(mahalanobis_distance < m_max_mahalanobis_distance)
         {
@@ -168,7 +167,7 @@ void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
 //          }
 
           // create new hypothesis for observation
-          m_hypotheses.emplace_back(m_hypothesisFactory->createHypothesis(measurements[j], m_lastHypothesisID++));
+          m_hypotheses.emplace_back(m_hypothesis_factory->createHypothesis(measurements[j], m_current_hypothesis_id++));
         }
       }
       else if(i < hyp_size && j >= meas_size)
@@ -182,7 +181,7 @@ void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
         // an observation with no corresponding hypothesis -> add
         if(!associated)
         {
-          m_hypotheses.emplace_back(m_hypothesisFactory->createHypothesis(measurements[j], m_lastHypothesisID++));
+          m_hypotheses.emplace_back(m_hypothesis_factory->createHypothesis(measurements[j], m_current_hypothesis_id++));
         }
       }
       else if(i >= hyp_size && j >= meas_size)
