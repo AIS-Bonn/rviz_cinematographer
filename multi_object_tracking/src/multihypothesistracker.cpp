@@ -3,24 +3,12 @@
 namespace MultiHypothesisTracker
 {
 
-MultiHypothesisTracker::MultiHypothesisTracker(std::shared_ptr<HypothesisFactory> hypothesis_factory = std::make_shared<HypothesisFactory>())
-:	m_lastHypothesisID(1)
-	,	m_hypothesisFactory(hypothesis_factory)
-  , m_cost_factor(10000)
+MultiHypothesisTracker::MultiHypothesisTracker(std::shared_ptr<HypothesisFactory> hypothesis_factory)
+:	m_hypothesisFactory(hypothesis_factory)
+ , m_lastHypothesisID(1)
+ , m_cost_factor(10000)
+ , m_max_mahalanobis_distance(20.0)
 {
-}
-
-MultiHypothesisTracker::~MultiHypothesisTracker()
-{
-}
-
-std::shared_ptr<Hypothesis> MultiHypothesisTracker::getHypothesisByID(unsigned int id)
-{
-	for(unsigned int i = 0; i < m_hypotheses.size(); i++)
-		if(m_hypotheses[i]->getID() == id)
-			return m_hypotheses[i];
-
-	return nullptr;
 }
 
 void MultiHypothesisTracker::predict(double time_diff)
@@ -34,20 +22,6 @@ void MultiHypothesisTracker::predict(double time_diff,
 {
   for(auto& hypothesis : m_hypotheses)
     hypothesis->predict(time_diff, control);
-}
-
-void MultiHypothesisTracker::deleteSpuriosHypotheses(double current_time)
-{
-  auto it = m_hypotheses.begin();
-  while(it != m_hypotheses.end())
-  {
-    if((*it)->isSpurious(current_time))
-    {
-      it = m_hypotheses.erase(it);
-      continue;
-    }
-    ++it;
-  }
 }
 
 void MultiHypothesisTracker::correct(const std::vector<Measurement>& measurements)
@@ -216,6 +190,20 @@ void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
         // a dummy job to a dummy machine
       }
     }
+  }
+}
+
+void MultiHypothesisTracker::deleteSpuriosHypotheses(double current_time)
+{
+  auto it = m_hypotheses.begin();
+  while(it != m_hypotheses.end())
+  {
+    if((*it)->isSpurious(current_time))
+    {
+      it = m_hypotheses.erase(it);
+      continue;
+    }
+    ++it;
   }
 }
 

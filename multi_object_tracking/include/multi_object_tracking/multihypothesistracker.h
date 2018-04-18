@@ -14,23 +14,16 @@
 #include <multi_object_tracking/hypothesis.h>
 
 
-// JS: a generic multi hypothesis tracker
-// of course, the measurement and state transition models have to be implemented for the specific task
-// this class just implements the most basic models: 3D position, noisy velocity, and direct state measurement
-// control input: robot pose difference to last prediction step (dx, dy, dtheta)
-
-
-
-
 namespace MultiHypothesisTracker
 {
 
 class HypothesisFactory;
 
-class MultiHypothesisTracker {
+class MultiHypothesisTracker
+{
 public:
-  MultiHypothesisTracker(std::shared_ptr<HypothesisFactory> hypothesis_factory);
-  ~MultiHypothesisTracker();
+  explicit MultiHypothesisTracker(std::shared_ptr<HypothesisFactory> hypothesis_factory);
+  ~MultiHypothesisTracker() = default;
 
   /**
    * @brief Calls predict for each hypothesis.
@@ -48,8 +41,16 @@ public:
   virtual void predict(double time_diff,
                        Eigen::Vector3f& control);
 
-  // returns vector of assignments
+
   void correct(const std::vector<Measurement>& measurements);
+
+  /**
+   * @brief Deletes hypotheses that are visible and spurious
+   *
+   * @see isVisible()
+   * @see isSpurious()
+   */
+  void deleteSpuriosHypotheses(double current_time);
 
   /**
    * @brief Deletes all hypotheses that are too close to others.
@@ -60,29 +61,11 @@ public:
    */
   void mergeCloseHypotheses(double distance_threshold);
 
-  inline std::vector<std::shared_ptr<Hypothesis>>& getHypotheses() { return m_hypotheses; }
-  std::shared_ptr<Hypothesis> getHypothesisByID( unsigned int ID );
-
-  void clear(){ m_hypotheses.clear(); };
-
-  /**
-   * @brief Deletes hypotheses that are visible and spurious
-   *
-   * @see isVisible()
-   * @see isSpurious()
-   */
-  void deleteSpuriosHypotheses(double current_time);
+  inline std::vector<std::shared_ptr<Hypothesis>>& getHypotheses(){ return m_hypotheses; }
 
   inline void setMaxMahalanobisDistance(double distance){ m_max_mahalanobis_distance = distance; }
 
 protected:
-  std::vector<std::shared_ptr<Hypothesis>> m_hypotheses;
-  unsigned int m_lastHypothesisID;
-  std::shared_ptr<HypothesisFactory> m_hypothesisFactory;
-
-  int m_cost_factor;
-  double m_max_mahalanobis_distance;
-
   /**
    * @brief Set up cost matrix for hungarian method.
    *
@@ -112,6 +95,15 @@ protected:
   void assign(const hungarian_problem_t& hung,
               const std::vector<Measurement>& measurements,
               std::vector<std::shared_ptr<Hypothesis>>& hypotheses);
+
+
+  std::shared_ptr<HypothesisFactory> m_hypothesisFactory;
+  std::vector<std::shared_ptr<Hypothesis>> m_hypotheses;
+
+  unsigned int m_lastHypothesisID;
+
+  int m_cost_factor;
+  double m_max_mahalanobis_distance;
 };
 
 };

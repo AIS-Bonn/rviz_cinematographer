@@ -35,9 +35,4 @@ const std::vector<std::shared_ptr<Hypothesis>>& MultiObjectTrackerAlgorithm::get
 	return m_multi_hypothesis_tracker.getHypotheses();
 }
 
-std::shared_ptr<Hypothesis> MultiObjectTrackerAlgorithm::getHypothesisByID(unsigned int id)
-{
-  return std::static_pointer_cast<Hypothesis>(m_multi_hypothesis_tracker.getHypothesisByID(id));
-}
-
 }

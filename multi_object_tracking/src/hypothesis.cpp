@@ -25,7 +25,7 @@ Hypothesis::Hypothesis(const Measurement& measurement,
   , m_cap_velocity(true)
   , m_max_allowed_velocity(1.4) // 1.4m/s or 5km/h
   , m_max_tracked_velocity(0.0)
-  , m_max_covariance(0.1f)
+  , m_max_covariance(50.1f)
 {
   int number_of_state_dimensions = 6;
   Eigen::VectorXf meas(number_of_state_dimensions);
@@ -108,6 +108,9 @@ bool Hypothesis::exceedsMaxCovariance(const Eigen::Matrix3f& covariance,
   Eigen::EigenSolver<Eigen::Matrix3f> eigen_solver(covariance);
   auto eigen_values = eigen_solver.eigenvalues();
 
+//  std::cout << "eigen values of hyp with id = " << m_id << " are " << eigen_values.col(0)[0].real() << " "
+//            << eigen_values.col(0)[1].real() << " " << eigen_values.col(0)[2].real() << " " << std::endl;
+
   return (eigen_values.col(0)[0].real() > max_covariance ||
           eigen_values.col(0)[1].real() > max_covariance ||
           eigen_values.col(0)[2].real() > max_covariance);
@@ -126,9 +129,9 @@ bool Hypothesis::isSpurious(double current_time)
   }
   else
   {
-//    if(exceedsMaxCovariance(getCovariance(), m_max_covariance))
-//      return true;
-//    else
+    if(exceedsMaxCovariance(getCovariance(), m_max_covariance))
+      return true;
+    else
       return false;
   }
 }
