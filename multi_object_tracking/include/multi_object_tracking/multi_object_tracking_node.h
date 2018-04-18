@@ -1,3 +1,10 @@
+/** @file
+ *
+ * Multi object tracker implementation.
+ *
+ * @author Jan Razlaw
+ */
+
 #ifndef __MULTI_OBJECT_TRACKING_NODE_H__
 #define __MULTI_OBJECT_TRACKING_NODE_H__
 
@@ -19,11 +26,16 @@
 namespace MultiHypothesisTracker
 {
 
+/**
+ * @brief Ros node to track multiple objects simultaneously.
+ */
 class Tracker
 {
 public:
+  /** @brief Constructor. */
   Tracker();
-  ~Tracker(){};
+  /** @brief Destructor. */
+  ~Tracker() = default;
 
   /**
    * @brief Publishes the hypotheses in several versions.

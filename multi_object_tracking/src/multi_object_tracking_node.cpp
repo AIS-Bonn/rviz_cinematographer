@@ -1,3 +1,10 @@
+/** @file
+ *
+ * Multi object tracker implementation.
+ *
+ * @author Jan Razlaw
+ */
+
 #include <multi_object_tracking/multi_object_tracking_node.h>
 
 namespace MultiHypothesisTracker

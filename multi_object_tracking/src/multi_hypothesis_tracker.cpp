@@ -1,3 +1,10 @@
+/** @file
+ *
+ * Multi hypothesis tracker implementation.
+ *
+ * @author Jan Razlaw
+ */
+
 #include <multi_object_tracking/multi_hypothesis_tracker.h>
 
 namespace MultiHypothesisTracker
@@ -45,14 +52,12 @@ void MultiHypothesisTracker::correct(const std::vector<Measurement>& measurement
   hungarian_solve(&hung);
 // 		hungarian_print_assignment(&hung);
 
-  assign(hung, measurements, m_hypotheses, cost_matrix);
+  applyAssignments(hung.assignment, cost_matrix, measurements, m_hypotheses);
 
   for(size_t i = 0; i < dim; i++)
     delete[] cost_matrix[i];
   delete[] cost_matrix;
   hungarian_free(&hung);
-
-  deleteSpuriosHypotheses(measurements.at(0).time);
 }
 
 double MultiHypothesisTracker::distance(const Eigen::Vector3f& hyp_position,
@@ -129,10 +134,10 @@ void MultiHypothesisTracker::setupCostMatrix(const std::vector<Measurement>& mea
   }
 }
 
-void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
-                                    const std::vector<Measurement>& measurements,
-                                    std::vector<std::shared_ptr<Hypothesis>>& hypotheses,
-                                    int**& cost_matrix)
+void MultiHypothesisTracker::applyAssignments(int**& assignments,
+                                              int**& cost_matrix,
+                                              const std::vector<Measurement>& measurements,
+                                              std::vector<std::shared_ptr<Hypothesis>>& hypotheses)
 {
   size_t hyp_size = hypotheses.size();
   size_t meas_size = measurements.size();
@@ -145,12 +150,12 @@ void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
       if(i < hyp_size && j < meas_size)
       {
         // if hypothesis assigned to measurement and distance below threshold -> correct hypothesis
-        if(hung.assignment[i][j] == HUNGARIAN_ASSIGNED && cost_matrix[i][j] < m_max_mahalanobis_distance)
+        if(assignments[i][j] == HUNGARIAN_ASSIGNED && cost_matrix[i][j] < m_max_mahalanobis_distance)
         {
           m_hypotheses[i]->correct(measurements[j]);
           m_hypotheses[i]->detected();
         }
-        else if(hung.assignment[i][j] == HUNGARIAN_ASSIGNED)
+        else if(assignments[i][j] == HUNGARIAN_ASSIGNED)
         {
           // if assigned but distance too high -> prohibited assignment -> hypothesis undetected
           m_hypotheses[i]->undetected();
@@ -162,13 +167,13 @@ void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
       else if(i < hyp_size && j >= meas_size)
       {
         // if hypothesis assigned to dummy measurement -> failed to detect hypothesis
-        if(hung.assignment[i][j] == HUNGARIAN_ASSIGNED)
+        if(assignments[i][j] == HUNGARIAN_ASSIGNED)
           m_hypotheses[i]->undetected();
       }
       else if(i >= hyp_size && j < meas_size)
       {
         // if measurement assigned to dummy hypothesis -> create new hypothesis
-        if(hung.assignment[i][j] == HUNGARIAN_ASSIGNED)
+        if(assignments[i][j] == HUNGARIAN_ASSIGNED)
           m_hypotheses.emplace_back(m_hypothesis_factory->createHypothesis(measurements[j], m_current_hypothesis_id++));
       }
       else if(i >= hyp_size && j >= meas_size)
@@ -193,6 +198,7 @@ void MultiHypothesisTracker::deleteSpuriosHypotheses(double current_time)
   }
 }
 
+//TODO: implement a reasonable merging function.
 void MultiHypothesisTracker::mergeCloseHypotheses(double distance_threshold)
 {
 	auto it1 = m_hypotheses.begin();

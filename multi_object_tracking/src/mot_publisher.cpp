@@ -1,3 +1,10 @@
+/** @file
+ *
+ * Class to publish data from the multi object tracker.
+ *
+ * @author Jan Razlaw
+ */
+
 #include <multi_object_tracking/mot_publisher.h>
 
 namespace MultiHypothesisTracker
