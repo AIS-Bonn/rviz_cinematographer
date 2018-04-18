@@ -42,7 +42,7 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
   m_mot_publisher.publishMeasurementPositions(measurements);
   m_mot_publisher.publishMeasurementsCovariances(measurements);
 
-  objectDetectionDataReceived(measurements);
+  processMeasurements(measurements);
 
 //  std::cout << std::setprecision(10) << "\n####time for one callback " << (getTimeHighRes() - start) << " " << std::endl;
   publish();
@@ -76,7 +76,7 @@ void Tracker::convert(const geometry_msgs::PoseArray::ConstPtr &msg,
 }
 
 bool Tracker::transformToFrame(std::vector<Measurement>& measurements,
-                               const std::string target_frame)
+                               const std::string& target_frame)
 {
   for(auto& measurement : measurements)
   {
@@ -107,25 +107,22 @@ bool Tracker::transformToFrame(std::vector<Measurement>& measurements,
   return true;
 }
 
-void Tracker::predict(double prediction_time)
-{
-  if(m_last_prediction_time > 0)
-    m_multi_hypothesis_tracker.predict(prediction_time - m_last_prediction_time);
-
-  m_last_prediction_time = prediction_time;
-
-  m_multi_hypothesis_tracker.deleteSpuriosHypotheses(prediction_time);
-}
-
-void Tracker::objectDetectionDataReceived(const std::vector<Measurement>& measurements)
+void Tracker::processMeasurements(const std::vector<Measurement> &measurements)
 {
   if(measurements.empty())
     return;
 
-  predict(measurements.at(0).time);
+  // Prediction step of kalman filter for all hypotheses
+  if(m_last_prediction_time > 0)
+    m_multi_hypothesis_tracker.predict(measurements.at(0).time - m_last_prediction_time);
 
+  m_last_prediction_time = measurements.at(0).time;
+
+  // Correction step of kalman filter for all hypotheses
   m_multi_hypothesis_tracker.correct(measurements);
 
+  // Filter out weak hypotheses
+  m_multi_hypothesis_tracker.deleteSpuriosHypotheses(measurements.at(0).time);
   m_multi_hypothesis_tracker.mergeCloseHypotheses(m_merge_distance);
 }
 

@@ -26,12 +26,12 @@ public:
   ~Tracker(){};
 
   /**
-   * @brief Publishes the hypothesis in several versions.
+   * @brief Publishes the hypotheses in several versions.
    */
   void publish();
 
   /**
-   * @brief Callback function for detections messages
+   * @brief Callback function for detection messages
    *
    * Converts messages to measurements.
    * Transforms measurements to #m_world_frame and passes those to the tracking algorithm.
@@ -49,7 +49,7 @@ public:
    * @return false if at least one measurement couldn't be transformed, true otherwise
    */
   bool transformToFrame(std::vector<Measurement>& measurements,
-                        const std::string target_frame);
+                        const std::string& target_frame);
 
   /**
    * @brief Converts the detections from the laser into the internal format
@@ -60,22 +60,22 @@ public:
   void convert(const geometry_msgs::PoseArray::ConstPtr &msg,
                std::vector<Measurement>& measurements);
 
-  /**
-   * @brief Calls prediction method of the hypotheses and deletes spurious hypothesis afterwards.
-   */
-  void predict(double prediction_time);
 
   /**
-   * @brief Predicts and corrects the hypotheses based on the new measurements.
+   * @brief Performs one prediction and correction step for every hypothesis.
    *
-   * // TODO: rename
+   * Invokes prediction step for every hypothesis.
+   * Passes measurements to multi hypothesis tracker for correction step.
+   * Filters out weak hypotheses.
    *
-   * @param measurements    new detections
+   * @param measurements    new detections.
    */
-  void objectDetectionDataReceived(const std::vector<Measurement>& measurements);
+  void processMeasurements(const std::vector<Measurement> &measurements);
 
+  /** @brief Getter for hypotheses vector. */
   const std::vector<std::shared_ptr<Hypothesis>>& getHypotheses();
 
+  /** @brief Setter for #m_merge_distance. */
   void setMergeDistance(double distance){ m_merge_distance = distance; }
 
 private:
@@ -98,9 +98,11 @@ private:
   double m_max_mahalanobis_distance;
   /** @brief Fixed frame the detections and tracks are in. */
   std::string m_world_frame;
-
-  double m_last_prediction_time;
+  /** @brief Hypotheses are merged if their distance is below this parameter. */
   double m_merge_distance;
+
+  /** @brief Time when the last prediction was performed. */
+  double m_last_prediction_time;
 };
 
 }
