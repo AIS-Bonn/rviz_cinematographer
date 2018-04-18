@@ -58,7 +58,7 @@ public:
 
   inline std::vector<std::shared_ptr<Hypothesis>>& getHypotheses(){ return m_hypotheses; }
 
-  inline void setMaxMahalanobisDistance(double distance){ m_max_mahalanobis_distance = distance; }
+  inline void setMaxMahalanobisDistance(double distance){ m_max_mahalanobis_distance = (int)m_dist_scale * distance; }
 
 protected:
   /**
@@ -106,7 +106,8 @@ protected:
    */
   void assign(const hungarian_problem_t& hung,
               const std::vector<Measurement>& measurements,
-              std::vector<std::shared_ptr<Hypothesis>>& hypotheses);
+              std::vector<std::shared_ptr<Hypothesis>>& hypotheses,
+              int**& cost_matrix);
 
 
   std::shared_ptr<HypothesisFactory> m_hypothesis_factory;
@@ -114,8 +115,9 @@ protected:
 
   unsigned int m_current_hypothesis_id;
 
-  int m_cost_factor;
-  double m_max_mahalanobis_distance;
+  /** @brief Scale from double to int, because distance is in double but hungarian needs int costs.*/
+  int m_dist_scale;
+  int m_max_mahalanobis_distance;
 };
 
 };

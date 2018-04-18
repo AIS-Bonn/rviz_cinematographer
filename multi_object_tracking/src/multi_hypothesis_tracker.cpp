@@ -6,8 +6,8 @@ namespace MultiHypothesisTracker
 MultiHypothesisTracker::MultiHypothesisTracker(std::shared_ptr<HypothesisFactory> hypothesis_factory)
 :	m_hypothesis_factory(hypothesis_factory)
  , m_current_hypothesis_id(1)
- , m_cost_factor(10000)
- , m_max_mahalanobis_distance(20.0)
+ , m_dist_scale(10000)
+ , m_max_mahalanobis_distance((int)(m_dist_scale * 20.0))
 {
 }
 
@@ -45,7 +45,7 @@ void MultiHypothesisTracker::correct(const std::vector<Measurement>& measurement
   hungarian_solve(&hung);
 // 		hungarian_print_assignment(&hung);
 
-  assign(hung, measurements, m_hypotheses);
+  assign(hung, measurements, m_hypotheses, cost_matrix);
 
   for(size_t i = 0; i < dim; i++)
     delete[] cost_matrix[i];
@@ -93,36 +93,36 @@ void MultiHypothesisTracker::setupCostMatrix(const std::vector<Measurement>& mea
     {
       if(i < hyp_size && j < meas_size)
       {
-        // an observation with a corresponding hypothesis
-
         // Calculate distance between hypothesis and measurement
         double mahalanobis_distance = distance(m_hypotheses[i]->getPosition(),
                                                m_hypotheses[i]->getCovariance(),
                                                measurements[j].pos.block<3,1>(0, 0),
                                                measurements[j].cov.block<3,3>(0,0));
 
-        if(mahalanobis_distance < m_max_mahalanobis_distance)
+        int scaled_mahalanobis_distance = (int)(m_dist_scale * mahalanobis_distance);
+        if(scaled_mahalanobis_distance < m_max_mahalanobis_distance)
         {
-          cost_matrix[i][j] = (int)(m_cost_factor * mahalanobis_distance);
+          cost_matrix[i][j] = scaled_mahalanobis_distance;
         }
         else
         {
+          // if threshold exceeded, make sure assignment algorithm doesn't assign here
           cost_matrix[i][j] = INT_MAX;
         }
       }
       else if(i < hyp_size && j >= meas_size)
       {
-        // cost for a hypothesis with no corresponding observation
-        cost_matrix[i][j] = (int)(m_cost_factor * m_max_mahalanobis_distance);
+        // distance from a hypothesis to a dummy measurement
+        cost_matrix[i][j] = m_max_mahalanobis_distance;
       }
       else if(i >= hyp_size && j < meas_size)
       {
-        // cost for an observation with no corresponding hypothesis
-        cost_matrix[i][j] = (int)(m_cost_factor * m_max_mahalanobis_distance);
+        // distance from a measurement to a dummy hypothesis
+        cost_matrix[i][j] = m_max_mahalanobis_distance;
       }
       else if(i >= hyp_size && j >= meas_size)
       {
-        // cost for a dummy job to a dummy machine
+        // distance from a dummy hypothesis to a dummy measurement
         cost_matrix[i][j] = 0;
       }
     }
@@ -131,7 +131,8 @@ void MultiHypothesisTracker::setupCostMatrix(const std::vector<Measurement>& mea
 
 void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
                                     const std::vector<Measurement>& measurements,
-                                    std::vector<std::shared_ptr<Hypothesis>>& hypotheses)
+                                    std::vector<std::shared_ptr<Hypothesis>>& hypotheses,
+                                    int**& cost_matrix)
 {
   size_t hyp_size = hypotheses.size();
   size_t meas_size = measurements.size();
@@ -141,52 +142,38 @@ void MultiHypothesisTracker::assign(const hungarian_problem_t& hung,
   {
     for(size_t j = 0; j < dim; j++)
     {
-      bool associated = false;
       if(i < hyp_size && j < meas_size)
       {
-        if(hung.assignment[i][j] == HUNGARIAN_ASSIGNED && hung.cost[i][j] < m_cost_factor * m_max_mahalanobis_distance)
-          associated = true;
-      }
-      else
-        associated = ( hung.assignment[i][j] != HUNGARIAN_ASSIGNED );
-
-      if(i < hyp_size && j < meas_size)
-      {
-        if(associated)
+        // if hypothesis assigned to measurement and distance below threshold -> correct hypothesis
+        if(hung.assignment[i][j] == HUNGARIAN_ASSIGNED && cost_matrix[i][j] < m_max_mahalanobis_distance)
         {
           m_hypotheses[i]->correct(measurements[j]);
           m_hypotheses[i]->detected();
         }
         else if(hung.assignment[i][j] == HUNGARIAN_ASSIGNED)
         {
-          // hungarian method assigned with INT_MAX => observation and track unassigned
+          // if assigned but distance too high -> prohibited assignment -> hypothesis undetected
+          m_hypotheses[i]->undetected();
 
-          // discount hypothesis detection rate
-//          if( m_hypotheses[i]->isVisible() ) {
-            m_hypotheses[i]->undetected();
-//          }
-
-          // create new hypothesis for observation
+          // create new hypothesis from measurement
           m_hypotheses.emplace_back(m_hypothesis_factory->createHypothesis(measurements[j], m_current_hypothesis_id++));
         }
       }
       else if(i < hyp_size && j >= meas_size)
       {
-        // a hypothesis with no corresponding observation
-        if(!associated)
+        // if hypothesis assigned to dummy measurement -> failed to detect hypothesis
+        if(hung.assignment[i][j] == HUNGARIAN_ASSIGNED)
           m_hypotheses[i]->undetected();
       }
       else if(i >= hyp_size && j < meas_size)
       {
-        // an observation with no corresponding hypothesis -> add
-        if(!associated)
-        {
+        // if measurement assigned to dummy hypothesis -> create new hypothesis
+        if(hung.assignment[i][j] == HUNGARIAN_ASSIGNED)
           m_hypotheses.emplace_back(m_hypothesis_factory->createHypothesis(measurements[j], m_current_hypothesis_id++));
-        }
       }
       else if(i >= hyp_size && j >= meas_size)
       {
-        // a dummy job to a dummy machine
+        // dummy hypothesis to dummy measurement
       }
     }
   }
