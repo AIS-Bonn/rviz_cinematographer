@@ -43,34 +43,37 @@ include_directories(
 	${EIGEN3_INCLUDE_DIR}
 )
 
-
+# Libraries
 add_library(hypotheses
 	src/hypothesis.cpp
 	src/kalman_filter.cpp
 )
 
 target_link_libraries(hypotheses
-	${catkin_LIBRARIES}
+	${EIGEN3_LIBRARIES}
 )
 
 add_library(hungarian
 	src/hungarian.cpp
 )
 
-target_link_libraries(hungarian
-	${catkin_LIBRARIES}
-)
-
-# TODO: to libraries
-add_executable(multi_object_tracking_node
-	src/multi_object_tracking_node.cpp
-	src/mot_publisher.cpp
+add_library(multi_hypothesis_tracker
 	src/multi_hypothesis_tracker.cpp
 )
 
-target_link_libraries(multi_object_tracking_node
+target_link_libraries(multi_hypothesis_tracker
 	hypotheses
 	hungarian
+)
+
+# Nodes
+add_executable(multi_object_tracking_node
+	src/multi_object_tracking_node.cpp
+	src/mot_publisher.cpp
+)
+
+target_link_libraries(multi_object_tracking_node
+	multi_hypothesis_tracker
 	${catkin_LIBRARIES}
 )
 
