@@ -1,5 +1,5 @@
-#ifndef __MULTIHYPOTHESISTRACKER_H__
-#define __MULTIHYPOTHESISTRACKER_H__
+#ifndef __MULTI_HYPOTHESIS_TRACKER_H__
+#define __MULTI_HYPOTHESIS_TRACKER_H__
 
 #include <vector>
 #include <string>
@@ -108,4 +108,4 @@ protected:
 
 };
 
-#endif //__MULTIHYPOTHESISTRACKER_H__
+#endif //__MULTI_HYPOTHESIS_TRACKER_H__

@@ -1,5 +1,5 @@
-#ifndef __MULTI_OBJECT_TRACKER_H__
-#define __MULTI_OBJECT_TRACKER_H__
+#ifndef __MULTI_OBJECT_TRACKING_NODE_H__
+#define __MULTI_OBJECT_TRACKING_NODE_H__
 
 #include <ros/ros.h>
 #include <ros/console.h>
@@ -12,7 +12,7 @@
 
 #include <object_detection/ObjectDetections.h>
 
-#include <multi_object_tracking/multihypothesistracker.h>
+#include <multi_object_tracking/multi_hypothesis_tracker.h>
 #include <multi_object_tracking/mot_publisher.h>
 
 

@@ -1,4 +1,4 @@
-#include <multi_object_tracking/multihypothesistracker.h>
+#include <multi_object_tracking/multi_hypothesis_tracker.h>
 
 namespace MultiHypothesisTracker
 {

@@ -62,20 +62,20 @@ target_link_libraries(hungarian
 )
 
 # TODO: to libraries
-add_executable(multi_object_tracking
-	src/multi_object_tracker.cpp
+add_executable(multi_object_tracking_node
+	src/multi_object_tracking_node.cpp
 	src/mot_publisher.cpp
-	src/multihypothesistracker.cpp
+	src/multi_hypothesis_tracker.cpp
 )
 
-target_link_libraries(multi_object_tracking
+target_link_libraries(multi_object_tracking_node
 	hypotheses
 	hungarian
 	${catkin_LIBRARIES}
 )
 
 ## Add cmake target dependencies of the executable
-add_dependencies(multi_object_tracking
+add_dependencies(multi_object_tracking_node
 	${${PROJECT_NAME}_EXPORTED_TARGETS}
 	${catkin_EXPORTED_TARGETS}
 )
