@@ -12,7 +12,6 @@
 
 #include <object_detection/ObjectDetections.h>
 
-#include <multi_object_tracking/multiobjecttracker_algorithm.h>
 #include <multi_object_tracking/multihypothesistracker.h>
 #include <multi_object_tracking/mot_publisher.h>
 
@@ -61,6 +60,24 @@ public:
   void convert(const geometry_msgs::PoseArray::ConstPtr &msg,
                std::vector<Measurement>& measurements);
 
+  /**
+   * @brief Calls prediction method of the hypotheses and deletes spurious hypothesis afterwards.
+   */
+  void predict(double prediction_time);
+
+  /**
+   * @brief Predicts and corrects the hypotheses based on the new measurements.
+   *
+   * // TODO: rename
+   *
+   * @param measurements    new detections
+   */
+  void objectDetectionDataReceived(const std::vector<Measurement>& measurements);
+
+  const std::vector<std::shared_ptr<Hypothesis>>& getHypotheses();
+
+  void setMergeDistance(double distance){ m_merge_distance = distance; }
+
 private:
   /** @brief Subscribes to detections. */
   ros::Subscriber m_laser_detection_subscriber;
@@ -71,7 +88,8 @@ private:
   std::shared_ptr<tf::TransformListener> m_transform_listener;
 
   /** @brief The functionality. */
-  std::shared_ptr<MultiObjectTrackerAlgorithm> m_algorithm;
+  MultiHypothesisTracker m_multi_hypothesis_tracker;
+
 
   //Params
   /** @brief Hypotheses that are closer than this distance to one another are merged. */
@@ -80,6 +98,9 @@ private:
   double m_max_mahalanobis_distance;
   /** @brief Fixed frame the detections and tracks are in. */
   std::string m_world_frame;
+
+  double m_last_prediction_time;
+  double m_merge_distance;
 };
 
 }

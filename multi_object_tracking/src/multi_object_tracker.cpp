@@ -4,11 +4,12 @@ namespace MultiHypothesisTracker
 {
 
 Tracker::Tracker()
+: m_multi_hypothesis_tracker(std::make_shared<HypothesisFactory>())
+  , m_last_prediction_time(0)
 {
   ros::NodeHandle n("~");
   ros::NodeHandle pub_n;
 
-  m_algorithm = std::make_shared<MultiObjectTrackerAlgorithm>();
   m_transform_listener = std::make_shared<tf::TransformListener>();
 
   m_laser_detection_subscriber = n.subscribe<geometry_msgs::PoseArray>("/object_poses", 1, &Tracker::detectionCallback, this);
@@ -17,13 +18,13 @@ Tracker::Tracker()
   n.param<double>("m_max_mahalanobis_distance", m_max_mahalanobis_distance, 3.75);
   n.param<std::string>("m_world_frame", m_world_frame, "world");
 
-  m_algorithm->setMergeDistance(m_merge_close_hypotheses_distance);
-  m_algorithm->m_multi_hypothesis_tracker.setMaxMahalanobisDistance(m_max_mahalanobis_distance);
+  setMergeDistance(m_merge_close_hypotheses_distance);
+  m_multi_hypothesis_tracker.setMaxMahalanobisDistance(m_max_mahalanobis_distance);
 }
 
 void Tracker::publish()
 {
-  m_mot_publisher.publishAll(m_algorithm->getHypotheses());
+  m_mot_publisher.publishAll(getHypotheses());
 }
 
 void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
@@ -41,7 +42,7 @@ void Tracker::detectionCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
   m_mot_publisher.publishMeasurementPositions(measurements);
   m_mot_publisher.publishMeasurementsCovariances(measurements);
 
-  m_algorithm->objectDetectionDataReceived(measurements);
+  objectDetectionDataReceived(measurements);
 
 //  std::cout << std::setprecision(10) << "\n####time for one callback " << (getTimeHighRes() - start) << " " << std::endl;
   publish();
@@ -104,6 +105,33 @@ bool Tracker::transformToFrame(std::vector<Measurement>& measurements,
   }
 
   return true;
+}
+
+void Tracker::predict(double prediction_time)
+{
+  if(m_last_prediction_time > 0)
+    m_multi_hypothesis_tracker.predict(prediction_time - m_last_prediction_time);
+
+  m_last_prediction_time = prediction_time;
+
+  m_multi_hypothesis_tracker.deleteSpuriosHypotheses(prediction_time);
+}
+
+void Tracker::objectDetectionDataReceived(const std::vector<Measurement>& measurements)
+{
+  if(measurements.empty())
+    return;
+
+  predict(measurements.at(0).time);
+
+  m_multi_hypothesis_tracker.correct(measurements);
+
+  m_multi_hypothesis_tracker.mergeCloseHypotheses(m_merge_distance);
+}
+
+const std::vector<std::shared_ptr<Hypothesis>>& Tracker::getHypotheses()
+{
+  return m_multi_hypothesis_tracker.getHypotheses();
 }
 
 }
