@@ -1,0 +1,20 @@
+<library path="lib/libpose_interpolator">
+    <class name="pose_interpolator/PoseInterpolator" type="pose_interpolator::PoseInterpolator" base_class_type="rqt_gui_cpp::Plugin">
+        <description>
+            An example Python GUI plugin to create a great user interface.
+        </description>
+        <qtgui>
+            <!-- optional grouping...
+            <group>
+              <label>Group</label>
+            </group>
+            <group>
+              <label>Subgroup</label>
+            </group>
+            -->
+            <label>Pose Interpolator</label>
+            <icon type="theme">system-help</icon>
+            <statustip>TODO statustip.</statustip>
+        </qtgui>
+    </class>
+</library>
