@@ -33,7 +33,8 @@ Q_SIGNALS:
   void updateRequested();
 
 public slots:
-  void setCamera();
+  void moveCamToStart();
+  void moveCamToEnd();
 
 private:
   Ui::pose_interpolator ui_;
