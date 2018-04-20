@@ -6,6 +6,11 @@
 #define RQT_POSE_INTERPOLATOR_POSE_INTERPOLATOR_H
 
 #include <ros/ros.h>
+
+#include <tf/tf.h>
+#include <tf/transform_datatypes.h>
+
+#include <geometry_msgs/Pose.h>
 #include <view_controller_msgs/CameraPlacement.h>
 
 #include <rqt_gui_cpp/plugin.h>
@@ -29,18 +34,26 @@ public:
   //bool hasConfiguration() const;
   //void triggerConfiguration();
 
+  void camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_pose);
 Q_SIGNALS:
   void updateRequested();
 
 public slots:
   void moveCamToStart();
   void moveCamToEnd();
+  void setStartToCurrentCam();
 
 private:
   Ui::pose_interpolator ui_;
   QWidget* widget_;
 
   ros::Publisher camera_placement_pub_;
+  ros::Subscriber camera_pose_sub_;
+
+  geometry_msgs::Pose cam_pose_;
+
+  geometry_msgs::Point start_look_at_;
+  geometry_msgs::Point end_look_at_;
 };
 } // namespace
 

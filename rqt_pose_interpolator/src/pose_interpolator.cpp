@@ -13,6 +13,7 @@ PoseInterpolator::PoseInterpolator()
   , widget_(0)
 {
   // Constructor is called first before initPlugin function, needless to say.
+  cam_pose_.orientation.w = 1.0;
 
   // give QObjects reasonable names
   setObjectName("PoseInterpolator");
@@ -21,7 +22,7 @@ PoseInterpolator::PoseInterpolator()
 void PoseInterpolator::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   ros::NodeHandle ph("~");
-
+  camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &PoseInterpolator::camPoseCallback, this);
   camera_placement_pub_ = ph.advertise<view_controller_msgs::CameraPlacement>("/rviz/camera_placement", 1);
 
   // access standalone command line arguments
@@ -33,6 +34,7 @@ void PoseInterpolator::initPlugin(qt_gui_cpp::PluginContext& context)
 
   connect(ui_.move_to_start_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToStart()));
   connect(ui_.move_to_end_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToEnd()));
+  connect(ui_.set_to_cam_button, SIGNAL(clicked(bool)), this, SLOT(setStartToCurrentCam()));
 
   // add widget to the user interface
   context.addWidget(widget_);
@@ -56,6 +58,40 @@ void PoseInterpolator::restoreSettings(const qt_gui_cpp::Settings& plugin_settin
   // v = instance_settings.value(k)
 }
 
+void PoseInterpolator::camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_pose)
+{
+  cam_pose_ = geometry_msgs::Pose(*cam_pose);
+}
+
+void PoseInterpolator::setStartToCurrentCam()
+{
+  if(ui_.start_x_spin_box->maximum() < cam_pose_.position.x ||
+     ui_.start_x_spin_box->minimum() > cam_pose_.position.x ||
+     ui_.start_y_spin_box->maximum() < cam_pose_.position.y ||
+     ui_.start_y_spin_box->minimum() > cam_pose_.position.y ||
+     ui_.start_z_spin_box->maximum() < cam_pose_.position.z ||
+     ui_.start_z_spin_box->minimum() > cam_pose_.position.z )
+  {
+    std::cout << "Current position is our of scope. Try moving closer to the center of the frame." << std::endl;
+    return;
+  }
+
+  tf::Quaternion rotation;
+  tf::quaternionMsgToTF(cam_pose_.orientation , rotation);
+  tf::Vector3 vector(0, 0, 1);
+  tf::Vector3 rotated_vector = tf::quatRotate(rotation, vector);
+  
+  ui_.start_x_spin_box->setValue(cam_pose_.position.x);
+  ui_.start_y_spin_box->setValue(cam_pose_.position.y);
+  ui_.start_z_spin_box->setValue(cam_pose_.position.z);
+
+  start_look_at_.x = cam_pose_.position.x - rotated_vector.x();
+  start_look_at_.y = cam_pose_.position.y - rotated_vector.y();
+  start_look_at_.z = cam_pose_.position.z - rotated_vector.z();
+
+  moveCamToStart();
+}
+
 void PoseInterpolator::moveCamToStart()
 {
   view_controller_msgs::CameraPlacement cp;
@@ -75,11 +111,7 @@ void PoseInterpolator::moveCamToStart()
   look_from.z = ui_.start_z_spin_box->value();
   cp.eye.point = look_from;
 
-  geometry_msgs::Point look_at;
-  look_at.x = 0;
-  look_at.y = 0;
-  look_at.z = 0;
-  cp.focus.point = look_at;
+  cp.focus.point = start_look_at_;
 
   camera_placement_pub_.publish(cp);
 }
@@ -90,7 +122,7 @@ void PoseInterpolator::moveCamToEnd()
   cp.eye.header.stamp = ros::Time::now();
   cp.eye.header.frame_id = "base_link"; // TODO: make parameter
   cp.target_frame = "base_link";
-  cp.interpolation_mode = view_controller_msgs::CameraPlacement::LINEAR; // SPHERICAL
+  cp.interpolation_mode = view_controller_msgs::CameraPlacement::SPHERICAL; // SPHERICAL
   cp.time_from_start = ros::Duration(ui_.transition_time_spin_box->value());
 
   cp.up.header = cp.focus.header = cp.eye.header;

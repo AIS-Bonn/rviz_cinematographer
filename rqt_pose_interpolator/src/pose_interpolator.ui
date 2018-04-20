@@ -117,6 +117,13 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QPushButton" name="set_to_cam_button">
+             <property name="text">
+              <string>Set to Cam</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
          <item>
@@ -128,7 +135,10 @@
             <string>x : </string>
            </property>
            <property name="minimum">
-            <double>-99.000000000000000</double>
+            <double>-9999.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>9999.989999999999782</double>
            </property>
            <property name="singleStep">
             <double>0.010000000000000</double>
@@ -144,7 +154,10 @@
             <string>y : </string>
            </property>
            <property name="minimum">
-            <double>-99.000000000000000</double>
+            <double>-9999.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>9999.000000000000000</double>
            </property>
            <property name="singleStep">
             <double>0.010000000000000</double>
@@ -160,7 +173,10 @@
             <string>z : </string>
            </property>
            <property name="minimum">
-            <double>-99.000000000000000</double>
+            <double>-9999.000000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>9999.989999999999782</double>
            </property>
            <property name="singleStep">
             <double>0.010000000000000</double>
@@ -229,7 +245,10 @@
               <string>x : </string>
              </property>
              <property name="minimum">
-              <double>-99.000000000000000</double>
+              <double>-9999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>9999.989999999999782</double>
              </property>
              <property name="singleStep">
               <double>0.010000000000000</double>
@@ -248,10 +267,10 @@
               <string>y : </string>
              </property>
              <property name="minimum">
-              <double>-99.000000000000000</double>
+              <double>-9999.000000000000000</double>
              </property>
              <property name="maximum">
-              <double>99.989999999999995</double>
+              <double>9999.989999999999782</double>
              </property>
              <property name="singleStep">
               <double>0.010000000000000</double>
@@ -267,7 +286,10 @@
               <string>z : </string>
              </property>
              <property name="minimum">
-              <double>-99.000000000000000</double>
+              <double>-9999.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>9999.000000000000000</double>
              </property>
              <property name="singleStep">
               <double>0.010000000000000</double>
