@@ -40,6 +40,7 @@ void PoseInterpolator::initPlugin(qt_gui_cpp::PluginContext& context)
 void PoseInterpolator::shutdownPlugin()
 {
   // TODO unregister all publishers here
+  camera_placement_pub_.shutdown();
 }
 
 void PoseInterpolator::saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const
@@ -56,43 +57,30 @@ void PoseInterpolator::restoreSettings(const qt_gui_cpp::Settings& plugin_settin
 
 void PoseInterpolator::setCamera()
 {
-  std::cout << "###Setting camera." << std::endl;
+  view_controller_msgs::CameraPlacement cp;
+  cp.eye.header.stamp = ros::Time::now();
+  cp.eye.header.frame_id = "base_link";
+  cp.target_frame = "base_link";
+  cp.interpolation_mode = view_controller_msgs::CameraPlacement::LINEAR; // SPHERICAL
+  cp.time_from_start = ros::Duration(ui_.transition_time_spin_box->value());
 
-//  double rate = 30;
-//  ros::Rate loop_rate(rate);
-//  for(int i = 0; i < 100; i++)
-//  {
-    view_controller_msgs::CameraPlacement cp;
-    cp.eye.header.stamp = ros::Time::now();
-    cp.eye.header.frame_id = "base_link";
-    cp.target_frame = "base_link";
-    cp.interpolation_mode = view_controller_msgs::CameraPlacement::LINEAR; // SPHERICAL
-    cp.time_from_start = ros::Duration(1.);
+  cp.up.header = cp.focus.header = cp.eye.header;
+  cp.up.vector.x = 0.0;
+  cp.up.vector.y = 0.0;
+  cp.up.vector.z = 1.0;
+  geometry_msgs::Point look_from;
+  look_from.x = 100;
+  look_from.y = 0;
+  look_from.z = 0;
+  cp.eye.point = look_from;
 
-    cp.up.header = cp.focus.header = cp.eye.header;
-    cp.up.vector.x = 0.0;
-    cp.up.vector.y = 0.0;
-    cp.up.vector.z = 1.0;
-    geometry_msgs::Point look_from;
-    look_from.x = 100;
-    look_from.y = 0;
-    look_from.z = 0;
-    cp.eye.point = look_from;
+  geometry_msgs::Point look_at;
+  look_at.x = 0;
+  look_at.y = 0;
+  look_at.z = 0;
+  cp.focus.point = look_at;
 
-    geometry_msgs::Point look_at;
-    look_at.x = 0;
-    look_at.y = 0;
-    look_at.z = 0;
-    cp.focus.point = look_at;
-
-//    ros::spinOnce();
-//    loop_rate.sleep();
-
-    camera_placement_pub_.publish(cp);
-//  }
-
-
-  std::cout << "###Setting camera finished." << std::endl;
+  camera_placement_pub_.publish(cp);
 }
 
 /*bool hasConfiguration() const

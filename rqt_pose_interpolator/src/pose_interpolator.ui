@@ -19,6 +19,19 @@
      <item>
       <layout class="QHBoxLayout" name="controlsLayout">
        <item>
+        <widget class="QDoubleSpinBox" name="transition_time_spin_box">
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+         <property name="prefix">
+          <string>transition time: </string>
+         </property>
+         <property name="suffix">
+          <string> seconds</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="set_camera_button">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
