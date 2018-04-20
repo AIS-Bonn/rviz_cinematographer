@@ -1,0 +1,17 @@
+<launch>
+
+  <arg name="debug" default="false" />
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
+  <arg name="load_config" default="true" />
+
+  <arg unless="$(arg load_config)" name="command_args" value="" />
+  <arg if="$(arg load_config)"     name="command_args" value="-d $(find rviz_animated_view_controller)/launch/demo.rviz" />
+
+  <node name="$(anon rviz)" launch-prefix="$(arg launch_prefix)" pkg="rviz" type="rviz" required="true"
+        respawn="false" output="screen" args="$(arg command_args)">
+  </node>
+
+  <node name="$(anon camera_test)" pkg="view_controller_msgs" type="SquareTest" output="screen" />
+
+</launch>

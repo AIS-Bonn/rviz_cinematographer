@@ -1,0 +1,7 @@
+<library path="librviz_animated_view_controller">
+  <class name="rviz_animated_view_controller/Animated" type="rviz_animated_view_controller::AnimatedViewController" base_class_type="rviz::ViewController">
+    <description>
+      A view controller for Rviz that allows message API control, smooth view transitions, and switchable Orbit/FPS interaction.
+    </description>
+  </class>
+</library>
