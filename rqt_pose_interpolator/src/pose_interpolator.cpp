@@ -9,8 +9,8 @@
 namespace pose_interpolator {
 
 PoseInterpolator::PoseInterpolator()
-        : rqt_gui_cpp::Plugin()
-          , widget_(0)
+: rqt_gui_cpp::Plugin()
+  , widget_(0)
 {
   // Constructor is called first before initPlugin function, needless to say.
 
@@ -20,12 +20,19 @@ PoseInterpolator::PoseInterpolator()
 
 void PoseInterpolator::initPlugin(qt_gui_cpp::PluginContext& context)
 {
+  ros::NodeHandle ph("~");
+
+  camera_placement_pub_ = ph.advertise<view_controller_msgs::CameraPlacement>("/rviz/camera_placement", 1);
+
   // access standalone command line arguments
   QStringList argv = context.argv();
   // create QWidget
   widget_ = new QWidget();
   // extend the widget with all attributes and children from UI file
   ui_.setupUi(widget_);
+
+  connect(ui_.set_camera_button, SIGNAL(clicked(bool)), this, SLOT(setCamera()));
+
   // add widget to the user interface
   context.addWidget(widget_);
 }
@@ -45,6 +52,47 @@ void PoseInterpolator::restoreSettings(const qt_gui_cpp::Settings& plugin_settin
 {
   // TODO restore intrinsic configuration, usually using:
   // v = instance_settings.value(k)
+}
+
+void PoseInterpolator::setCamera()
+{
+  std::cout << "###Setting camera." << std::endl;
+
+//  double rate = 30;
+//  ros::Rate loop_rate(rate);
+//  for(int i = 0; i < 100; i++)
+//  {
+    view_controller_msgs::CameraPlacement cp;
+    cp.eye.header.stamp = ros::Time::now();
+    cp.eye.header.frame_id = "base_link";
+    cp.target_frame = "base_link";
+    cp.interpolation_mode = view_controller_msgs::CameraPlacement::LINEAR; // SPHERICAL
+    cp.time_from_start = ros::Duration(1.);
+
+    cp.up.header = cp.focus.header = cp.eye.header;
+    cp.up.vector.x = 0.0;
+    cp.up.vector.y = 0.0;
+    cp.up.vector.z = 1.0;
+    geometry_msgs::Point look_from;
+    look_from.x = 100;
+    look_from.y = 0;
+    look_from.z = 0;
+    cp.eye.point = look_from;
+
+    geometry_msgs::Point look_at;
+    look_at.x = 0;
+    look_at.y = 0;
+    look_at.z = 0;
+    cp.focus.point = look_at;
+
+//    ros::spinOnce();
+//    loop_rate.sleep();
+
+    camera_placement_pub_.publish(cp);
+//  }
+
+
+  std::cout << "###Setting camera finished." << std::endl;
 }
 
 /*bool hasConfiguration() const

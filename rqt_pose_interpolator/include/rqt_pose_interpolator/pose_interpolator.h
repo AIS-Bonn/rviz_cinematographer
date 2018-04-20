@@ -5,6 +5,9 @@
 #ifndef RQT_POSE_INTERPOLATOR_POSE_INTERPOLATOR_H
 #define RQT_POSE_INTERPOLATOR_POSE_INTERPOLATOR_H
 
+#include <ros/ros.h>
+#include <view_controller_msgs/CameraPlacement.h>
+
 #include <rqt_gui_cpp/plugin.h>
 #include <QWidget>
 #include "ui_pose_interpolator.h"
@@ -25,9 +28,18 @@ public:
   // Comment in to signal that the plugin has a way to configure it
   //bool hasConfiguration() const;
   //void triggerConfiguration();
+
+Q_SIGNALS:
+  void updateRequested();
+
+public slots:
+  void setCamera();
+
 private:
   Ui::pose_interpolator ui_;
   QWidget* widget_;
+
+  ros::Publisher camera_placement_pub_;
 };
 } // namespace
 
