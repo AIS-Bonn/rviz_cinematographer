@@ -54,7 +54,6 @@ private:
                                                    double z=0.0);
 
   void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
-  void submit(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
 
   tf::Vector3 rotateVector(const tf::Vector3 vector,
                            const geometry_msgs::Quaternion& quat);

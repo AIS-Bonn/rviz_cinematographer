@@ -12,9 +12,7 @@ PoseInterpolator::PoseInterpolator()
 : rqt_gui_cpp::Plugin()
   , widget_(0)
 {
-  menu_handler_.insert("Set Point to Marker Pose", boost::bind(&PoseInterpolator::submit, this, _1));
-
-  server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>("trajectory");
+  // set up markers
   start_marker_ = makeMarker();
   start_marker_.name = "start_marker";
   start_marker_.description = "Start Marker";
@@ -26,6 +24,8 @@ PoseInterpolator::PoseInterpolator()
   end_marker_.pose.orientation.w = 1.0;
   end_marker_.controls[0].markers[0].color.r = 1.f;
 
+  // connect markers to callback functions
+  server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>("trajectory");
   server_->insert(start_marker_, boost::bind( &PoseInterpolator::processFeedback, this, _1));
   menu_handler_.apply(*server_, start_marker_.name);
   server_->insert(end_marker_, boost::bind( &PoseInterpolator::processFeedback, this, _1));
@@ -33,7 +33,6 @@ PoseInterpolator::PoseInterpolator()
 
   server_->applyChanges();
 
-  // Constructor is called first before initPlugin function, needless to say.
   cam_pose_.orientation.w = 1.0;
 
   // give QObjects reasonable names
@@ -186,14 +185,13 @@ visualization_msgs::Marker makeArrow(visualization_msgs::InteractiveMarker &msg)
   return marker;
 }
 
-visualization_msgs::InteractiveMarkerControl& makeBoxControl(visualization_msgs::InteractiveMarker &msg)
+void makeBoxControl(visualization_msgs::InteractiveMarker& msg)
 {
   visualization_msgs::InteractiveMarkerControl control;
   control.always_visible = true;
   control.markers.push_back(makeBox(msg));
   control.markers.push_back(makeArrow(msg));
   msg.controls.push_back(control);
-  return msg.controls.back();
 }
 
 
@@ -210,9 +208,7 @@ visualization_msgs::InteractiveMarker PoseInterpolator::makeMarker(double x, dou
   marker.pose.orientation.w = 1.0;
   marker.pose.orientation.y = 1.0;
 
-  visualization_msgs::InteractiveMarkerControl& submit_control = makeBoxControl(marker);
-  submit_control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;
-  submit_control.name = "set_button";
+  makeBoxControl(marker);
 
   visualization_msgs::InteractiveMarkerControl pose_control;
   pose_control.orientation.w = 1;
@@ -293,15 +289,9 @@ void PoseInterpolator::moveCamToEnd()
 void PoseInterpolator::processFeedback( const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback)
 {
   if(feedback->marker_name == "start_marker")
-    start_marker_.pose = feedback->pose;
-  else
-    end_marker_.pose = feedback->pose;
-}
-
-void PoseInterpolator::submit(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
-{
-  if(feedback->marker_name == "start_marker")
   {
+    start_marker_.pose = feedback->pose;
+
     ui_.start_x_spin_box->setValue(start_marker_.pose.position.x);
     ui_.start_y_spin_box->setValue(start_marker_.pose.position.y);
     ui_.start_z_spin_box->setValue(start_marker_.pose.position.z);
@@ -313,6 +303,8 @@ void PoseInterpolator::submit(const visualization_msgs::InteractiveMarkerFeedbac
   }
   else
   {
+    end_marker_.pose = feedback->pose;
+
     ui_.end_x_spin_box->setValue(end_marker_.pose.position.x);
     ui_.end_y_spin_box->setValue(end_marker_.pose.position.y);
     ui_.end_z_spin_box->setValue(end_marker_.pose.position.z);
