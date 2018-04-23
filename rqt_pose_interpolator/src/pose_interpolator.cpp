@@ -65,6 +65,8 @@ void PoseInterpolator::camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_
 
 void PoseInterpolator::setStartToCurrentCam()
 {
+  ui_.messages_label->setText(QString("Message: "));
+
   if(ui_.start_x_spin_box->maximum() < cam_pose_.position.x ||
      ui_.start_x_spin_box->minimum() > cam_pose_.position.x ||
      ui_.start_y_spin_box->maximum() < cam_pose_.position.y ||
@@ -72,7 +74,7 @@ void PoseInterpolator::setStartToCurrentCam()
      ui_.start_z_spin_box->maximum() < cam_pose_.position.z ||
      ui_.start_z_spin_box->minimum() > cam_pose_.position.z )
   {
-    std::cout << "Current position is our of scope. Try moving closer to the center of the frame." << std::endl;
+    ui_.messages_label->setText(QString("Message: Current position is out of scope.\n\tTry moving closer to the center of the frame."));
     return;
   }
 
@@ -93,6 +95,8 @@ void PoseInterpolator::setStartToCurrentCam()
 }
 
 void PoseInterpolator::moveCamToStart()
+  ui_.messages_label->setText(QString("Message: "));
+    ui_.messages_label->setText(QString("Message: Current position is out of scope.\n\tTry moving closer to the center of the frame."));
 {
   view_controller_msgs::CameraPlacement cp;
   cp.eye.header.stamp = ros::Time::now();
