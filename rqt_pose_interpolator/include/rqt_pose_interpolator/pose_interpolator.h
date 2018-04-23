@@ -40,10 +40,14 @@ Q_SIGNALS:
 
 public slots:
   void moveCamToStart();
+  void moveCamToStart(double transition_time);
   void moveCamToEnd();
   void setStartToCurrentCam();
+  void setEndToCurrentCam();
 
 private:
+  view_controller_msgs::CameraPlacement makeCameraPlacement();
+
   Ui::pose_interpolator ui_;
   QWidget* widget_;
 

@@ -32,6 +32,22 @@
         </spacer>
        </item>
        <item>
+        <widget class="QDoubleSpinBox" name="smoothness_spin_box">
+         <property name="prefix">
+          <string>smoothness factor : </string>
+         </property>
+         <property name="decimals">
+          <number>0</number>
+         </property>
+         <property name="minimum">
+          <double>1.000000000000000</double>
+         </property>
+         <property name="value">
+          <double>20.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QDoubleSpinBox" name="transition_time_spin_box">
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -118,9 +134,9 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="set_to_cam_button">
+            <widget class="QPushButton" name="set_start_to_cam_button">
              <property name="text">
-              <string>Set to Cam</string>
+              <string>Set to Cam Pose</string>
              </property>
             </widget>
            </item>
@@ -234,6 +250,13 @@
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QPushButton" name="set_end_to_cam_button">
+               <property name="text">
+                <string>Set to Cam Pose</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
            <item>
@@ -293,6 +316,20 @@
              </property>
              <property name="singleStep">
               <double>0.010000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="messages_label">
+             <property name="text">
+              <string>Messages: </string>
              </property>
             </widget>
            </item>
