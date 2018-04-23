@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   rqt_gui_cpp
   tf
   view_controller_msgs
+  rviz_animated_view_controller
 )
 
 # Decide on a Qt version
@@ -42,7 +43,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS interactive_markers nav_msgs roscpp rqt_gui rqt_gui_cpp tf view_controller_msgs
+  CATKIN_DEPENDS interactive_markers nav_msgs roscpp rqt_gui rqt_gui_cpp tf view_controller_msgs rviz_animated_view_controller
 )
 
 ###########
