@@ -1,10 +1,12 @@
-//
-// Created by razlaw on 19.04.18.
-//
+/** @file
+ *
+ * Simple rqt plugin to generate tracking shots.
+ *
+ * @author Jan Razlaw
+ */
 
 #include <rqt_pose_interpolator/pose_interpolator.h>
 #include <pluginlib/class_list_macros.h>
-#include <QStringList>
 
 namespace pose_interpolator {
 
@@ -63,7 +65,6 @@ void PoseInterpolator::initPlugin(qt_gui_cpp::PluginContext& context)
 
 void PoseInterpolator::shutdownPlugin()
 {
-  // unregister all publishers here
   camera_pose_sub_.shutdown();
   camera_placement_pub_.shutdown();
 }
@@ -104,10 +105,11 @@ void PoseInterpolator::setStartToCurrentCam()
   ui_.start_y_spin_box->setValue(cam_pose_.position.y);
   ui_.start_z_spin_box->setValue(cam_pose_.position.z);
 
-  tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, 1), cam_pose_.orientation);
-  start_look_at_.x = cam_pose_.position.x - ui_.smoothness_spin_box->value() * rotated_vector.x();
-  start_look_at_.y = cam_pose_.position.y - ui_.smoothness_spin_box->value() * rotated_vector.y();
-  start_look_at_.z = cam_pose_.position.z - ui_.smoothness_spin_box->value() * rotated_vector.z();
+  // rviz camera looks into negative z direction
+  tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), cam_pose_.orientation);
+  start_look_at_.x = cam_pose_.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
+  start_look_at_.y = cam_pose_.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
+  start_look_at_.z = cam_pose_.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 }
 
 void PoseInterpolator::setEndToCurrentCam()
@@ -129,10 +131,11 @@ void PoseInterpolator::setEndToCurrentCam()
   ui_.end_y_spin_box->setValue(cam_pose_.position.y);
   ui_.end_z_spin_box->setValue(cam_pose_.position.z);
 
-  tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, 1), cam_pose_.orientation);
-  end_look_at_.x = cam_pose_.position.x - ui_.smoothness_spin_box->value() * rotated_vector.x();
-  end_look_at_.y = cam_pose_.position.y - ui_.smoothness_spin_box->value() * rotated_vector.y();
-  end_look_at_.z = cam_pose_.position.z - ui_.smoothness_spin_box->value() * rotated_vector.z();
+  // rviz camera looks into negative z direction
+  tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), cam_pose_.orientation);
+  end_look_at_.x = cam_pose_.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
+  end_look_at_.y = cam_pose_.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
+  end_look_at_.z = cam_pose_.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 }
 
 view_controller_msgs::CameraPlacement PoseInterpolator::makeCameraPlacement()
@@ -245,6 +248,7 @@ void PoseInterpolator::moveCamToStart(double transition_time)
 
   if(!ui_.use_up_of_world_radio_button->isChecked())
   {
+    // in the cam frame up is the negative x direction
     tf::Vector3 rotated_vector = rotateVector(tf::Vector3(-1, 0, 0), start_marker_.pose.orientation);
     cp.up.vector.x = rotated_vector.x();
     cp.up.vector.y = rotated_vector.y();
@@ -269,6 +273,7 @@ void PoseInterpolator::moveCamToEnd()
 
   if(!ui_.use_up_of_world_radio_button->isChecked())
   {
+    // in the cam frame up is the negative x direction 
     tf::Vector3 rotated_vector = rotateVector(tf::Vector3(-1, 0, 0), end_marker_.pose.orientation);
     cp.up.vector.x = rotated_vector.x();
     cp.up.vector.y = rotated_vector.y();
@@ -286,7 +291,7 @@ void PoseInterpolator::moveCamToEnd()
   camera_placement_pub_.publish(cp);
 }
 
-void PoseInterpolator::processFeedback( const visualization_msgs::InteractiveMarkerFeedbackConstPtr &feedback)
+void PoseInterpolator::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   if(feedback->marker_name == "start_marker")
   {
@@ -296,10 +301,10 @@ void PoseInterpolator::processFeedback( const visualization_msgs::InteractiveMar
     ui_.start_y_spin_box->setValue(start_marker_.pose.position.y);
     ui_.start_z_spin_box->setValue(start_marker_.pose.position.z);
 
-    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, 1), start_marker_.pose.orientation);
-    start_look_at_.x = start_marker_.pose.position.x - ui_.smoothness_spin_box->value() * rotated_vector.x();
-    start_look_at_.y = start_marker_.pose.position.y - ui_.smoothness_spin_box->value() * rotated_vector.y();
-    start_look_at_.z = start_marker_.pose.position.z - ui_.smoothness_spin_box->value() * rotated_vector.z();
+    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), start_marker_.pose.orientation);
+    start_look_at_.x = start_marker_.pose.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
+    start_look_at_.y = start_marker_.pose.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
+    start_look_at_.z = start_marker_.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
   }
   else
   {
@@ -309,10 +314,10 @@ void PoseInterpolator::processFeedback( const visualization_msgs::InteractiveMar
     ui_.end_y_spin_box->setValue(end_marker_.pose.position.y);
     ui_.end_z_spin_box->setValue(end_marker_.pose.position.z);
 
-    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, 1), end_marker_.pose.orientation);
-    end_look_at_.x = end_marker_.pose.position.x - ui_.smoothness_spin_box->value() * rotated_vector.x();
-    end_look_at_.y = end_marker_.pose.position.y - ui_.smoothness_spin_box->value() * rotated_vector.y();
-    end_look_at_.z = end_marker_.pose.position.z - ui_.smoothness_spin_box->value() * rotated_vector.z();
+    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), end_marker_.pose.orientation);
+    end_look_at_.x = end_marker_.pose.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
+    end_look_at_.y = end_marker_.pose.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
+    end_look_at_.z = end_marker_.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
   }
 }
 
