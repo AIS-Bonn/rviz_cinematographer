@@ -13,6 +13,9 @@
 #include <geometry_msgs/Pose.h>
 #include <view_controller_msgs/CameraPlacement.h>
 
+#include <interactive_markers/interactive_marker_server.h>
+#include <interactive_markers/menu_handler.h>
+
 #include <rqt_gui_cpp/plugin.h>
 #include <QWidget>
 #include "ui_pose_interpolator.h"
@@ -47,12 +50,20 @@ public slots:
 
 private:
   view_controller_msgs::CameraPlacement makeCameraPlacement();
+  visualization_msgs::InteractiveMarker makeMarker(double x=0.0, double y=0.0, double z=0.0);
+  void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+  void submit(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
 
   Ui::pose_interpolator ui_;
   QWidget* widget_;
 
   ros::Publisher camera_placement_pub_;
   ros::Subscriber camera_pose_sub_;
+
+  interactive_markers::MenuHandler menu_handler_;
+  std::shared_ptr<interactive_markers::InteractiveMarkerServer> server_;
+  visualization_msgs::InteractiveMarker start_marker_;
+  visualization_msgs::InteractiveMarker end_marker_;
 
   geometry_msgs::Pose cam_pose_;
 

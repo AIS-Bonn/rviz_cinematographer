@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>610</width>
+    <width>339</width>
     <height>663</height>
    </rect>
   </property>
@@ -31,50 +31,27 @@
          </property>
         </spacer>
        </item>
-       <item>
-        <widget class="QDoubleSpinBox" name="smoothness_spin_box">
-         <property name="prefix">
-          <string>smoothness factor : </string>
-         </property>
-         <property name="decimals">
-          <number>0</number>
-         </property>
-         <property name="minimum">
-          <double>1.000000000000000</double>
-         </property>
-         <property name="value">
-          <double>20.000000000000000</double>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QDoubleSpinBox" name="transition_time_spin_box">
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-         <property name="prefix">
-          <string>transition time: </string>
-         </property>
-         <property name="suffix">
-          <string> seconds</string>
-         </property>
-         <property name="decimals">
-          <number>1</number>
-         </property>
-         <property name="singleStep">
-          <double>0.100000000000000</double>
-         </property>
-         <property name="value">
-          <double>3.000000000000000</double>
-         </property>
-        </widget>
-       </item>
       </layout>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
         <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="font">
+            <font>
+             <pointsize>15</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>Start Point  </string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
            <item>
@@ -89,21 +66,6 @@
               </size>
              </property>
             </spacer>
-           </item>
-           <item>
-            <widget class="QLabel" name="label">
-             <property name="font">
-              <font>
-               <pointsize>15</pointsize>
-              </font>
-             </property>
-             <property name="text">
-              <string>Start Point  </string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
            </item>
            <item>
             <widget class="QPushButton" name="move_to_start_button">
@@ -200,7 +162,29 @@
           </widget>
          </item>
          <item>
+          <widget class="Line" name="line_3">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
           <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="font">
+              <font>
+               <pointsize>15</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>End Point  </string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_3">
              <item>
@@ -215,21 +199,6 @@
                 </size>
                </property>
               </spacer>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_2">
-               <property name="font">
-                <font>
-                 <pointsize>15</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string>End Point  </string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-              </widget>
              </item>
              <item>
               <widget class="QPushButton" name="move_to_end_button">
@@ -321,8 +290,108 @@
            </item>
            <item>
             <widget class="Line" name="line">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>15</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <weight>50</weight>
+               <bold>false</bold>
+              </font>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Sunken</enum>
+             </property>
+             <property name="lineWidth">
+              <number>0</number>
+             </property>
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="Line" name="line_2">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_3">
+             <property name="font">
+              <font>
+               <pointsize>15</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Parameters  </string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="transition_time_spin_box">
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+             <property name="prefix">
+              <string>transition time: </string>
+             </property>
+             <property name="suffix">
+              <string> seconds</string>
+             </property>
+             <property name="decimals">
+              <number>1</number>
+             </property>
+             <property name="singleStep">
+              <double>0.100000000000000</double>
+             </property>
+             <property name="value">
+              <double>3.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="radioButton">
+             <property name="toolTip">
+              <string>dsad</string>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>Use Up of Wor&amp;ld</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="smoothness_spin_box">
+             <property name="layoutDirection">
+              <enum>Qt::LeftToRight</enum>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+             <property name="prefix">
+              <string>smoothness factor : </string>
+             </property>
+             <property name="decimals">
+              <number>0</number>
+             </property>
+             <property name="minimum">
+              <double>1.000000000000000</double>
+             </property>
+             <property name="value">
+              <double>20.000000000000000</double>
              </property>
             </widget>
            </item>
