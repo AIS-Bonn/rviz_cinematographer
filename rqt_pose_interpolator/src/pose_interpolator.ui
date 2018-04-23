@@ -87,6 +87,9 @@
                <height>16777215</height>
               </size>
              </property>
+             <property name="toolTip">
+              <string>Move the camera to the set start point.</string>
+             </property>
              <property name="text">
               <string>Move here</string>
              </property>
@@ -97,6 +100,9 @@
            </item>
            <item>
             <widget class="QPushButton" name="set_start_to_cam_button">
+             <property name="toolTip">
+              <string>Set the start pose to the current camera pose.</string>
+             </property>
              <property name="text">
               <string>Set to Cam Pose</string>
              </property>
@@ -214,6 +220,9 @@
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>Move camera to the set pose. </string>
+               </property>
                <property name="text">
                 <string>Move here</string>
                </property>
@@ -221,6 +230,9 @@
              </item>
              <item>
               <widget class="QPushButton" name="set_end_to_cam_button">
+               <property name="toolTip">
+                <string>Set end pose to the current camera pose.</string>
+               </property>
                <property name="text">
                 <string>Set to Cam Pose</string>
                </property>
@@ -337,6 +349,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="transition_time_spin_box">
+             <property name="toolTip">
+              <string>Time the camera needs to move from start to end.</string>
+             </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
@@ -358,9 +373,9 @@
             </widget>
            </item>
            <item>
-            <widget class="QRadioButton" name="radioButton">
+            <widget class="QRadioButton" name="use_up_of_world_radio_button">
              <property name="toolTip">
-              <string>dsad</string>
+              <string>If checked, camera can't roll. Uncheck for fancy movements. </string>
              </property>
              <property name="layoutDirection">
               <enum>Qt::RightToLeft</enum>
@@ -375,6 +390,9 @@
            </item>
            <item>
             <widget class="QDoubleSpinBox" name="smoothness_spin_box">
+             <property name="toolTip">
+              <string>Technically the distance between the eye point and the focus point of the camera. </string>
+             </property>
              <property name="layoutDirection">
               <enum>Qt::LeftToRight</enum>
              </property>

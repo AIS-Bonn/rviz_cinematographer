@@ -155,14 +155,9 @@ view_controller_msgs::CameraPlacement PoseInterpolator::makeCameraPlacement()
 
   cp.up.header = cp.focus.header = cp.eye.header;
 
-  tf::Quaternion rotation;
-  tf::quaternionMsgToTF(start_marker_.pose.orientation , rotation);
-  tf::Vector3 vector(-1, 0, 0);
-  tf::Vector3 rotated_vector = tf::quatRotate(rotation, vector);
-
-  cp.up.vector.x = rotated_vector.x();//0.0;
-  cp.up.vector.y = rotated_vector.y();//0.0;
-  cp.up.vector.z = rotated_vector.z();//1.0;
+  cp.up.vector.x = 0.0;
+  cp.up.vector.y = 0.0;
+  cp.up.vector.z = 1.0;
 
   return cp;
 }
@@ -260,6 +255,18 @@ void PoseInterpolator::moveCamToStart(double transition_time)
   view_controller_msgs::CameraPlacement cp = makeCameraPlacement();
   cp.time_from_start = ros::Duration(transition_time);
 
+  if(!ui_.use_up_of_world_radio_button->isChecked())
+  {
+    tf::Quaternion rotation;
+    tf::quaternionMsgToTF(start_marker_.pose.orientation, rotation);
+    tf::Vector3 vector(-1, 0, 0);
+    tf::Vector3 rotated_vector = tf::quatRotate(rotation, vector);
+
+    cp.up.vector.x = rotated_vector.x();
+    cp.up.vector.y = rotated_vector.y();
+    cp.up.vector.z = rotated_vector.z();
+  }
+
   geometry_msgs::Point look_from;
   look_from.x = ui_.start_x_spin_box->value();
   look_from.y = ui_.start_y_spin_box->value();
@@ -275,6 +282,18 @@ void PoseInterpolator::moveCamToEnd()
 {
   view_controller_msgs::CameraPlacement cp = makeCameraPlacement();
   cp.time_from_start = ros::Duration(ui_.transition_time_spin_box->value());
+
+  if(!ui_.use_up_of_world_radio_button->isChecked())
+  {
+    tf::Quaternion rotation;
+    tf::quaternionMsgToTF(end_marker_.pose.orientation, rotation);
+    tf::Vector3 vector(-1, 0, 0);
+    tf::Vector3 rotated_vector = tf::quatRotate(rotation, vector);
+
+    cp.up.vector.x = rotated_vector.x();
+    cp.up.vector.y = rotated_vector.y();
+    cp.up.vector.z = rotated_vector.z();
+  }
 
   geometry_msgs::Point look_from;
   look_from.x = ui_.end_x_spin_box->value();
