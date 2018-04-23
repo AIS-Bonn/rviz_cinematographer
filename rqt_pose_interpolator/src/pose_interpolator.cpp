@@ -64,7 +64,7 @@ void PoseInterpolator::initPlugin(qt_gui_cpp::PluginContext& context)
 
 void PoseInterpolator::shutdownPlugin()
 {
-  // TODO unregister all publishers here
+  // unregister all publishers here
   camera_pose_sub_.shutdown();
   camera_placement_pub_.shutdown();
 }
@@ -100,16 +100,12 @@ void PoseInterpolator::setStartToCurrentCam()
     ui_.messages_label->setText(QString("Message: Current position is out of scope.\n\tTry moving closer to the center of the frame."));
     return;
   }
-
-  tf::Quaternion rotation;
-  tf::quaternionMsgToTF(cam_pose_.orientation , rotation);
-  tf::Vector3 vector(0, 0, 1);
-  tf::Vector3 rotated_vector = tf::quatRotate(rotation, vector);
   
   ui_.start_x_spin_box->setValue(cam_pose_.position.x);
   ui_.start_y_spin_box->setValue(cam_pose_.position.y);
   ui_.start_z_spin_box->setValue(cam_pose_.position.z);
 
+  tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, 1), cam_pose_.orientation);
   start_look_at_.x = cam_pose_.position.x - ui_.smoothness_spin_box->value() * rotated_vector.x();
   start_look_at_.y = cam_pose_.position.y - ui_.smoothness_spin_box->value() * rotated_vector.y();
   start_look_at_.z = cam_pose_.position.z - ui_.smoothness_spin_box->value() * rotated_vector.z();
@@ -130,15 +126,11 @@ void PoseInterpolator::setEndToCurrentCam()
     return;
   }
 
-  tf::Quaternion rotation;
-  tf::quaternionMsgToTF(cam_pose_.orientation, rotation);
-  tf::Vector3 vector(0, 0, 1);
-  tf::Vector3 rotated_vector = tf::quatRotate(rotation, vector);
-
   ui_.end_x_spin_box->setValue(cam_pose_.position.x);
   ui_.end_y_spin_box->setValue(cam_pose_.position.y);
   ui_.end_z_spin_box->setValue(cam_pose_.position.z);
 
+  tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, 1), cam_pose_.orientation);
   end_look_at_.x = cam_pose_.position.x - ui_.smoothness_spin_box->value() * rotated_vector.x();
   end_look_at_.y = cam_pose_.position.y - ui_.smoothness_spin_box->value() * rotated_vector.y();
   end_look_at_.z = cam_pose_.position.z - ui_.smoothness_spin_box->value() * rotated_vector.z();
@@ -148,7 +140,7 @@ view_controller_msgs::CameraPlacement PoseInterpolator::makeCameraPlacement()
 {
   view_controller_msgs::CameraPlacement cp;
   cp.eye.header.stamp = ros::Time::now();
-  cp.eye.header.frame_id = "base_link"; // TODO: make parameter
+  cp.eye.header.frame_id = "base_link";
   cp.target_frame = "base_link";
   cp.interpolation_mode = view_controller_msgs::CameraPlacement::FPS; // SPHERICAL
   cp.time_from_start = ros::Duration(0);
@@ -171,9 +163,9 @@ visualization_msgs::Marker makeBox(visualization_msgs::InteractiveMarker &msg)
   marker.scale.x = msg.scale * 0.15;
   marker.scale.y = msg.scale * 0.45;
   marker.scale.z = msg.scale * 0.25;
-  marker.color.r = 0.;
-  marker.color.g = 0.;
-  marker.color.b = 0.;
+  marker.color.r = 0.f;
+  marker.color.g = 0.f;
+  marker.color.b = 0.f;
   marker.color.a = 1.0;
   return marker;
 }
@@ -187,9 +179,9 @@ visualization_msgs::Marker makeArrow(visualization_msgs::InteractiveMarker &msg)
   marker.scale.x = msg.scale * 0.7;
   marker.scale.y = msg.scale * 0.1;
   marker.scale.z = msg.scale * 0.1;
-  marker.color.r = 1.;
-  marker.color.g = 1.;
-  marker.color.b = 1.;
+  marker.color.r = 1.f;
+  marker.color.g = 1.f;
+  marker.color.b = 1.f;
   marker.color.a = 0.6;
   return marker;
 }
@@ -218,29 +210,29 @@ visualization_msgs::InteractiveMarker PoseInterpolator::makeMarker(double x, dou
   marker.pose.orientation.w = 1.0;
   marker.pose.orientation.y = 1.0;
 
-  visualization_msgs::InteractiveMarkerControl& submitControl = makeBoxControl(marker);
-  submitControl.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;
-  submitControl.name = "set_button";
+  visualization_msgs::InteractiveMarkerControl& submit_control = makeBoxControl(marker);
+  submit_control.interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;
+  submit_control.name = "set_button";
 
-  visualization_msgs::InteractiveMarkerControl poseControl;
-  poseControl.orientation.w = 1;
-  poseControl.orientation.x = 1;
-  poseControl.orientation.y = 0;
-  poseControl.orientation.z = 0;
-  poseControl.orientation_mode = visualization_msgs::InteractiveMarkerControl::FIXED;
-  poseControl.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE;
-  marker.controls.push_back(poseControl);
+  visualization_msgs::InteractiveMarkerControl pose_control;
+  pose_control.orientation.w = 1;
+  pose_control.orientation.x = 1;
+  pose_control.orientation.y = 0;
+  pose_control.orientation.z = 0;
+  pose_control.orientation_mode = visualization_msgs::InteractiveMarkerControl::FIXED;
+  pose_control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE;
+  marker.controls.push_back(pose_control);
 
-  poseControl.orientation.x = 0;
-  poseControl.orientation.y = 1;
-  poseControl.orientation_mode = visualization_msgs::InteractiveMarkerControl::FIXED;
-  poseControl.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE;
-  marker.controls.push_back(poseControl);
+  pose_control.orientation.x = 0;
+  pose_control.orientation.y = 1;
+  pose_control.orientation_mode = visualization_msgs::InteractiveMarkerControl::FIXED;
+  pose_control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE;
+  marker.controls.push_back(pose_control);
 
-  poseControl.orientation.y = 0;
-  poseControl.orientation.z = 1;
-  poseControl.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE;
-  marker.controls.push_back(poseControl);
+  pose_control.orientation.y = 0;
+  pose_control.orientation.z = 1;
+  pose_control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE;
+  marker.controls.push_back(pose_control);
   return marker;
 }
 
@@ -257,11 +249,7 @@ void PoseInterpolator::moveCamToStart(double transition_time)
 
   if(!ui_.use_up_of_world_radio_button->isChecked())
   {
-    tf::Quaternion rotation;
-    tf::quaternionMsgToTF(start_marker_.pose.orientation, rotation);
-    tf::Vector3 vector(-1, 0, 0);
-    tf::Vector3 rotated_vector = tf::quatRotate(rotation, vector);
-
+    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(-1, 0, 0), start_marker_.pose.orientation);
     cp.up.vector.x = rotated_vector.x();
     cp.up.vector.y = rotated_vector.y();
     cp.up.vector.z = rotated_vector.z();
@@ -285,11 +273,7 @@ void PoseInterpolator::moveCamToEnd()
 
   if(!ui_.use_up_of_world_radio_button->isChecked())
   {
-    tf::Quaternion rotation;
-    tf::quaternionMsgToTF(end_marker_.pose.orientation, rotation);
-    tf::Vector3 vector(-1, 0, 0);
-    tf::Vector3 rotated_vector = tf::quatRotate(rotation, vector);
-
+    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(-1, 0, 0), end_marker_.pose.orientation);
     cp.up.vector.x = rotated_vector.x();
     cp.up.vector.y = rotated_vector.y();
     cp.up.vector.z = rotated_vector.z();
@@ -318,45 +302,36 @@ void PoseInterpolator::submit(const visualization_msgs::InteractiveMarkerFeedbac
 {
   if(feedback->marker_name == "start_marker")
   {
-    tf::Quaternion rotation;
-    tf::quaternionMsgToTF(start_marker_.pose.orientation , rotation);
-    tf::Vector3 vector(0, 0, 1);
-    tf::Vector3 rotated_vector = tf::quatRotate(rotation, vector);
-
     ui_.start_x_spin_box->setValue(start_marker_.pose.position.x);
     ui_.start_y_spin_box->setValue(start_marker_.pose.position.y);
     ui_.start_z_spin_box->setValue(start_marker_.pose.position.z);
 
+    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, 1), start_marker_.pose.orientation);
     start_look_at_.x = start_marker_.pose.position.x - ui_.smoothness_spin_box->value() * rotated_vector.x();
     start_look_at_.y = start_marker_.pose.position.y - ui_.smoothness_spin_box->value() * rotated_vector.y();
     start_look_at_.z = start_marker_.pose.position.z - ui_.smoothness_spin_box->value() * rotated_vector.z();
   }
   else
   {
-    tf::Quaternion rotation;
-    tf::quaternionMsgToTF(end_marker_.pose.orientation , rotation);
-    tf::Vector3 vector(0, 0, 1);
-    tf::Vector3 rotated_vector = tf::quatRotate(rotation, vector);
-
     ui_.end_x_spin_box->setValue(end_marker_.pose.position.x);
     ui_.end_y_spin_box->setValue(end_marker_.pose.position.y);
     ui_.end_z_spin_box->setValue(end_marker_.pose.position.z);
 
+    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, 1), end_marker_.pose.orientation);
     end_look_at_.x = end_marker_.pose.position.x - ui_.smoothness_spin_box->value() * rotated_vector.x();
     end_look_at_.y = end_marker_.pose.position.y - ui_.smoothness_spin_box->value() * rotated_vector.y();
     end_look_at_.z = end_marker_.pose.position.z - ui_.smoothness_spin_box->value() * rotated_vector.z();
   }
 }
 
-/*bool hasConfiguration() const
+tf::Vector3 PoseInterpolator::rotateVector(const tf::Vector3 vector,
+                                           const geometry_msgs::Quaternion& quat)
 {
-  return true;
+  tf::Quaternion rotation;
+  tf::quaternionMsgToTF(quat, rotation);
+  return tf::quatRotate(rotation, vector);
 }
 
-void triggerConfiguration()
-{
-  // Usually used to open a dialog to offer the user a set of configuration
-}*/
 
 } // namespace
 PLUGINLIB_EXPORT_CLASS(pose_interpolator::PoseInterpolator, rqt_gui_cpp::Plugin)

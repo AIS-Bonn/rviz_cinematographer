@@ -30,14 +30,13 @@ public:
   PoseInterpolator();
   virtual void initPlugin(qt_gui_cpp::PluginContext& context);
   virtual void shutdownPlugin();
-  virtual void saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const;
-  virtual void restoreSettings(const qt_gui_cpp::Settings& plugin_settings, const qt_gui_cpp::Settings& instance_settings);
-
-  // Comment in to signal that the plugin has a way to configure it
-  //bool hasConfiguration() const;
-  //void triggerConfiguration();
+  virtual void saveSettings(qt_gui_cpp::Settings& plugin_settings,
+                            qt_gui_cpp::Settings& instance_settings) const;
+  virtual void restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
+                               const qt_gui_cpp::Settings& instance_settings);
 
   void camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_pose);
+
 Q_SIGNALS:
   void updateRequested();
 
@@ -50,9 +49,15 @@ public slots:
 
 private:
   view_controller_msgs::CameraPlacement makeCameraPlacement();
-  visualization_msgs::InteractiveMarker makeMarker(double x=0.0, double y=0.0, double z=0.0);
+  visualization_msgs::InteractiveMarker makeMarker(double x=0.0,
+                                                   double y=0.0,
+                                                   double z=0.0);
+
   void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
   void submit(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+
+  tf::Vector3 rotateVector(const tf::Vector3 vector,
+                           const geometry_msgs::Quaternion& quat);
 
   Ui::pose_interpolator ui_;
   QWidget* widget_;
