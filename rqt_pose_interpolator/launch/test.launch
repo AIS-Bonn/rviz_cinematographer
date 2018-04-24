@@ -1,0 +1,13 @@
+<launch>
+
+    <!--<node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" required="true" args="">
+
+    </node>-->
+
+    <node name="trajectory_selector" pkg="rqt_pose_interpolator" type="interactive_trajectory_control">
+    <param name="frame_id" value="laser_map" />
+    <remap from="odometry" to="/MAV_odometry" />
+    <rosparam command="load" file="$(find rqt_pose_interpolator)/imperial-poses-2.yaml"/>
+    </node>
+
+</launch>
