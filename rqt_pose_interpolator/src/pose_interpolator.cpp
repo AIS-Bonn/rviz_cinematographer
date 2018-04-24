@@ -6,7 +6,6 @@
  */
 
 #include <rqt_pose_interpolator/pose_interpolator.h>
-#include <pluginlib/class_list_macros.h> //TODO ?
 
 namespace pose_interpolator {
 

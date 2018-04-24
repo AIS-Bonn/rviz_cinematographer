@@ -6,7 +6,6 @@
  */
 
 #include <rqt_pose_interpolator/trajectory_editor.h>
-#include <pluginlib/class_list_macros.h>
 
 namespace pose_interpolator {
 
