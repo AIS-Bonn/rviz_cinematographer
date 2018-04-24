@@ -1,20 +1,29 @@
-<library path="lib/libpose_interpolator">
+<library path="lib/libpose_interpolator_plugins">
     <class name="pose_interpolator/PoseInterpolator" type="pose_interpolator::PoseInterpolator" base_class_type="rqt_gui_cpp::Plugin">
         <description>
-            An example Python GUI plugin to create a great user interface.
+            Create simple tracking shots inside rviz.
         </description>
         <qtgui>
-            <!-- optional grouping...
             <group>
-              <label>Group</label>
+              <label>Visualization</label>
             </group>
-            <group>
-              <label>Subgroup</label>
-            </group>
-            -->
-            <label>Pose Interpolator</label>
+            <label>RViz Tracking Shots</label>
             <icon type="theme">system-help</icon>
-            <statustip>TODO statustip.</statustip>
+            <statustip>statustip.</statustip>
+        </qtgui>
+    </class>
+
+    <class name="pose_interpolator/TrajectoryEditor" type="pose_interpolator::TrajectoryEditor" base_class_type="rqt_gui_cpp::Plugin">
+        <description>
+            Generate and edit trajectories.
+        </description>
+        <qtgui>
+            <group>
+                <label>Visualization</label>
+            </group>
+            <label>Trajectory Editor</label>
+            <icon type="theme">system-help</icon>
+            <statustip>statustip.</statustip>
         </qtgui>
     </class>
 </library>

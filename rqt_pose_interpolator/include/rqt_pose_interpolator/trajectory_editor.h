@@ -1,12 +1,12 @@
 /** @file
  *
- * Simple rqt plugin to generate tracking shots.
+ * Simple rqt plugin to edit trajectories.
  *
  * @author Jan Razlaw
  */
 
-#ifndef RQT_POSE_INTERPOLATOR_POSE_INTERPOLATOR_H
-#define RQT_POSE_INTERPOLATOR_POSE_INTERPOLATOR_H
+#ifndef RQT_POSE_INTERPOLATOR_TRAJECTORY_EDITOR_H
+#define RQT_POSE_INTERPOLATOR_TRAJECTORY_EDITOR_H
 
 #include <ros/ros.h>
 
@@ -23,19 +23,19 @@
 
 #include <QWidget>
 
-#include "ui_pose_interpolator.h"
+#include "ui_trajectory_editor.h"
 
 namespace pose_interpolator {
 
 /**
  * @brief Manipulates the rviz camera.
  */
-class PoseInterpolator : public rqt_gui_cpp::Plugin
+class TrajectoryEditor : public rqt_gui_cpp::Plugin
 {
   Q_OBJECT
 public:
   /** @brief Constructor. */
-  PoseInterpolator();
+  TrajectoryEditor();
 
   /**
    * @brief Sets up subscribers and publishers and connects GUI to functions.
@@ -136,7 +136,7 @@ private:
 
 
   /** @brief Ui object - connection to GUI. */
-  Ui::pose_interpolator ui_;
+  Ui::trajectory_editor ui_;
   /** @brief Widget. */
   QWidget* widget_;
 
@@ -164,4 +164,4 @@ private:
 };
 } // namespace
 
-#endif //RQT_POSE_INTERPOLATOR_POSE_INTERPOLATOR_H
+#endif //RQT_POSE_INTERPOLATOR_TRAJECTORY_EDITOR_H

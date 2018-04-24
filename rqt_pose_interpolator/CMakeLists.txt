@@ -58,10 +58,12 @@ include_directories(
 
 set(UI_FILES
     src/pose_interpolator.ui
+    src/trajectory_editor.ui
 )
 
 set(H_FILES
     include/rqt_pose_interpolator/pose_interpolator.h
+    include/rqt_pose_interpolator/trajectory_editor.h
 )
 
 if(USE_QT5)
@@ -72,23 +74,31 @@ else()
     qt4_wrap_cpp(MOC_FILES ${H_FILES})
 endif()
 
-add_library(pose_interpolator
+add_library(pose_interpolator_plugins
     ${UIC_FILES}
     ${MOC_FILES}
+    src/plugins.cpp
     src/pose_interpolator.cpp
+    src/trajectory_editor.cpp
 )
 
-target_link_libraries(pose_interpolator
+target_link_libraries(pose_interpolator_plugins
     ${catkin_LIBRARIES}
     ${QT_LIBRARIES}
 )
+
+add_executable( interactive_trajectory_control src/interactive_trajectory_control_node.cpp )
+target_link_libraries( interactive_trajectory_control ${catkin_LIBRARIES} )
+
 
 #############
 ## Install ##
 #############
 
-install(TARGETS pose_interpolator
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+install(TARGETS pose_interpolator_plugins
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(FILES plugin.xml
@@ -103,11 +113,3 @@ FILE(GLOB_RECURSE all_headers_for_ides
         ${CMAKE_SOURCE_DIR}/**/*.hpp
         ${CMAKE_SOURCE_DIR}/**/*.h)
 ADD_CUSTOM_TARGET(ide_includes SOURCES ${all_headers_for_ides})
-
-set(my_bla "${CATKIN_DEVEL_PREFIX}/../build/${PROJECT_NAME}")
-
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()

@@ -1,29 +1,29 @@
 /** @file
  *
- * Simple rqt plugin to generate tracking shots.
+ * Simple rqt plugin to edit trajectories.
  *
  * @author Jan Razlaw
  */
 
-#include <rqt_pose_interpolator/pose_interpolator.h>
-#include <pluginlib/class_list_macros.h> //TODO ?
+#include <rqt_pose_interpolator/trajectory_editor.h>
+#include <pluginlib/class_list_macros.h>
 
 namespace pose_interpolator {
 
-PoseInterpolator::PoseInterpolator()
+TrajectoryEditor::TrajectoryEditor()
 : rqt_gui_cpp::Plugin()
   , widget_(0)
 {
   cam_pose_.orientation.w = 1.0;
 
   // give QObjects reasonable names
-  setObjectName("PoseInterpolator");
+  setObjectName("TrajectoryEditor");
 }
 
-void PoseInterpolator::initPlugin(qt_gui_cpp::PluginContext& context)
+void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   ros::NodeHandle ph("~");
-  camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &PoseInterpolator::camPoseCallback, this);
+  camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
   camera_placement_pub_ = ph.advertise<view_controller_msgs::CameraPlacement>("/rviz/camera_placement", 1);
 
   // access standalone command line arguments
@@ -56,38 +56,38 @@ void PoseInterpolator::initPlugin(qt_gui_cpp::PluginContext& context)
 
   // connect markers to callback functions
   server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>("trajectory");
-  server_->insert(start_marker_, boost::bind( &PoseInterpolator::processFeedback, this, _1));
+  server_->insert(start_marker_, boost::bind( &TrajectoryEditor::processFeedback, this, _1));
   menu_handler_.apply(*server_, start_marker_.name);
-  server_->insert(end_marker_, boost::bind( &PoseInterpolator::processFeedback, this, _1));
+  server_->insert(end_marker_, boost::bind( &TrajectoryEditor::processFeedback, this, _1));
   menu_handler_.apply(*server_, end_marker_.name);
 
   server_->applyChanges();
 }
 
-void PoseInterpolator::shutdownPlugin()
+void TrajectoryEditor::shutdownPlugin()
 {
   camera_pose_sub_.shutdown();
   camera_placement_pub_.shutdown();
 }
 
-void PoseInterpolator::saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const
+void TrajectoryEditor::saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const
 {
   // TODO save intrinsic configuration, usually using:
   // instance_settings.setValue(k, v)
 }
 
-void PoseInterpolator::restoreSettings(const qt_gui_cpp::Settings& plugin_settings, const qt_gui_cpp::Settings& instance_settings)
+void TrajectoryEditor::restoreSettings(const qt_gui_cpp::Settings& plugin_settings, const qt_gui_cpp::Settings& instance_settings)
 {
   // TODO restore intrinsic configuration, usually using:
   // v = instance_settings.value(k)
 }
 
-void PoseInterpolator::camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_pose)
+void TrajectoryEditor::camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_pose)
 {
   cam_pose_ = geometry_msgs::Pose(*cam_pose);
 }
 
-void PoseInterpolator::setStartToCurrentCam()
+void TrajectoryEditor::setStartToCurrentCam()
 {
   ui_.messages_label->setText(QString("Message: "));
 
@@ -113,7 +113,7 @@ void PoseInterpolator::setStartToCurrentCam()
   start_look_at_.z = cam_pose_.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 }
 
-void PoseInterpolator::setEndToCurrentCam()
+void TrajectoryEditor::setEndToCurrentCam()
 {
   ui_.messages_label->setText(QString("Message: "));
 
@@ -139,7 +139,7 @@ void PoseInterpolator::setEndToCurrentCam()
   end_look_at_.z = cam_pose_.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 }
 
-void PoseInterpolator::setMarkerFrames()
+void TrajectoryEditor::setMarkerFrames()
 {
   start_marker_.header.frame_id = ui_.frame_text_edit->toPlainText().toStdString();
   end_marker_.header.frame_id = ui_.frame_text_edit->toPlainText().toStdString();
@@ -150,7 +150,7 @@ void PoseInterpolator::setMarkerFrames()
   server_->applyChanges();
 }
 
-view_controller_msgs::CameraPlacement PoseInterpolator::makeCameraPlacement()
+view_controller_msgs::CameraPlacement TrajectoryEditor::makeCameraPlacement()
 {
   view_controller_msgs::CameraPlacement cp;
   cp.eye.header.stamp = ros::Time::now();
@@ -168,7 +168,7 @@ view_controller_msgs::CameraPlacement PoseInterpolator::makeCameraPlacement()
   return cp;
 }
 
-visualization_msgs::Marker PoseInterpolator::makeBox(visualization_msgs::InteractiveMarker &msg)
+visualization_msgs::Marker TrajectoryEditor::makeBox(visualization_msgs::InteractiveMarker &msg)
 {
   visualization_msgs::Marker marker;
   marker.type = visualization_msgs::Marker::CUBE;
@@ -184,7 +184,7 @@ visualization_msgs::Marker PoseInterpolator::makeBox(visualization_msgs::Interac
   return marker;
 }
 
-visualization_msgs::Marker PoseInterpolator::makeArrow(visualization_msgs::InteractiveMarker &msg)
+visualization_msgs::Marker TrajectoryEditor::makeArrow(visualization_msgs::InteractiveMarker &msg)
 {
   visualization_msgs::Marker marker;
   marker.type = visualization_msgs::Marker::ARROW;
@@ -200,7 +200,7 @@ visualization_msgs::Marker PoseInterpolator::makeArrow(visualization_msgs::Inter
   return marker;
 }
 
-void PoseInterpolator::makeBoxControl(visualization_msgs::InteractiveMarker& msg)
+void TrajectoryEditor::makeBoxControl(visualization_msgs::InteractiveMarker& msg)
 {
   visualization_msgs::InteractiveMarkerControl control;
   control.always_visible = true;
@@ -209,7 +209,7 @@ void PoseInterpolator::makeBoxControl(visualization_msgs::InteractiveMarker& msg
   msg.controls.push_back(control);
 }
 
-visualization_msgs::InteractiveMarker PoseInterpolator::makeMarker(double x, double y, double z)
+visualization_msgs::InteractiveMarker TrajectoryEditor::makeMarker(double x, double y, double z)
 {
   visualization_msgs::InteractiveMarker marker;
   marker.header.frame_id = ui_.frame_text_edit->toPlainText().toStdString();
@@ -247,12 +247,12 @@ visualization_msgs::InteractiveMarker PoseInterpolator::makeMarker(double x, dou
 }
 
 
-void PoseInterpolator::moveCamToStart()
+void TrajectoryEditor::moveCamToStart()
 {
   moveCamToStart(ui_.transition_time_spin_box->value());
 }
 
-void PoseInterpolator::moveCamToStart(double transition_time)
+void TrajectoryEditor::moveCamToStart(double transition_time)
 {
   view_controller_msgs::CameraPlacement cp = makeCameraPlacement();
   cp.time_from_start = ros::Duration(transition_time);
@@ -277,7 +277,7 @@ void PoseInterpolator::moveCamToStart(double transition_time)
   camera_placement_pub_.publish(cp);
 }
 
-void PoseInterpolator::moveCamToEnd()
+void TrajectoryEditor::moveCamToEnd()
 {
   view_controller_msgs::CameraPlacement cp = makeCameraPlacement();
   cp.time_from_start = ros::Duration(ui_.transition_time_spin_box->value());
@@ -302,7 +302,7 @@ void PoseInterpolator::moveCamToEnd()
   camera_placement_pub_.publish(cp);
 }
 
-void PoseInterpolator::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
+void TrajectoryEditor::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   if(feedback->marker_name == "start_marker")
   {
@@ -332,7 +332,7 @@ void PoseInterpolator::processFeedback(const visualization_msgs::InteractiveMark
   }
 }
 
-tf::Vector3 PoseInterpolator::rotateVector(const tf::Vector3 vector,
+tf::Vector3 TrajectoryEditor::rotateVector(const tf::Vector3 vector,
                                            const geometry_msgs::Quaternion& quat)
 {
   tf::Quaternion rotation;
