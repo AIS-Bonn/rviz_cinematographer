@@ -15,6 +15,7 @@
 
 #include <geometry_msgs/Pose.h>
 #include <view_controller_msgs/CameraPlacement.h>
+#include <nav_msgs/Path.h>
 
 #include <interactive_markers/interactive_marker_server.h>
 #include <interactive_markers/menu_handler.h>
@@ -33,7 +34,9 @@ namespace pose_interpolator {
  */
 class TrajectoryEditor : public rqt_gui_cpp::Plugin
 {
-  Q_OBJECT
+  typedef std::list<visualization_msgs::InteractiveMarker> MarkerList;
+
+Q_OBJECT
 public:
   /** @brief Constructor. */
   TrajectoryEditor();
@@ -131,6 +134,16 @@ private:
   tf::Vector3 rotateVector(const tf::Vector3 vector,
                            const geometry_msgs::Quaternion& quat);
 
+  visualization_msgs::InteractiveMarker makeTrajectory();
+  void updateTrajectory();
+  void submit(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+  void addWaypointHere(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+  void addWaypointBefore(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+  void addWaypointBehind(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+  void removeWaypoint(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+  void loadParams(ros::NodeHandle& nh);
+
+
 
   /** @brief Ui object - connection to GUI. */
   Ui::trajectory_editor ui_;
@@ -139,6 +152,8 @@ private:
 
   /** @brief Publishes the camera placement. */
   ros::Publisher camera_placement_pub_;
+  /** @brief //TODO */
+  ros::Publisher view_poses_array_pub_;
   /** @brief Subscribes to the camera pose. */
   ros::Subscriber camera_pose_sub_;
 
@@ -158,6 +173,8 @@ private:
   geometry_msgs::Point start_look_at_;
   /** @brief Focus point of the end pose. */
   geometry_msgs::Point end_look_at_;
+
+  MarkerList markers_;
 };
 } // namespace
 

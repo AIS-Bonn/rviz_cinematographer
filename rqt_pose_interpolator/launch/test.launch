@@ -1,13 +1,12 @@
 <launch>
 
-    <!--<node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" required="true" args="">
+    <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" required="true" args="">
+        <param name="/trajectory_editor/frame_id" value="laser_map" />
 
-    </node>-->
-
-    <node name="trajectory_selector" pkg="rqt_pose_interpolator" type="interactive_trajectory_control">
-    <param name="frame_id" value="laser_map" />
-    <remap from="odometry" to="/MAV_odometry" />
-    <rosparam command="load" file="$(find rqt_pose_interpolator)/trajectories/example_trajectory.yaml"/>
     </node>
+
+    <!--<node name="trajectory_selector" pkg="rqt_pose_interpolator" type="interactive_trajectory_control">
+    <rosparam command="load" file="$(find rqt_pose_interpolator)/trajectories/example_trajectory.yaml"/>
+    </node>-->
 
 </launch>

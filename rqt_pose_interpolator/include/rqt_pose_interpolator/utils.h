@@ -71,6 +71,8 @@ inline void makeBoxControl(visualization_msgs::InteractiveMarker& marker)
   control.markers.push_back(makeBox(marker.scale));
   control.markers.push_back(makeArrow(marker.scale));
   marker.controls.push_back(control);
+  marker.controls.back().interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;
+  marker.controls.back().name = "submit_button";
 }
 
 }

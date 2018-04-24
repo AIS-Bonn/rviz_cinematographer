@@ -87,10 +87,6 @@ target_link_libraries(pose_interpolator_plugins
     ${QT_LIBRARIES}
 )
 
-add_executable( interactive_trajectory_control src/interactive_trajectory_control_node.cpp )
-target_link_libraries( interactive_trajectory_control ${catkin_LIBRARIES} )
-
-
 #############
 ## Install ##
 #############
