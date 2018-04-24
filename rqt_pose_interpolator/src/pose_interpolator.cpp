@@ -14,27 +14,6 @@ PoseInterpolator::PoseInterpolator()
 : rqt_gui_cpp::Plugin()
   , widget_(0)
 {
-  // set up markers
-  start_marker_ = makeMarker();
-  start_marker_.name = "start_marker";
-  start_marker_.description = "Start Marker";
-  start_marker_.pose.orientation.w = 1.0;
-  start_marker_.controls[0].markers[0].color.g = 1.f;
-  end_marker_ = makeMarker(5.0, 0.0, 0.0);
-  end_marker_.name = "end_marker";
-  end_marker_.description = "End Marker";
-  end_marker_.pose.orientation.w = 1.0;
-  end_marker_.controls[0].markers[0].color.r = 1.f;
-
-  // connect markers to callback functions
-  server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>("trajectory");
-  server_->insert(start_marker_, boost::bind( &PoseInterpolator::processFeedback, this, _1));
-  menu_handler_.apply(*server_, start_marker_.name);
-  server_->insert(end_marker_, boost::bind( &PoseInterpolator::processFeedback, this, _1));
-  menu_handler_.apply(*server_, end_marker_.name);
-
-  server_->applyChanges();
-
   cam_pose_.orientation.w = 1.0;
 
   // give QObjects reasonable names
@@ -58,9 +37,31 @@ void PoseInterpolator::initPlugin(qt_gui_cpp::PluginContext& context)
   connect(ui_.move_to_end_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToEnd()));
   connect(ui_.set_start_to_cam_button, SIGNAL(clicked(bool)), this, SLOT(setStartToCurrentCam()));
   connect(ui_.set_end_to_cam_button, SIGNAL(clicked(bool)), this, SLOT(setEndToCurrentCam()));
+  connect(ui_.frame_text_edit, SIGNAL(textChanged()), this, SLOT(setMarkerFrames()));
 
   // add widget to the user interface
   context.addWidget(widget_);
+
+  // set up markers
+  start_marker_ = makeMarker();
+  start_marker_.name = "start_marker";
+  start_marker_.description = "Start Marker";
+  start_marker_.pose.orientation.w = 1.0;
+  start_marker_.controls[0].markers[0].color.g = 1.f;
+  end_marker_ = makeMarker(5.0, 0.0, 0.0);
+  end_marker_.name = "end_marker";
+  end_marker_.description = "End Marker";
+  end_marker_.pose.orientation.w = 1.0;
+  end_marker_.controls[0].markers[0].color.r = 1.f;
+
+  // connect markers to callback functions
+  server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>("trajectory");
+  server_->insert(start_marker_, boost::bind( &PoseInterpolator::processFeedback, this, _1));
+  menu_handler_.apply(*server_, start_marker_.name);
+  server_->insert(end_marker_, boost::bind( &PoseInterpolator::processFeedback, this, _1));
+  menu_handler_.apply(*server_, end_marker_.name);
+
+  server_->applyChanges();
 }
 
 void PoseInterpolator::shutdownPlugin()
@@ -138,12 +139,23 @@ void PoseInterpolator::setEndToCurrentCam()
   end_look_at_.z = cam_pose_.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 }
 
+void PoseInterpolator::setMarkerFrames()
+{
+  start_marker_.header.frame_id = ui_.frame_text_edit->toPlainText().toStdString();
+  end_marker_.header.frame_id = ui_.frame_text_edit->toPlainText().toStdString();
+  server_->erase("start_marker");
+  server_->erase("end_marker");
+  server_->insert(start_marker_);
+  server_->insert(end_marker_);
+  server_->applyChanges();
+}
+
 view_controller_msgs::CameraPlacement PoseInterpolator::makeCameraPlacement()
 {
   view_controller_msgs::CameraPlacement cp;
   cp.eye.header.stamp = ros::Time::now();
-  cp.eye.header.frame_id = "base_link";
-  cp.target_frame = "base_link";
+  cp.eye.header.frame_id = ui_.frame_text_edit->toPlainText().toStdString();
+  cp.target_frame = ui_.frame_text_edit->toPlainText().toStdString();
   cp.interpolation_mode = view_controller_msgs::CameraPlacement::FPS; // SPHERICAL
   cp.time_from_start = ros::Duration(0);
 
@@ -197,11 +209,10 @@ void makeBoxControl(visualization_msgs::InteractiveMarker& msg)
   msg.controls.push_back(control);
 }
 
-
 visualization_msgs::InteractiveMarker PoseInterpolator::makeMarker(double x, double y, double z)
 {
   visualization_msgs::InteractiveMarker marker;
-  marker.header.frame_id = "base_link";
+  marker.header.frame_id = ui_.frame_text_edit->toPlainText().toStdString();
   marker.name = "marker";
   marker.description = "Marker";
   marker.scale = 2.22;

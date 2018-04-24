@@ -92,6 +92,8 @@ public slots:
   void setStartToCurrentCam();
   /** @brief Sets end pose to current pose of rviz camera.*/
   void setEndToCurrentCam();
+  /** @brief Sets the frame_id of the markers.*/
+  void setMarkerFrames();
 
 private:
   /**
