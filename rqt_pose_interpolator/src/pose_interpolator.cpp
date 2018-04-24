@@ -168,47 +168,6 @@ view_controller_msgs::CameraPlacement PoseInterpolator::makeCameraPlacement()
   return cp;
 }
 
-visualization_msgs::Marker PoseInterpolator::makeBox(visualization_msgs::InteractiveMarker &msg)
-{
-  visualization_msgs::Marker marker;
-  marker.type = visualization_msgs::Marker::CUBE;
-  marker.pose.orientation.w = 1.;
-  marker.pose.orientation.y = 1.;
-  marker.scale.x = msg.scale * 0.15;
-  marker.scale.y = msg.scale * 0.45;
-  marker.scale.z = msg.scale * 0.25;
-  marker.color.r = 0.f;
-  marker.color.g = 0.f;
-  marker.color.b = 0.f;
-  marker.color.a = 1.0;
-  return marker;
-}
-
-visualization_msgs::Marker PoseInterpolator::makeArrow(visualization_msgs::InteractiveMarker &msg)
-{
-  visualization_msgs::Marker marker;
-  marker.type = visualization_msgs::Marker::ARROW;
-  marker.pose.orientation.w = 1.;
-  marker.pose.orientation.y = 1.;
-  marker.scale.x = msg.scale * 0.7;
-  marker.scale.y = msg.scale * 0.1;
-  marker.scale.z = msg.scale * 0.1;
-  marker.color.r = 1.f;
-  marker.color.g = 1.f;
-  marker.color.b = 1.f;
-  marker.color.a = 0.6;
-  return marker;
-}
-
-void PoseInterpolator::makeBoxControl(visualization_msgs::InteractiveMarker& msg)
-{
-  visualization_msgs::InteractiveMarkerControl control;
-  control.always_visible = true;
-  control.markers.push_back(makeBox(msg));
-  control.markers.push_back(makeArrow(msg));
-  msg.controls.push_back(control);
-}
-
 visualization_msgs::InteractiveMarker PoseInterpolator::makeMarker(double x, double y, double z)
 {
   visualization_msgs::InteractiveMarker marker;

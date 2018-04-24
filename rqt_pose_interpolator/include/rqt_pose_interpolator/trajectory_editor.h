@@ -23,6 +23,7 @@
 
 #include <QWidget>
 
+#include <rqt_pose_interpolator/utils.h>
 #include "ui_trajectory_editor.h"
 
 namespace pose_interpolator {
@@ -129,10 +130,6 @@ private:
    */
   tf::Vector3 rotateVector(const tf::Vector3 vector,
                            const geometry_msgs::Quaternion& quat);
-
-  void makeBoxControl(visualization_msgs::InteractiveMarker& msg);
-  visualization_msgs::Marker makeArrow(visualization_msgs::InteractiveMarker &msg);
-  visualization_msgs::Marker makeBox(visualization_msgs::InteractiveMarker &msg);
 
 
   /** @brief Ui object - connection to GUI. */
