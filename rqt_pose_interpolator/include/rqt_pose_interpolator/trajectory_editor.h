@@ -159,6 +159,7 @@ private:
   void removeWaypoint(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
   void loadParams(ros::NodeHandle& nh,
                   const std::string& param_name);
+  visualization_msgs::InteractiveMarker& getMarkerByName(const std::string& marker_name);
   void safeTrajectoryToFile(const std::string& file_path);
 
 

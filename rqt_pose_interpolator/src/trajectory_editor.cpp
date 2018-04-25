@@ -29,8 +29,6 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   std::string frame_id_param_name = "frame_id";
   std::string test;
   getParam<std::string>(ph, frame_id_param_name, test, "local_map");
-  std::cout << "test should be laser_map and is " << test << std::endl;
-
 
   // access standalone command line arguments
   QStringList argv = context.argv();
@@ -114,12 +112,12 @@ visualization_msgs::InteractiveMarker TrajectoryEditor::makeTrajectory()
   visualization_msgs::Marker marker;
   marker.type = visualization_msgs::Marker::LINE_STRIP;
   marker.scale.x = 0.1;
-  marker.color.r = 1.;
-  marker.color.g = 0.;
-  marker.color.b = 0.;
+  marker.color.r = 1.f;
+  marker.color.g = 0.f;
+  marker.color.b = 0.f;
   marker.color.a = 1.0;
 
-  control.always_visible = true;
+  control.always_visible = 0;
   control.markers.push_back( marker );
 
   int_marker.header.frame_id = ui_.frame_text_edit->toPlainText().toStdString();
@@ -241,8 +239,8 @@ void TrajectoryEditor::addWaypointHere(const visualization_msgs::InteractiveMark
 
   size_t count = 0;
   for( MarkerList::iterator it = markers_.begin(); it != markers_.end(); ++it ) {
-    it->marker.name = std::string( "wp" ) + boost::lexical_cast< std::string >( count );
-    it->marker.description = std::string( "WP ") + boost::lexical_cast< std::string >( count ) + std::string( "\n(click to submit)" );
+    it->marker.name = std::string( "wp" ) + std::to_string( count );
+    it->marker.description = std::string( "WP ") + std::to_string( count ) + std::string( "\n(click to submit)" );
     count++;
     server_->insert(it->marker, boost::bind( &TrajectoryEditor::processFeedback, this, _1));
     menu_handler_.apply( *server_, it->marker.name );
@@ -291,8 +289,8 @@ void TrajectoryEditor::addWaypointBefore(const visualization_msgs::InteractiveMa
 
   size_t count = 0;
   for( MarkerList::iterator it = markers_.begin(); it != markers_.end(); ++it ) {
-    it->marker.name = std::string( "wp" ) + boost::lexical_cast< std::string >( count );
-    it->marker.description = std::string( "WP ") + boost::lexical_cast< std::string >( count ) + std::string( "\n(click to submit)" );
+    it->marker.name = std::string( "wp" ) + std::to_string( count );
+    it->marker.description = std::string( "WP ") + std::to_string( count ) + std::string( "\n(click to submit)" );
     count++;
     server_->insert(it->marker, boost::bind( &TrajectoryEditor::processFeedback, this, _1));
     menu_handler_.apply( *server_, it->marker.name );
@@ -342,8 +340,8 @@ void TrajectoryEditor::addWaypointBehind(const visualization_msgs::InteractiveMa
 
   size_t count = 0;
   for( MarkerList::iterator it = markers_.begin(); it != markers_.end(); ++it ) {
-    it->marker.name = std::string( "wp" ) + boost::lexical_cast< std::string >( count );
-    it->marker.description = std::string( "WP ") + boost::lexical_cast< std::string >( count ) + std::string( "\n(click to submit)" );
+    it->marker.name = std::string( "wp" ) + std::to_string( count );
+    it->marker.description = std::string( "WP ") + std::to_string( count ) + std::string( "\n(click to submit)" );
     count++;
     server_->insert(it->marker, boost::bind( &TrajectoryEditor::processFeedback, this, _1));
     menu_handler_.apply( *server_, it->marker.name );
@@ -376,8 +374,8 @@ void TrajectoryEditor::removeWaypoint(const visualization_msgs::InteractiveMarke
 
   size_t count = 0;
   for( MarkerList::iterator it = markers_.begin(); it != markers_.end(); ++it ) {
-    it->marker.name = std::string( "wp" ) + boost::lexical_cast< std::string >( count );
-    it->marker.description = std::string( "WP ") + boost::lexical_cast< std::string >( count ) + std::string( "\n(click to submit)" );
+    it->marker.name = std::string( "wp" ) + std::to_string( count );
+    it->marker.description = std::string( "WP ") + std::to_string( count ) + std::string( "\n(click to submit)" );
     count++;
     server_->insert(it->marker, boost::bind( &TrajectoryEditor::processFeedback, this, _1));
     menu_handler_.apply( *server_, it->marker.name );
@@ -414,8 +412,8 @@ void TrajectoryEditor::loadParams(ros::NodeHandle& nh,
 
     wp_marker.pose = p;
 
-    wp_marker.name = std::string( "wp" ) + boost::lexical_cast< std::string >( i );
-    wp_marker.description = std::string( "WP ") + boost::lexical_cast< std::string >( i ) + std::string( "\n(click to submit)" );
+    wp_marker.name = std::string( "wp" ) + std::to_string( i );
+    wp_marker.description = std::string( "WP ") + std::to_string( i ) + std::string( "\n(click to submit)" );
 
 
     markers_.emplace_back(TimedMarker(wp_marker, v["transition_time"]));
@@ -602,8 +600,6 @@ void TrajectoryEditor::processFeedback(const visualization_msgs::InteractiveMark
 {
   if(feedback->marker_name == "start_marker")
   {
-    ROS_INFO("###iwas here - start_marker");
-
     start_marker_.pose = feedback->pose;
 
     ui_.start_x_spin_box->setValue(start_marker_.pose.position.x);
@@ -615,18 +611,17 @@ void TrajectoryEditor::processFeedback(const visualization_msgs::InteractiveMark
     start_look_at_.y = start_marker_.pose.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
     start_look_at_.z = start_marker_.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
   }
-  else if(feedback->marker_name == "end_marker")
+
+  visualization_msgs::InteractiveMarker marker;
+
+  if(feedback->event_type == visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP
+     && server_->get(feedback->marker_name, marker))
   {
-    end_marker_.pose = feedback->pose;
-
-    ui_.end_x_spin_box->setValue(end_marker_.pose.position.x);
-    ui_.end_y_spin_box->setValue(end_marker_.pose.position.y);
-    ui_.end_z_spin_box->setValue(end_marker_.pose.position.z);
-
-    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), end_marker_.pose.orientation);
-    end_look_at_.x = end_marker_.pose.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
-    end_look_at_.y = end_marker_.pose.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
-    end_look_at_.z = end_marker_.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
+    marker.pose = feedback->pose;
+    server_->erase( feedback->marker_name );
+    server_->insert( marker );
+    server_->applyChanges();
+    getMarkerByName(feedback->marker_name).pose = feedback->pose;
   }
   updateTrajectory();
 
@@ -638,6 +633,15 @@ tf::Vector3 TrajectoryEditor::rotateVector(const tf::Vector3& vector,
   tf::Quaternion rotation;
   tf::quaternionMsgToTF(quat, rotation);
   return tf::quatRotate(rotation, vector);
+}
+
+visualization_msgs::InteractiveMarker& TrajectoryEditor::getMarkerByName(const std::string& marker_name)
+{
+  for(auto& marker : markers_)
+  {
+    if(marker.marker.name == marker_name)
+      return marker.marker;
+  }
 }
 
 
