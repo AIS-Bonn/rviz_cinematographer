@@ -150,17 +150,57 @@ private:
   tf::Vector3 rotateVector(const tf::Vector3& vector,
                            const geometry_msgs::Quaternion& quat);
 
-  visualization_msgs::InteractiveMarker makeTrajectory();
+  /**
+   * @brief Reconstructs trajectory from current markers.
+   */
   void updateTrajectory();
-  void submit(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
-  void addWaypointHere(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
-  void addWaypointBefore(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
-  void addWaypointBehind(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
-  void removeWaypoint(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+
+  /**
+   * @brief Safes poses and times of markers to yaml file.
+   *
+   * @param[in] file_path   path to the file.
+   */
+  void safeTrajectoryToFile(const std::string& file_path);
+
+  /**
+   * @brief Publishes the trajectory that is defined by the markers.
+   *
+   * @param[in] feedback    feedback from selected marker.
+   */
+  void publishTrajectory(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+
+  /**
+   * @brief Adds a marker between the selected marker and the one before.
+   *
+   * @param[in] feedback    feedback from selected marker.
+   */
+  void addMarkerBefore(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+
+  /**
+   * @brief Adds a marker between the selected marker and the one after.
+   *
+   * @param[in] feedback    feedback from selected marker.
+   */
+  void addMarkerBehind(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+
+  /**
+   * @brief Removes the selected marker.
+   *
+   * @param[in] feedback    feedback from selected marker.
+   */
+  void removeMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+
+  /**
+   * @brief Saves markers in server.
+   *
+   * @param[in] markers     markers.
+   */
+  void fillServer(MarkerList& markers);
+
+
   void loadParams(ros::NodeHandle& nh,
                   const std::string& param_name);
   visualization_msgs::InteractiveMarker& getMarkerByName(const std::string& marker_name);
-  void safeTrajectoryToFile(const std::string& file_path);
 
 
 
