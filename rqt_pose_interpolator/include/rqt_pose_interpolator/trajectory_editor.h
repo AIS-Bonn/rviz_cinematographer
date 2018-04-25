@@ -29,12 +29,25 @@
 
 namespace pose_interpolator {
 
+struct InteractiveMarkerWithTime
+{
+  InteractiveMarkerWithTime(const visualization_msgs::InteractiveMarker& input_marker, const double time)
+  : marker(input_marker)
+    , transition_time(time)
+  {
+  }
+
+  visualization_msgs::InteractiveMarker marker;
+  double transition_time;
+};
+
 /**
  * @brief Manipulates the rviz camera.
  */
 class TrajectoryEditor : public rqt_gui_cpp::Plugin
 {
-  typedef std::list<visualization_msgs::InteractiveMarker> MarkerList;
+  typedef InteractiveMarkerWithTime TimedMarker;
+  typedef std::list<TimedMarker> MarkerList;
 
 Q_OBJECT
 public:
@@ -131,7 +144,7 @@ private:
    * @param[in] quat    input rotation.
    * @return the rotated vector.
    */
-  tf::Vector3 rotateVector(const tf::Vector3 vector,
+  tf::Vector3 rotateVector(const tf::Vector3& vector,
                            const geometry_msgs::Quaternion& quat);
 
   visualization_msgs::InteractiveMarker makeTrajectory();
@@ -141,7 +154,8 @@ private:
   void addWaypointBefore(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
   void addWaypointBehind(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
   void removeWaypoint(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
-  void loadParams(ros::NodeHandle& nh);
+  void loadParams(ros::NodeHandle& nh,
+                  const std::string& param_name);
 
 
 
