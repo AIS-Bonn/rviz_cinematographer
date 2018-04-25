@@ -8,6 +8,8 @@
 #ifndef RQT_POSE_INTERPOLATOR_UTILS_H
 #define RQT_POSE_INTERPOLATOR_UTILS_H
 
+#include <ros/node_handle.h>
+
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/InteractiveMarker.h>
 #include <visualization_msgs/InteractiveMarkerControl.h>
@@ -73,6 +75,30 @@ inline void makeBoxControl(visualization_msgs::InteractiveMarker& marker)
   marker.controls.push_back(control);
   marker.controls.back().interaction_mode = visualization_msgs::InteractiveMarkerControl::BUTTON;
   marker.controls.back().name = "submit_button";
+}
+
+inline bool getFullParamName(const ros::NodeHandle& nh,
+                             std::string& param_name)
+{
+  std::vector<std::string> keys;
+  nh.getParamNames(keys);
+  for(auto& key : keys)
+  {
+    if (key.find(param_name) != std::string::npos) {
+      param_name = key;
+      return true;
+    }
+  }
+  return false;
+}
+
+template<typename T> inline bool getParam(const ros::NodeHandle& nh,
+                     std::string& param_name,
+                     T& param,
+                     T default_param)
+{
+  getFullParamName(nh, param_name);
+  return nh.param< T >(param_name, param, default_param);
 }
 
 }
