@@ -178,6 +178,7 @@ void TrajectoryEditor::safeTrajectoryToFile(const std::string& file_path)
   file << "poses:\n";
   for(const auto& marker : markers_)
   {
+    file << std::fixed << std::setprecision(6);
     file << "  -\n";
     file << "    position:\n";
     file << "      x: " << marker.marker.pose.position.x << "\n";
