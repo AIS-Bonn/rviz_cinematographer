@@ -8,7 +8,10 @@
 #ifndef RQT_POSE_INTERPOLATOR_TRAJECTORY_EDITOR_H
 #define RQT_POSE_INTERPOLATOR_TRAJECTORY_EDITOR_H
 
+#include <fstream>
+
 #include <ros/ros.h>
+#include <ros/package.h>
 
 #include <tf/tf.h>
 #include <tf/transform_datatypes.h>
@@ -156,6 +159,7 @@ private:
   void removeWaypoint(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
   void loadParams(ros::NodeHandle& nh,
                   const std::string& param_name);
+  void safeTrajectoryToFile(const std::string& file_path);
 
 
 

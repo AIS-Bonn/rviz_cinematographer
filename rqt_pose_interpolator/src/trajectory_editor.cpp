@@ -173,6 +173,28 @@ void TrajectoryEditor::updateTrajectory()
 //  //ROS_ERROR( "Done" );
 //}
 
+void TrajectoryEditor::safeTrajectoryToFile(const std::string& file_path)
+{
+  std::ofstream file;
+  file.open(file_path, std::ofstream::trunc);
+  file << "poses:\n";
+  for(const auto& marker : markers_)
+  {
+    file << "  -\n";
+    file << "    position:\n";
+    file << "      x: " << marker.marker.pose.position.x << "\n";
+    file << "      y: " << marker.marker.pose.position.y << "\n";
+    file << "      z: " << marker.marker.pose.position.z << "\n";
+    file << "    orientation:\n";
+    file << "      x: " << marker.marker.pose.orientation.x << "\n";
+    file << "      y: " << marker.marker.pose.orientation.y << "\n";
+    file << "      z: " << marker.marker.pose.orientation.z << "\n";
+    file << "      w: " << marker.marker.pose.orientation.w << "\n";
+    file << "    transition_time: " << marker.transition_time << "\n";
+  }
+  file.close();
+}
+
 void TrajectoryEditor::submit(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   ROS_INFO_STREAM( "button click");
@@ -189,7 +211,8 @@ void TrajectoryEditor::submit(const visualization_msgs::InteractiveMarkerFeedbac
     path.poses.push_back( waypoint );
   }
 
-  //TODO struct for pose + transition time
+  std::string file_path = ros::package::getPath("rqt_pose_interpolator")  + "/trajectories/example_trajectory.yaml";
+  safeTrajectoryToFile(file_path);
 
   view_poses_array_pub_.publish( path );
 }
