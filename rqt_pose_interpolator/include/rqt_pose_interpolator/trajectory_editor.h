@@ -26,9 +26,12 @@
 #include <rqt_gui_cpp/plugin.h>
 
 #include <QWidget>
+#include <QFileDialog>
 
 #include <rqt_pose_interpolator/utils.h>
 #include "ui_trajectory_editor.h"
+
+#include <mutex>
 
 namespace pose_interpolator {
 
@@ -98,22 +101,20 @@ Q_SIGNALS:
   void updateRequested();
 
 public slots:
-  /** @brief Moves rviz camera to start pose.*/
-  void moveCamToStart();
-  /**
-   * @brief Moves rviz camera to start pose by publishing a CameraDisplacement message.
-   *
-   * @param[in] transition_time     time the camera should take to move to the goal pose.
-   */
-  void moveCamToStart(double transition_time);
-  /** @brief Moves rviz camera to end pose.*/
-  void moveCamToEnd();
-  /** @brief Sets start pose to current pose of rviz camera.*/
-  void setStartToCurrentCam();
-  /** @brief Sets end pose to current pose of rviz camera.*/
-  void setEndToCurrentCam();
+  /** @brief Moves rviz camera to currently selected pose.*/
+  void moveCamToCurrent();
+  /** @brief Moves rviz camera to pose before currently selected one.*/
+  void moveCamToPrev();
+  /** @brief Moves rviz camera to pose after currently selected one.*/
+  void moveCamToNext();
+  /** @brief Update marker with values from GUI.*/
+  void updateCurrentMarker();
+  /** @brief Sets currently selected pose to the current pose of the rviz camera.*/
+  void setCurrentPoseToCam();
   /** @brief Sets the frame_id of the markers.*/
   void setMarkerFrames();
+  /** @brief Loads a series of markers from a file.*/
+  void loadTrajectoryFromFile();
 
 private:
   /**
@@ -133,6 +134,13 @@ private:
   visualization_msgs::InteractiveMarker makeMarker(double x=0.0,
                                                    double y=0.0,
                                                    double z=0.0);
+
+  /**
+   * @brief Moves rviz camera to marker pose by publishing a CameraDisplacement message.
+   *
+   * @param[in] marker   provides the pose and transition time.
+   */
+  void moveCamToMarker(const TimedMarker& marker);
 
   /**
    * @brief Sets members to pose of currently moved interactive marker.
@@ -214,6 +222,8 @@ private:
    */
   visualization_msgs::InteractiveMarker& getMarkerByName(const std::string& marker_name);
 
+  void currentPoseWidgetsSetDisabled(bool value);
+  void setValueQuietly(QDoubleSpinBox* spin_box, double value);
 
 
   /** @brief Ui object - connection to GUI. */
@@ -245,8 +255,13 @@ private:
   /** @brief Focus point of the end pose. */
   geometry_msgs::Point end_look_at_;
 
+  /** @brief Currently selected marker. */
+  TimedMarker current_marker_;
+
   /** @brief Currently maintained list of TimedMarkers. */
   MarkerList markers_;
+
+  bool are_spin_boxes_disabled_;
 };
 } // namespace
 

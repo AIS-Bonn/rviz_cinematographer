@@ -12,6 +12,8 @@ namespace pose_interpolator {
 TrajectoryEditor::TrajectoryEditor()
 : rqt_gui_cpp::Plugin()
   , widget_(0)
+  , current_marker_(visualization_msgs::InteractiveMarker(), 0.5)
+  , are_spin_boxes_disabled_(false)
 {
   cam_pose_.orientation.w = 1.0;
 
@@ -38,11 +40,22 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   // extend the widget with all attributes and children from UI file
   ui_.setupUi(widget_);
 
-  connect(ui_.move_to_start_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToStart()));
-  connect(ui_.move_to_end_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToEnd()));
-  connect(ui_.set_start_to_cam_button, SIGNAL(clicked(bool)), this, SLOT(setStartToCurrentCam()));
-  connect(ui_.set_end_to_cam_button, SIGNAL(clicked(bool)), this, SLOT(setEndToCurrentCam()));
+  connect(ui_.translation_x_spin_box, SIGNAL(valueChanged(double)), this, SLOT(updateCurrentMarker()));
+  connect(ui_.translation_y_spin_box, SIGNAL(valueChanged(double)), this, SLOT(updateCurrentMarker()));
+  connect(ui_.translation_z_spin_box, SIGNAL(valueChanged(double)), this, SLOT(updateCurrentMarker()));
+
+  connect(ui_.rotation_x_spin_box, SIGNAL(valueChanged(double)), this, SLOT(updateCurrentMarker()));
+  connect(ui_.rotation_y_spin_box, SIGNAL(valueChanged(double)), this, SLOT(updateCurrentMarker()));
+  connect(ui_.rotation_z_spin_box, SIGNAL(valueChanged(double)), this, SLOT(updateCurrentMarker()));
+  connect(ui_.rotation_w_spin_box, SIGNAL(valueChanged(double)), this, SLOT(updateCurrentMarker()));
+
+
+  connect(ui_.move_to_current_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToCurrent()));
+  connect(ui_.move_to_prev_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToPrev()));
+  connect(ui_.move_to_next_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToNext()));
+  connect(ui_.set_pose_to_cam_button, SIGNAL(clicked(bool)), this, SLOT(setCurrentPoseToCam()));
   connect(ui_.frame_text_edit, SIGNAL(textChanged()), this, SLOT(setMarkerFrames()));
+  connect(ui_.open_file_push_button, SIGNAL(clicked(bool)), this, SLOT(loadTrajectoryFromFile()));
 
   // add widget to the user interface
   context.addWidget(widget_);
@@ -63,7 +76,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
     visualization_msgs::InteractiveMarker marker = makeMarker();
     marker.name = "first_marker";
     marker.description = "Marker";
-    marker.controls[0].markers[0].color.g = 1.f;
+    marker.controls[0].markers[0].color.r = 1.f;
     markers_.emplace_back(TimedMarker(std::move(marker), 0.5));
   }
 
@@ -74,6 +87,10 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
     server_->insert(marker.marker, boost::bind(&TrajectoryEditor::processFeedback, this, _1));
     menu_handler_.apply(*server_, marker.marker.name);
   }
+
+  current_marker_ = markers_.back();
+  current_marker_.marker.controls[0].markers[0].color.r = 0.f;
+  current_marker_.marker.controls[0].markers[0].color.g = 1.f;
 
   // 'commit' changes and send to all clients
   server_->applyChanges();
@@ -105,22 +122,23 @@ void TrajectoryEditor::camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_
 
 void TrajectoryEditor::updateTrajectory()
 {
-  visualization_msgs::Marker marker;
-  marker.type = visualization_msgs::Marker::LINE_STRIP;
-  marker.scale.x = 0.1;
-  marker.color.r = 1.f;
-  marker.color.a = 1.f;
+  visualization_msgs::Marker line_marker;
+  line_marker.type = visualization_msgs::Marker::LINE_STRIP;
+  line_marker.scale.x = 0.1;
+  line_marker.color.r = 1.f;
+  line_marker.color.a = 1.f;
 
   visualization_msgs::InteractiveMarkerControl control;
   control.always_visible = 1;
-  control.markers.push_back(marker);
+  control.markers.push_back(std::move(line_marker));
 
   visualization_msgs::InteractiveMarker trajectory;
   trajectory.header.frame_id = ui_.frame_text_edit->toPlainText().toStdString();
   trajectory.name = "trajectory";
   trajectory.scale = 1.0;
-  trajectory.controls.push_back(control);
+  trajectory.controls.push_back(std::move(control));
 
+  //TODO: test: fill trajectory before, remove old insert new
   for(const auto& marker : markers_)
   {
     visualization_msgs::InteractiveMarker int_marker;
@@ -280,6 +298,18 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
   updateTrajectory();
 }
 
+// TODO: fix why find children doesn't find any chilrdn 
+void TrajectoryEditor::currentPoseWidgetsSetDisabled(bool value)
+{
+  QList<QWidget*> list = ui_.verticalLayout_3->findChildren<QWidget*>();
+  ROS_INFO_STREAM("list lenght " << list.size());
+  foreach(QWidget* w, list)
+  {
+    w->setEnabled(!value);
+  }
+  are_spin_boxes_disabled_ = value;
+}
+
 void TrajectoryEditor::removeMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   if(markers_.size() == 1)
@@ -298,9 +328,14 @@ void TrajectoryEditor::removeMarker(const visualization_msgs::InteractiveMarkerF
       searched_element = it;
   }
 
+  // TODO: select previous marker as current
+
   // delete selected marker from member markers
   if(searched_element != markers_.end())
+  {
     markers_.erase(searched_element);
+    currentPoseWidgetsSetDisabled(true);
+  }
 
   // refill server with member markers
   fillServer(markers_);
@@ -335,7 +370,7 @@ void TrajectoryEditor::loadParams(const ros::NodeHandle& nh,
 
     visualization_msgs::InteractiveMarker wp_marker = makeMarker();
     wp_marker.pose.orientation.y = 0.0;
-    wp_marker.controls[0].markers[0].color.g = 1.f;
+    wp_marker.controls[0].markers[0].color.r = 1.f;
 
     wp_marker.pose.orientation.w = v["orientation"]["w"];
     wp_marker.pose.orientation.x = v["orientation"]["x"];
@@ -365,58 +400,49 @@ visualization_msgs::InteractiveMarker& TrajectoryEditor::getMarkerByName(const s
   return tmp;
 }
 
-void TrajectoryEditor::setStartToCurrentCam()
+void TrajectoryEditor::setCurrentPoseToCam()
 {
   ui_.messages_label->setText(QString("Message: "));
 
-  if(ui_.start_x_spin_box->maximum() < cam_pose_.position.x ||
-     ui_.start_x_spin_box->minimum() > cam_pose_.position.x ||
-     ui_.start_y_spin_box->maximum() < cam_pose_.position.y ||
-     ui_.start_y_spin_box->minimum() > cam_pose_.position.y ||
-     ui_.start_z_spin_box->maximum() < cam_pose_.position.z ||
-     ui_.start_z_spin_box->minimum() > cam_pose_.position.z )
-  {
-    ui_.messages_label->setText(QString("Message: Current position is out of scope.\n\tTry moving closer to the center of the frame."));
-    return;
-  }
-  
-  ui_.start_x_spin_box->setValue(cam_pose_.position.x);
-  ui_.start_y_spin_box->setValue(cam_pose_.position.y);
-  ui_.start_z_spin_box->setValue(cam_pose_.position.z);
-
-  // rviz camera looks into negative z direction
-  tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), cam_pose_.orientation);
-  start_look_at_.x = cam_pose_.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
-  start_look_at_.y = cam_pose_.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
-  start_look_at_.z = cam_pose_.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
-}
-
-void TrajectoryEditor::setEndToCurrentCam()
-{
-  ui_.messages_label->setText(QString("Message: "));
-
-  if(ui_.end_x_spin_box->maximum() < cam_pose_.position.x ||
-     ui_.end_x_spin_box->minimum() > cam_pose_.position.x ||
-     ui_.end_y_spin_box->maximum() < cam_pose_.position.y ||
-     ui_.end_y_spin_box->minimum() > cam_pose_.position.y ||
-     ui_.end_z_spin_box->maximum() < cam_pose_.position.z ||
-     ui_.end_z_spin_box->minimum() > cam_pose_.position.z )
+  if(ui_.translation_x_spin_box->maximum() < cam_pose_.position.x ||
+     ui_.translation_x_spin_box->minimum() > cam_pose_.position.x ||
+     ui_.translation_y_spin_box->maximum() < cam_pose_.position.y ||
+     ui_.translation_y_spin_box->minimum() > cam_pose_.position.y ||
+     ui_.translation_z_spin_box->maximum() < cam_pose_.position.z ||
+     ui_.translation_z_spin_box->minimum() > cam_pose_.position.z )
   {
     ui_.messages_label->setText(QString("Message: Current position is out of scope.\n\tTry moving closer to the center of the frame."));
     return;
   }
 
-  ui_.end_x_spin_box->setValue(cam_pose_.position.x);
-  ui_.end_y_spin_box->setValue(cam_pose_.position.y);
-  ui_.end_z_spin_box->setValue(cam_pose_.position.z);
+  // TODO: rotate frame
+  current_marker_.marker.pose = cam_pose_;
 
-  // rviz camera looks into negative z direction
-  tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), cam_pose_.orientation);
-  end_look_at_.x = cam_pose_.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
-  end_look_at_.y = cam_pose_.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
-  end_look_at_.z = cam_pose_.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
+  // update gui elements
+  setValueQuietly(ui_.translation_x_spin_box, cam_pose_.position.x);
+  setValueQuietly(ui_.translation_y_spin_box, cam_pose_.position.y);
+  setValueQuietly(ui_.translation_z_spin_box, cam_pose_.position.z);
+
+  setValueQuietly(ui_.rotation_x_spin_box, cam_pose_.orientation.x);
+  setValueQuietly(ui_.rotation_y_spin_box, cam_pose_.orientation.y);
+  setValueQuietly(ui_.rotation_z_spin_box, cam_pose_.orientation.z);
+  setValueQuietly(ui_.rotation_w_spin_box, cam_pose_.orientation.w);
+
+  // update marker pose
+  getMarkerByName(current_marker_.marker.name).pose = cam_pose_;
+
+  server_->setPose(current_marker_.marker.name, current_marker_.marker.pose, current_marker_.marker.header);
+  server_->applyChanges();
+  updateTrajectory();
+
+//  // rviz camera looks into negative z direction
+//  tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), cam_pose_.orientation);
+//  start_look_at_.x = cam_pose_.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
+//  start_look_at_.y = cam_pose_.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
+//  start_look_at_.z = cam_pose_.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 }
 
+//TODO:
 void TrajectoryEditor::setMarkerFrames()
 {
   start_marker_.header.frame_id = ui_.frame_text_edit->toPlainText().toStdString();
@@ -484,90 +510,113 @@ visualization_msgs::InteractiveMarker TrajectoryEditor::makeMarker(double x, dou
 }
 
 
-void TrajectoryEditor::moveCamToStart()
+void TrajectoryEditor::moveCamToCurrent()
 {
-  moveCamToStart(ui_.transition_time_spin_box->value());
+  moveCamToMarker(current_marker_);
 }
 
-void TrajectoryEditor::moveCamToStart(double transition_time)
+void TrajectoryEditor::moveCamToMarker(const TimedMarker& marker)
 {
   view_controller_msgs::CameraPlacement cp = makeCameraPlacement();
-  cp.time_from_start = ros::Duration(transition_time);
+  cp.time_from_start = ros::Duration(marker.transition_time);
 
   if(!ui_.use_up_of_world_radio_button->isChecked())
   {
     // in the cam frame up is the negative x direction
-    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(-1, 0, 0), start_marker_.pose.orientation);
+    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(-1, 0, 0), marker.marker.pose.orientation);
     cp.up.vector.x = rotated_vector.x();
     cp.up.vector.y = rotated_vector.y();
     cp.up.vector.z = rotated_vector.z();
   }
 
-  geometry_msgs::Point look_from;
-  look_from.x = ui_.start_x_spin_box->value();
-  look_from.y = ui_.start_y_spin_box->value();
-  look_from.z = ui_.start_z_spin_box->value();
-  cp.eye.point = look_from;
+  // look from
+  cp.eye.point = marker.marker.pose.position;
 
-  cp.focus.point = start_look_at_;
+  // look at
+  tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), marker.marker.pose.orientation);
+  cp.focus.point.x = marker.marker.pose.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
+  cp.focus.point.y = marker.marker.pose.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
+  cp.focus.point.z = marker.marker.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 
   camera_placement_pub_.publish(cp);
 }
 
-void TrajectoryEditor::moveCamToEnd()
+void TrajectoryEditor::setValueQuietly(QDoubleSpinBox* spin_box, double value)
 {
-  view_controller_msgs::CameraPlacement cp = makeCameraPlacement();
-  cp.time_from_start = ros::Duration(ui_.transition_time_spin_box->value());
-
-  if(!ui_.use_up_of_world_radio_button->isChecked())
-  {
-    // in the cam frame up is the negative x direction 
-    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(-1, 0, 0), end_marker_.pose.orientation);
-    cp.up.vector.x = rotated_vector.x();
-    cp.up.vector.y = rotated_vector.y();
-    cp.up.vector.z = rotated_vector.z();
-  }
-
-  geometry_msgs::Point look_from;
-  look_from.x = ui_.end_x_spin_box->value();
-  look_from.y = ui_.end_y_spin_box->value();
-  look_from.z = ui_.end_z_spin_box->value();
-  cp.eye.point = look_from;
-
-  cp.focus.point = end_look_at_;
-
-  camera_placement_pub_.publish(cp);
+  bool old_block_state = spin_box->blockSignals(true);
+  spin_box->setValue(value);
+  spin_box->blockSignals(old_block_state);
 }
 
 void TrajectoryEditor::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
-  if(feedback->marker_name == "start_marker")
-  {
-    start_marker_.pose = feedback->pose;
-
-    ui_.start_x_spin_box->setValue(start_marker_.pose.position.x);
-    ui_.start_y_spin_box->setValue(start_marker_.pose.position.y);
-    ui_.start_z_spin_box->setValue(start_marker_.pose.position.z);
-
-    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), start_marker_.pose.orientation);
-    start_look_at_.x = start_marker_.pose.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
-    start_look_at_.y = start_marker_.pose.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
-    start_look_at_.z = start_marker_.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
-  }
-
+  // update markers
   visualization_msgs::InteractiveMarker marker;
-
   if(feedback->event_type == visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP
      && server_->get(feedback->marker_name, marker))
   {
+    // enable spin boxes
+    if(are_spin_boxes_disabled_)
+      currentPoseWidgetsSetDisabled(false);
+
+    current_marker_.marker.name = feedback->marker_name;
+    current_marker_.marker.pose = feedback->pose;
+
+    // update gui elements
+    setValueQuietly(ui_.translation_x_spin_box, feedback->pose.position.x);
+    setValueQuietly(ui_.translation_y_spin_box, feedback->pose.position.y);
+    setValueQuietly(ui_.translation_z_spin_box, feedback->pose.position.z);
+
+    setValueQuietly(ui_.rotation_x_spin_box, feedback->pose.orientation.x);
+    setValueQuietly(ui_.rotation_y_spin_box, feedback->pose.orientation.y);
+    setValueQuietly(ui_.rotation_z_spin_box, feedback->pose.orientation.z);
+    setValueQuietly(ui_.rotation_w_spin_box, feedback->pose.orientation.w);
+
+    // update marker pose
     marker.pose = feedback->pose;
-    server_->erase( feedback->marker_name );
-    server_->insert( marker );
-    server_->applyChanges();
     getMarkerByName(feedback->marker_name).pose = feedback->pose;
+
+    // change color of current marker to green
+    marker.controls[0].markers[0].color.r = 0.f;
+    marker.controls[0].markers[0].color.g = 1.f;
+
+    // change color of all markers back to red
+    for(const auto& marker : markers_)
+    {
+      visualization_msgs::InteractiveMarker int_marker;
+      server_->get(marker.marker.name, int_marker);
+      int_marker.controls[0].markers[0].color.r = 1.f;
+      int_marker.controls[0].markers[0].color.g = 0.f;
+      server_->erase(marker.marker.name);
+      server_->insert(int_marker);
+      server_->applyChanges();
+    }
+
+    // update server
+    server_->erase(feedback->marker_name);
+    server_->insert(marker);
+    server_->applyChanges();
   }
   updateTrajectory();
+}
 
+void TrajectoryEditor::updateCurrentMarker()
+{
+  current_marker_.marker.pose.position.x = ui_.translation_x_spin_box->value();
+  current_marker_.marker.pose.position.y = ui_.translation_y_spin_box->value();
+  current_marker_.marker.pose.position.z = ui_.translation_z_spin_box->value();
+
+  current_marker_.marker.pose.orientation.x = ui_.rotation_x_spin_box->value();
+  current_marker_.marker.pose.orientation.y = ui_.rotation_y_spin_box->value();
+  current_marker_.marker.pose.orientation.z = ui_.rotation_z_spin_box->value();
+  current_marker_.marker.pose.orientation.w = ui_.rotation_w_spin_box->value();
+
+  getMarkerByName(current_marker_.marker.name).pose = current_marker_.marker.pose;
+
+  server_->setPose(current_marker_.marker.name, current_marker_.marker.pose, current_marker_.marker.header);
+  server_->applyChanges();
+
+  updateTrajectory();
 }
 
 tf::Vector3 TrajectoryEditor::rotateVector(const tf::Vector3& vector,
