@@ -197,9 +197,21 @@ private:
    */
   void fillServer(MarkerList& markers);
 
-
-  void loadParams(ros::NodeHandle& nh,
+  /**
+   * @brief Load marker poses from a file.
+   *
+   * @param[in] nh          node handle.
+   * @param[in] param_name  root name of the parameters.
+   */
+  void loadParams(const ros::NodeHandle& nh,
                   const std::string& param_name);
+
+  /**
+   * @brief Gets marker with specified name.
+   *
+   * @param[in] marker_name name of marker.
+   * @return marker with marker_name.
+   */
   visualization_msgs::InteractiveMarker& getMarkerByName(const std::string& marker_name);
 
 
@@ -233,6 +245,7 @@ private:
   /** @brief Focus point of the end pose. */
   geometry_msgs::Point end_look_at_;
 
+  /** @brief Currently maintained list of TimedMarkers. */
   MarkerList markers_;
 };
 } // namespace

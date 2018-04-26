@@ -321,43 +321,48 @@ void TrajectoryEditor::fillServer(MarkerList& markers)
   }
 }
 
-// TODO: proceed from here 
-void TrajectoryEditor::loadParams(ros::NodeHandle& nh,
+void TrajectoryEditor::loadParams(const ros::NodeHandle& nh,
                                   const std::string& param_name)
 {
-  ROS_INFO("laoding params ### .");
-  XmlRpc::XmlRpcValue poseList;
-  nh.getParam(param_name, poseList);
-  ROS_ASSERT( poseList.getType() == XmlRpc::XmlRpcValue::TypeArray );
+  XmlRpc::XmlRpcValue pose_list;
+  nh.getParam(param_name, pose_list);
+  ROS_ASSERT(pose_list.getType() == XmlRpc::XmlRpcValue::TypeArray);
 
-  for ( int i = 0; i < poseList.size(); ++i ) {
-    ROS_ASSERT( poseList[i].getType() == XmlRpc::XmlRpcValue::TypeStruct );
-    XmlRpc::XmlRpcValue& v = poseList[ i ];
-
-    geometry_msgs::Pose p;
-    p.orientation.w = v["orientation"]["w"];
-    p.orientation.x = v["orientation"]["x"];
-    p.orientation.y = v["orientation"]["y"];
-    p.orientation.z = v["orientation"]["z"];
-
-    p.position.x = v["position"]["x"];
-    p.position.y = v["position"]["y"];
-    p.position.z = v["position"]["z"];
+  for(int i = 0; i < pose_list.size(); ++i)
+  {
+    ROS_ASSERT(pose_list[i].getType() == XmlRpc::XmlRpcValue::TypeStruct);
+    XmlRpc::XmlRpcValue& v = pose_list[i];
 
     visualization_msgs::InteractiveMarker wp_marker = makeMarker();
     wp_marker.pose.orientation.y = 0.0;
     wp_marker.controls[0].markers[0].color.g = 1.f;
 
-    wp_marker.pose = p;
+    wp_marker.pose.orientation.w = v["orientation"]["w"];
+    wp_marker.pose.orientation.x = v["orientation"]["x"];
+    wp_marker.pose.orientation.y = v["orientation"]["y"];
+    wp_marker.pose.orientation.z = v["orientation"]["z"];
 
-    wp_marker.name = std::string( "wp" ) + std::to_string( i );
-    wp_marker.description = std::string( "WP ") + std::to_string( i ) + std::string( "\n(click to publishTrajectory)" );
+    wp_marker.pose.position.x = v["position"]["x"];
+    wp_marker.pose.position.y = v["position"]["y"];
+    wp_marker.pose.position.z = v["position"]["z"];
 
+    wp_marker.name = std::string("wp") + std::to_string(i);
+    wp_marker.description = std::to_string(i) + std::string("\n(right click for options)");
 
     markers_.emplace_back(TimedMarker(wp_marker, v["transition_time"]));
-
-    //ROS_ERROR_STREAM( "Loaded: " << p );
   }
+}
+
+visualization_msgs::InteractiveMarker& TrajectoryEditor::getMarkerByName(const std::string& marker_name)
+{
+  for(auto& marker : markers_)
+  {
+    if(marker.marker.name == marker_name)
+      return marker.marker;
+  }
+
+  static visualization_msgs::InteractiveMarker tmp;
+  return tmp;
 }
 
 void TrajectoryEditor::setStartToCurrentCam()
@@ -572,18 +577,5 @@ tf::Vector3 TrajectoryEditor::rotateVector(const tf::Vector3& vector,
   tf::quaternionMsgToTF(quat, rotation);
   return tf::quatRotate(rotation, vector);
 }
-
-visualization_msgs::InteractiveMarker& TrajectoryEditor::getMarkerByName(const std::string& marker_name)
-{
-  for(auto& marker : markers_)
-  {
-    if(marker.marker.name == marker_name)
-      return marker.marker;
-  }
-
-  static visualization_msgs::InteractiveMarker tmp;
-  return tmp;
-}
-
 
 } // namespace
