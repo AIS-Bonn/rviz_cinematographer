@@ -34,7 +34,7 @@ namespace pose_interpolator {
 
 struct InteractiveMarkerWithTime
 {
-  InteractiveMarkerWithTime(const visualization_msgs::InteractiveMarker& input_marker, const double time)
+  InteractiveMarkerWithTime(const visualization_msgs::InteractiveMarker&& input_marker, const double time)
   : marker(input_marker)
     , transition_time(time)
   {

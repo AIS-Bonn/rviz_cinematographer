@@ -64,14 +64,14 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
     marker.name = "first_marker";
     marker.description = "Marker";
     marker.controls[0].markers[0].color.g = 1.f;
-    markers_.emplace_back(TimedMarker(marker, 0.5));
+    markers_.emplace_back(TimedMarker(std::move(marker), 0.5));
   }
 
   // connect markers to callback functions
   server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>("trajectory");
   for(const auto& marker : markers_)
   {
-    server_->insert(marker.marker, boost::bind( &TrajectoryEditor::processFeedback, this, _1));
+    server_->insert(marker.marker, boost::bind(&TrajectoryEditor::processFeedback, this, _1));
     menu_handler_.apply(*server_, marker.marker.name);
   }
 
@@ -221,7 +221,7 @@ void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMark
       new_marker.pose.position.x -= 0.5;
     }
     // TODO: replace constant by time specified in gui
-    searched_element = markers_.insert(searched_element, TimedMarker(new_marker, 0.5));
+    searched_element = markers_.insert(searched_element, TimedMarker(std::move(new_marker), 0.5));
   }
 
   // refill server with member markers
@@ -271,7 +271,7 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
     {
       new_marker.pose.position.x -= 0.5;
     }
-    searched_element = markers_.insert(searched_element, TimedMarker(new_marker, 0.5));
+    searched_element = markers_.insert(searched_element, TimedMarker(std::move(new_marker), 0.5));
   }
 
   // refill server with member markers
@@ -349,7 +349,7 @@ void TrajectoryEditor::loadParams(const ros::NodeHandle& nh,
     wp_marker.name = std::string("wp") + std::to_string(i);
     wp_marker.description = std::to_string(i) + std::string("\n(right click for options)");
 
-    markers_.emplace_back(TimedMarker(wp_marker, v["transition_time"]));
+    markers_.emplace_back(TimedMarker(std::move(wp_marker), v["transition_time"]));
   }
 }
 
