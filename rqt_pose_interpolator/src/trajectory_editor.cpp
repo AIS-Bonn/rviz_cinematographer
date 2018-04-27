@@ -57,6 +57,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   connect(ui_.set_pose_to_cam_button, SIGNAL(clicked(bool)), this, SLOT(setCurrentPoseToCam()));
   connect(ui_.frame_line_edit, SIGNAL(editingFinished()), this, SLOT(setMarkerFrames()));
   connect(ui_.open_file_push_button, SIGNAL(clicked(bool)), this, SLOT(loadTrajectoryFromFile()));
+  connect(ui_.save_file_push_button, SIGNAL(clicked(bool)), this, SLOT(saveTrajectoryToFile()));
 
   // add widget to the user interface
   context.addWidget(widget_);
@@ -189,10 +190,6 @@ void TrajectoryEditor::publishTrajectory(const visualization_msgs::InteractiveMa
     waypoint.header = path.header;
     path.poses.push_back(waypoint);
   }
-
-  // TODO: move to own function that is triggered by button
-  std::string file_path = ros::package::getPath("rqt_pose_interpolator")  + "/trajectories/example_trajectory.yaml";
-  safeTrajectoryToFile(file_path);
 
   view_poses_array_pub_.publish(path);
 }
@@ -485,6 +482,91 @@ void TrajectoryEditor::setMarkerFrames()
   server_->applyChanges();
 
   updateTrajectory();
+}
+
+void TrajectoryEditor::loadTrajectoryFromFile()
+{
+  std::string directory_path = ros::package::getPath("rqt_pose_interpolator")  + "/trajectories/";
+
+  QString file_name = QFileDialog::getOpenFileName(widget_, "Open Trajectory", QString(directory_path.c_str()), "All Files (*);;.yaml files (*.yaml)");
+  if(file_name == "")
+  {
+    ROS_ERROR_STREAM("No file specified.");
+  }
+  else
+  {
+    YAML::Node trajectory = YAML::LoadFile(file_name.toStdString());
+    int count = 0;
+    markers_.clear();
+    for(const auto& pose : trajectory["poses"])
+    {
+      visualization_msgs::InteractiveMarker wp_marker = makeMarker();
+      wp_marker.pose.orientation.y = 0.0;
+      wp_marker.controls[0].markers[0].color.r = 1.f;
+
+      wp_marker.pose.orientation.w = pose["orientation"]["w"].as<double>();
+      wp_marker.pose.orientation.x = pose["orientation"]["x"].as<double>();
+      wp_marker.pose.orientation.y = pose["orientation"]["y"].as<double>();
+      wp_marker.pose.orientation.z = pose["orientation"]["z"].as<double>();
+
+      wp_marker.pose.position.x = pose["position"]["x"].as<double>();
+      wp_marker.pose.position.y = pose["position"]["y"].as<double>();
+      wp_marker.pose.position.z = pose["position"]["z"].as<double>();
+
+      wp_marker.name = std::string("wp") + std::to_string(count);
+      wp_marker.description = std::to_string(count);
+
+      markers_.emplace_back(TimedMarker(std::move(wp_marker), pose["transition_time"].as<double>()));
+      count++;
+    }
+
+    // green color for last marker
+    markers_.back().marker.controls[0].markers[0].color.r = 0.f;
+    markers_.back().marker.controls[0].markers[0].color.g = 1.f;
+
+    // connect markers to callback functions
+    for(const auto& marker : markers_)
+    {
+      server_->insert(marker.marker, boost::bind(&TrajectoryEditor::processFeedback, this, _1));
+      menu_handler_.apply(*server_, marker.marker.name);
+    }
+
+    // 'commit' changes and send to all clients
+    server_->applyChanges();
+
+    current_marker_ = markers_.back();
+
+    // update gui elements
+    setValueQuietly(ui_.translation_x_spin_box, current_marker_.marker.pose.position.x);
+    setValueQuietly(ui_.translation_y_spin_box, current_marker_.marker.pose.position.y);
+    setValueQuietly(ui_.translation_z_spin_box, current_marker_.marker.pose.position.z);
+
+    setValueQuietly(ui_.rotation_x_spin_box, current_marker_.marker.pose.orientation.x);
+    setValueQuietly(ui_.rotation_y_spin_box, current_marker_.marker.pose.orientation.y);
+    setValueQuietly(ui_.rotation_z_spin_box, current_marker_.marker.pose.orientation.z);
+    setValueQuietly(ui_.rotation_w_spin_box, current_marker_.marker.pose.orientation.w);
+
+    setValueQuietly(ui_.transition_time_spin_box, current_marker_.transition_time);
+
+    updateTrajectory();
+  }
+}
+
+void TrajectoryEditor::saveTrajectoryToFile()
+{
+  std::string directory_path = ros::package::getPath("rqt_pose_interpolator")  + "/trajectories/";
+
+  QString file_path = QFileDialog::getSaveFileName(widget_, "Save Trajectory", QString(directory_path.c_str()), "All Files (*)");
+  if(file_path == "")
+  {
+    ROS_ERROR_STREAM("No file specified.");
+  }
+  else
+  {
+    // TODO: make sure file_path ends with yaml
+    ROS_INFO_STREAM("filename is : " << file_path.toStdString());
+    safeTrajectoryToFile(file_path.toStdString());
+  }
 }
 
 view_controller_msgs::CameraPlacement TrajectoryEditor::makeCameraPlacement()

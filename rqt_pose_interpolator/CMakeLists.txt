@@ -85,6 +85,7 @@ add_library(pose_interpolator_plugins
 target_link_libraries(pose_interpolator_plugins
     ${catkin_LIBRARIES}
     ${QT_LIBRARIES}
+    yaml-cpp
 )
 
 #############

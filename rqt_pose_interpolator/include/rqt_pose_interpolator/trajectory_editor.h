@@ -31,7 +31,8 @@
 #include <rqt_pose_interpolator/utils.h>
 #include "ui_trajectory_editor.h"
 
-#include <mutex>
+#include <yaml-cpp/yaml.h>
+
 
 namespace pose_interpolator {
 
@@ -117,6 +118,8 @@ public slots:
   void setMarkerFrames();
   /** @brief Loads a series of markers from a file.*/
   void loadTrajectoryFromFile();
+  /** @brief Saves poses and transition times of interactive markers to a file.*/
+  void saveTrajectoryToFile();
 
 private:
   /**

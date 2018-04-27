@@ -470,7 +470,28 @@
        </layout>
       </item>
       <item>
-       <widget class="Line" name="line_3">
+       <widget class="Line" name="line_6">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>10</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(121, 121, 121);</string>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Sunken</enum>
+        </property>
+        <property name="lineWidth">
+         <number>0</number>
+        </property>
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -492,13 +513,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="file_line_edit">
-        <property name="text">
-         <string>  trajectories/example_trajectory.yaml</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
          <widget class="QPushButton" name="save_file_push_button">
@@ -509,7 +523,7 @@
            </size>
           </property>
           <property name="text">
-           <string>Save</string>
+           <string>Save As...</string>
           </property>
          </widget>
         </item>
@@ -529,7 +543,28 @@
        </layout>
       </item>
       <item>
-       <widget class="Line" name="line_2">
+       <widget class="Line" name="line_3">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>10</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(121, 121, 121);</string>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Sunken</enum>
+        </property>
+        <property name="lineWidth">
+         <number>0</number>
+        </property>
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
