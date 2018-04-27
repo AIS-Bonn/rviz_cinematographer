@@ -35,28 +35,30 @@
 
 namespace pose_interpolator {
 
-struct InteractiveMarkerWithTime
-{
-  InteractiveMarkerWithTime(const visualization_msgs::InteractiveMarker&& input_marker, const double time)
-  : marker(input_marker)
-    , transition_time(time)
-  {
-  }
-
-  visualization_msgs::InteractiveMarker marker;
-  double transition_time;
-};
-
 /**
  * @brief Manipulates the rviz camera.
  */
 class TrajectoryEditor : public rqt_gui_cpp::Plugin
 {
-  typedef InteractiveMarkerWithTime TimedMarker;
-  typedef std::list<TimedMarker> MarkerList;
 
 Q_OBJECT
 public:
+  struct InteractiveMarkerWithTime
+  {
+    InteractiveMarkerWithTime(visualization_msgs::InteractiveMarker&& input_marker, const double time)
+            : marker(input_marker)
+              , transition_time(time)
+    {
+    }
+
+    visualization_msgs::InteractiveMarker marker;
+    double transition_time;
+  };
+
+  typedef InteractiveMarkerWithTime TimedMarker;
+  typedef std::list<TimedMarker> MarkerList;
+
+
   /** @brief Constructor. */
   TrajectoryEditor();
 
@@ -220,9 +222,9 @@ private:
    * @param[in] marker_name name of marker.
    * @return marker with marker_name.
    */
-  visualization_msgs::InteractiveMarker& getMarkerByName(const std::string& marker_name);
+  InteractiveMarkerWithTime& getMarkerByName(const std::string& marker_name);
 
-  void currentPoseWidgetsSetDisabled(bool value);
+  void setCurrentTo(TimedMarker& marker);
   void setValueQuietly(QDoubleSpinBox* spin_box, double value);
 
 
@@ -260,9 +262,8 @@ private:
 
   /** @brief Currently maintained list of TimedMarkers. */
   MarkerList markers_;
-
-  bool are_spin_boxes_disabled_;
 };
+
 } // namespace
 
 #endif //RQT_POSE_INTERPOLATOR_TRAJECTORY_EDITOR_H

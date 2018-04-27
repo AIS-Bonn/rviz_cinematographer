@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>329</width>
+    <width>338</width>
     <height>946</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
     <rect>
      <x>8</x>
      <y>8</y>
-     <width>311</width>
+     <width>322</width>
      <height>921</height>
     </rect>
    </property>
@@ -121,6 +121,12 @@
         </item>
         <item>
          <widget class="QPushButton" name="set_pose_to_cam_button">
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="toolTip">
            <string>Set the start pose to the current camera pose.</string>
           </property>
@@ -446,33 +452,18 @@
          </widget>
         </item>
         <item>
-         <widget class="QPlainTextEdit" name="frame_text_edit">
-          <property name="enabled">
+         <widget class="QLineEdit" name="frame_line_edit">
+          <property name="text">
+           <string>base_link</string>
+          </property>
+          <property name="frame">
            <bool>true</bool>
           </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+          <property name="placeholderText">
+           <string/>
           </property>
-          <property name="minimumSize">
-           <size>
-            <width>60</width>
-            <height>15</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>32</height>
-           </size>
-          </property>
-          <property name="layoutDirection">
-           <enum>Qt::RightToLeft</enum>
-          </property>
-          <property name="plainText">
-           <string>base_link</string>
+          <property name="clearButtonEnabled">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -501,46 +492,11 @@
        </widget>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_3">
-        <item>
-         <widget class="QLabel" name="label_8">
-          <property name="text">
-           <string>  trajectories/</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPlainTextEdit" name="frame_text_edit_2">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>60</width>
-            <height>15</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>32</height>
-           </size>
-          </property>
-          <property name="layoutDirection">
-           <enum>Qt::RightToLeft</enum>
-          </property>
-          <property name="plainText">
-           <string>example_trajectory.yaml</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+       <widget class="QLineEdit" name="file_line_edit">
+        <property name="text">
+         <string>  trajectories/example_trajectory.yaml</string>
+        </property>
+       </widget>
       </item>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout">
@@ -582,7 +538,12 @@
       <item>
        <widget class="QLabel" name="messages_label">
         <property name="text">
-         <string>Messages: </string>
+         <string>&lt;html&gt;
+&lt;head/&gt;
+&lt;body&gt;
+&lt;p&gt;Messages: Right click on markers for options.&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</string>
         </property>
        </widget>
       </item>
