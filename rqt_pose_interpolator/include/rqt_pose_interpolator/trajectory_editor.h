@@ -100,6 +100,13 @@ public:
    */
   void camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_pose);
 
+  /**
+  * @brief Publishes the trajectory step by step.
+  *
+  * @param[in] event    timer information.
+  */
+  void trajectoryStepsPublisherCallback(const ros::TimerEvent& event);
+
 Q_SIGNALS:
   void updateRequested();
 
@@ -242,6 +249,10 @@ private:
   ros::Publisher view_poses_array_pub_;
   /** @brief Subscribes to the camera pose. */
   ros::Subscriber camera_pose_sub_;
+  /** @brief Publishes the trajectory steps in a specified rate. */
+  ros::Timer trajectory_publish_timer_;
+   /** @brief Publishing rate. */
+  double timer_rate_;
 
   /** @brief Connects markers to callbacks. */
   interactive_markers::MenuHandler menu_handler_;

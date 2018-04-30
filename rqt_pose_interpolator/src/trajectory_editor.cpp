@@ -12,6 +12,7 @@ namespace pose_interpolator {
 TrajectoryEditor::TrajectoryEditor()
 : rqt_gui_cpp::Plugin()
   , widget_(0)
+  , timer_rate_(0.1)
   , current_marker_(visualization_msgs::InteractiveMarker(), 0.5)
 {
   cam_pose_.orientation.w = 1.0;
@@ -26,6 +27,8 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
   camera_placement_pub_ = ph.advertise<view_controller_msgs::CameraPlacement>("/rviz/camera_placement", 1);
   view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1);
+
+  trajectory_publish_timer_ = ph.createTimer(ros::Duration(timer_rate_), &TrajectoryEditor::trajectoryStepsPublisherCallback, this);
 
   //TODO: remove?
   std::string frame_id_param_name = "frame_id";
@@ -120,6 +123,11 @@ void TrajectoryEditor::restoreSettings(const qt_gui_cpp::Settings& plugin_settin
 void TrajectoryEditor::camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_pose)
 {
   cam_pose_ = geometry_msgs::Pose(*cam_pose);
+}
+
+void TrajectoryEditor::trajectoryStepsPublisherCallback(const ros::TimerEvent& event)
+{
+  ROS_DEBUG_STREAM("Timer: time is " << ros::Time::now().toSec());
 }
 
 void TrajectoryEditor::updateTrajectory()
