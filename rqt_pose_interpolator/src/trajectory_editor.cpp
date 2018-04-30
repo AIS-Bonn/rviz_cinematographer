@@ -280,7 +280,6 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
     visualization_msgs::InteractiveMarker new_marker = searched_element->marker;
     new_marker.controls[0].markers[0].color.r = 1.f;
     new_marker.controls[0].markers[0].color.g = 0.f;
-    ++searched_element;
     if(pose_before_initialized && pose_behind_initialized)
     {
       new_marker.pose.position.x = (pose_before.position.x + pose_behind.position.x) / 2.;
@@ -291,7 +290,9 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
     {
       new_marker.pose.position.x -= 0.5;
     }
-    searched_element = markers_.insert(searched_element, TimedMarker(std::move(new_marker), searched_element->transition_time));
+    auto next_element = searched_element;
+    next_element++;
+    searched_element = markers_.insert(next_element, TimedMarker(std::move(new_marker), searched_element->transition_time));
   }
 
   // refill server with member markers
@@ -575,7 +576,8 @@ view_controller_msgs::CameraPlacement TrajectoryEditor::makeCameraPlacement()
   cp.eye.header.stamp = ros::Time::now();
   cp.eye.header.frame_id = ui_.frame_line_edit->text().toStdString();
   cp.target_frame = ui_.frame_line_edit->text().toStdString();
-  cp.interpolation_mode = view_controller_msgs::CameraPlacement::FPS; // SPHERICAL
+  cp.interpolation_mode = view_controller_msgs::CameraPlacement::SPHERICAL;
+  cp.mouse_interaction_mode = view_controller_msgs::CameraPlacement::NO_CHANGE;
   cp.time_from_start = ros::Duration(0);
 
   cp.up.header = cp.focus.header = cp.eye.header;
@@ -755,6 +757,8 @@ void TrajectoryEditor::moveCamToMarker(const TimedMarker& marker)
     cp.up.vector.x = rotated_vector.x();
     cp.up.vector.y = rotated_vector.y();
     cp.up.vector.z = rotated_vector.z();
+
+    cp.allow_free_yaw_axis = true;
   }
 
   // look from
