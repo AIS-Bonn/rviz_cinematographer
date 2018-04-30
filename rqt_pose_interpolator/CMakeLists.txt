@@ -109,4 +109,4 @@ install(FILES plugin.xml
 FILE(GLOB_RECURSE all_headers_for_ides
         ${CMAKE_SOURCE_DIR}/**/*.hpp
         ${CMAKE_SOURCE_DIR}/**/*.h)
-ADD_CUSTOM_TARGET(ide_includes SOURCES ${all_headers_for_ides})
+ADD_CUSTOM_TARGET(ide_includes_${PROJECT_NAME} SOURCES ${all_headers_for_ides})

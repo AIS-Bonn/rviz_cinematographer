@@ -68,3 +68,9 @@ install(TARGETS ${PROJECT_NAME}
    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+# Dummy target for IDE's
+FILE(GLOB_RECURSE all_headers_for_ides
+        ${CMAKE_SOURCE_DIR}/**/*.hpp
+        ${CMAKE_SOURCE_DIR}/**/*.h)
+ADD_CUSTOM_TARGET(ide_includes_${PROJECT_NAME} SOURCES ${all_headers_for_ides})
