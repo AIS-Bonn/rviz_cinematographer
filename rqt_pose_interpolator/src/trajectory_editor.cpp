@@ -283,7 +283,13 @@ void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMark
       new_marker.pose.position.x = (pose_before.position.x + pose_behind.position.x) / 2.;
       new_marker.pose.position.y = (pose_before.position.y + pose_behind.position.y) / 2.;
       new_marker.pose.position.z = (pose_before.position.z + pose_behind.position.z) / 2.;
-      //TODO: slerp on orientations to get mean of them as well
+
+      // Compute the slerp-ed rotation
+      tf::Quaternion start_orientation, end_orientation, intermediate_orientation;
+      tf::quaternionMsgToTF(pose_before.orientation, start_orientation);
+      tf::quaternionMsgToTF(pose_behind.orientation, end_orientation);
+      intermediate_orientation = start_orientation.slerp(end_orientation, 0.5);
+      tf::quaternionTFToMsg(intermediate_orientation, new_marker.pose.orientation);
     }
     else
     {
@@ -335,6 +341,13 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
       new_marker.pose.position.x = (pose_before.position.x + pose_behind.position.x) / 2.;
       new_marker.pose.position.y = (pose_before.position.y + pose_behind.position.y) / 2.;
       new_marker.pose.position.z = (pose_before.position.z + pose_behind.position.z) / 2.;
+      
+      // Compute the slerp-ed rotation
+      tf::Quaternion start_orientation, end_orientation, intermediate_orientation;
+      tf::quaternionMsgToTF(pose_before.orientation, start_orientation);
+      tf::quaternionMsgToTF(pose_behind.orientation, end_orientation);
+      intermediate_orientation = start_orientation.slerp(end_orientation, 0.5);
+      tf::quaternionTFToMsg(intermediate_orientation, new_marker.pose.orientation);
     }
     else
     {
