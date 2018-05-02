@@ -31,6 +31,7 @@
 #include <rqt_pose_interpolator/utils.h>
 #include "ui_trajectory_editor.h"
 
+#include <boost/filesystem.hpp>
 #include <yaml-cpp/yaml.h>
 
 

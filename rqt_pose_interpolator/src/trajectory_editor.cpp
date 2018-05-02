@@ -565,16 +565,19 @@ void TrajectoryEditor::saveTrajectoryToFile()
 {
   std::string directory_path = ros::package::getPath("rqt_pose_interpolator")  + "/trajectories/";
 
-  QString file_path = QFileDialog::getSaveFileName(widget_, "Save Trajectory", QString(directory_path.c_str()), "All Files (*)");
+  std::string file_path = QFileDialog::getSaveFileName(widget_, "Save Trajectory", QString(directory_path.c_str()), "All Files (*)").toStdString();
   if(file_path == "")
   {
     ROS_ERROR_STREAM("No file specified.");
   }
   else
   {
-    // TODO: make sure file_path ends with yaml
-    ROS_INFO_STREAM("filename is : " << file_path.toStdString());
-    safeTrajectoryToFile(file_path.toStdString());
+    std::string extension = boost::filesystem::extension(file_path);
+
+    if(extension != ".yaml")
+      file_path = file_path + std::string(".yaml");
+
+    safeTrajectoryToFile(file_path);
   }
 }
 
