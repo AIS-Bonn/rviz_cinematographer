@@ -341,7 +341,7 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
       new_marker.pose.position.x = (pose_before.position.x + pose_behind.position.x) / 2.;
       new_marker.pose.position.y = (pose_before.position.y + pose_behind.position.y) / 2.;
       new_marker.pose.position.z = (pose_before.position.z + pose_behind.position.z) / 2.;
-      
+
       // Compute the slerp-ed rotation
       tf::Quaternion start_orientation, end_orientation, intermediate_orientation;
       tf::quaternionMsgToTF(pose_before.orientation, start_orientation);
@@ -370,17 +370,7 @@ void TrajectoryEditor::setCurrentTo(TimedMarker& marker)
   marker.marker.controls[0].markers[0].color.g = 1.f;
   current_marker_ = marker;
 
-  // update gui elements
-  setValueQuietly(ui_.translation_x_spin_box, marker.marker.pose.position.x);
-  setValueQuietly(ui_.translation_y_spin_box, marker.marker.pose.position.y);
-  setValueQuietly(ui_.translation_z_spin_box, marker.marker.pose.position.z);
-
-  setValueQuietly(ui_.rotation_x_spin_box, marker.marker.pose.orientation.x);
-  setValueQuietly(ui_.rotation_y_spin_box, marker.marker.pose.orientation.y);
-  setValueQuietly(ui_.rotation_z_spin_box, marker.marker.pose.orientation.z);
-  setValueQuietly(ui_.rotation_w_spin_box, marker.marker.pose.orientation.w);
-
-  setValueQuietly(ui_.transition_time_spin_box, marker.marker.pose.orientation.w);
+  updatePoseInGUI(marker.marker.pose, marker.transition_time);
 }
 
 void TrajectoryEditor::removeMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
@@ -509,15 +499,7 @@ void TrajectoryEditor::setCurrentPoseToCam()
 
   current_marker_.marker.pose = rotated_cam_pose;
 
-  // update gui elements
-  setValueQuietly(ui_.translation_x_spin_box, rotated_cam_pose.position.x);
-  setValueQuietly(ui_.translation_y_spin_box, rotated_cam_pose.position.y);
-  setValueQuietly(ui_.translation_z_spin_box, rotated_cam_pose.position.z);
-
-  setValueQuietly(ui_.rotation_x_spin_box, rotated_cam_pose.orientation.x);
-  setValueQuietly(ui_.rotation_y_spin_box, rotated_cam_pose.orientation.y);
-  setValueQuietly(ui_.rotation_z_spin_box, rotated_cam_pose.orientation.z);
-  setValueQuietly(ui_.rotation_w_spin_box, rotated_cam_pose.orientation.w);
+  updatePoseInGUI(rotated_cam_pose, current_marker_.transition_time);
 
   // update marker pose
   getMarkerByName(current_marker_.marker.name).marker.pose = rotated_cam_pose;
@@ -525,12 +507,6 @@ void TrajectoryEditor::setCurrentPoseToCam()
   server_->setPose(current_marker_.marker.name, current_marker_.marker.pose, current_marker_.marker.header);
   server_->applyChanges();
   updateTrajectory();
-
-//  // rviz camera looks into negative z direction
-//  tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), cam_pose_.orientation);
-//  start_look_at_.x = cam_pose_.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
-//  start_look_at_.y = cam_pose_.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
-//  start_look_at_.z = cam_pose_.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 }
 
 void TrajectoryEditor::setMarkerFrames()
@@ -607,17 +583,7 @@ void TrajectoryEditor::loadTrajectoryFromFile()
 
     current_marker_ = markers_.back();
 
-    // update gui elements
-    setValueQuietly(ui_.translation_x_spin_box, current_marker_.marker.pose.position.x);
-    setValueQuietly(ui_.translation_y_spin_box, current_marker_.marker.pose.position.y);
-    setValueQuietly(ui_.translation_z_spin_box, current_marker_.marker.pose.position.z);
-
-    setValueQuietly(ui_.rotation_x_spin_box, current_marker_.marker.pose.orientation.x);
-    setValueQuietly(ui_.rotation_y_spin_box, current_marker_.marker.pose.orientation.y);
-    setValueQuietly(ui_.rotation_z_spin_box, current_marker_.marker.pose.orientation.z);
-    setValueQuietly(ui_.rotation_w_spin_box, current_marker_.marker.pose.orientation.w);
-
-    setValueQuietly(ui_.transition_time_spin_box, current_marker_.transition_time);
+    updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
 
     updateTrajectory();
   }
@@ -731,60 +697,50 @@ void TrajectoryEditor::moveCamToPrev()
   if(markers_.begin()->marker.name == current_marker_.marker.name)
     return;
 
-  for(auto it = ++(markers_.begin()); it != markers_.end(); ++it)
+  auto it = ++(markers_.begin()), prev_marker = ++(markers_.begin());
+  for(; it != markers_.end(); ++it)
   {
     // find current marker
     if(it->marker.name == current_marker_.marker.name)
     {
-      auto prev_marker = it;
+      prev_marker = it;
       --prev_marker;
-
-      // needed for transition steps publishing
-      start_pose_ = it->marker.pose;
-      end_pose_ = prev_marker->marker.pose;
-
-      // update member list
-      prev_marker->marker.controls[0].markers[0].color.r = 0.f;
-      prev_marker->marker.controls[0].markers[0].color.g = 1.f;
-      it->marker.controls[0].markers[0].color.r = 1.f;
-      it->marker.controls[0].markers[0].color.g = 0.f;
-
-      // update server
-      visualization_msgs::InteractiveMarker int_marker;
-      server_->get(prev_marker->marker.name, int_marker);
-      int_marker.controls[0].markers[0].color.r = 0.f;
-      int_marker.controls[0].markers[0].color.g = 1.f;
-      server_->erase(prev_marker->marker.name);
-      server_->insert(int_marker);
-
-      server_->get(it->marker.name, int_marker);
-      int_marker.controls[0].markers[0].color.r = 1.f;
-      int_marker.controls[0].markers[0].color.g = 0.f;
-      server_->erase(it->marker.name);
-      server_->insert(int_marker);
-
-      server_->applyChanges();
-
-      // update current marker to prev marker
-      current_marker_ = *prev_marker;
-
-      // update gui elements
-      setValueQuietly(ui_.translation_x_spin_box, current_marker_.marker.pose.position.x);
-      setValueQuietly(ui_.translation_y_spin_box, current_marker_.marker.pose.position.y);
-      setValueQuietly(ui_.translation_z_spin_box, current_marker_.marker.pose.position.z);
-
-      setValueQuietly(ui_.rotation_x_spin_box, current_marker_.marker.pose.orientation.x);
-      setValueQuietly(ui_.rotation_y_spin_box, current_marker_.marker.pose.orientation.y);
-      setValueQuietly(ui_.rotation_z_spin_box, current_marker_.marker.pose.orientation.z);
-      setValueQuietly(ui_.rotation_w_spin_box, current_marker_.marker.pose.orientation.w);
-
-      setValueQuietly(ui_.transition_time_spin_box, current_marker_.transition_time);
       break;
     }
   }
 
+  // update member list
+  prev_marker->marker.controls[0].markers[0].color.r = 0.f;
+  prev_marker->marker.controls[0].markers[0].color.g = 1.f;
+  it->marker.controls[0].markers[0].color.r = 1.f;
+  it->marker.controls[0].markers[0].color.g = 0.f;
+
+  // update server
+  visualization_msgs::InteractiveMarker int_marker;
+  server_->get(prev_marker->marker.name, int_marker);
+  int_marker.controls[0].markers[0].color.r = 0.f;
+  int_marker.controls[0].markers[0].color.g = 1.f;
+  server_->erase(prev_marker->marker.name);
+  server_->insert(int_marker);
+
+  server_->get(it->marker.name, int_marker);
+  int_marker.controls[0].markers[0].color.r = 1.f;
+  int_marker.controls[0].markers[0].color.g = 0.f;
+  server_->erase(it->marker.name);
+  server_->insert(int_marker);
+
+  server_->applyChanges();
+
+  // update current marker to prev marker
+  current_marker_ = *prev_marker;
+
+  updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
+
+
   // initiate publishing of steps between current and prev marker. see transitionStepsPublisherCallback()
-  current_transition_duration_ = ros::Duration(current_marker_.transition_time);
+  start_pose_ = it->marker.pose;
+  end_pose_ = prev_marker->marker.pose;
+  current_transition_duration_ = ros::Duration(prev_marker->transition_time);
   transition_start_time_ = ros::Time::now();
   publish_transition_steps_ = true;
 
@@ -799,61 +755,50 @@ void TrajectoryEditor::moveCamToNext()
   if(last_marker->marker.name == current_marker_.marker.name)
     return;
 
-  for(auto it = markers_.begin(); it != markers_.end(); ++it)
+  // find iterator to current marker
+  auto it = markers_.begin(), next_marker = markers_.begin();
+  for(; it != markers_.end(); ++it)
   {
-    // find current marker
     if(it->marker.name == current_marker_.marker.name)
     {
-      auto next_marker = it;
-      ++next_marker;
-
-      // needed for transition steps publishing
-      start_pose_ = it->marker.pose;
-      end_pose_ = next_marker->marker.pose;
-
-      // update member list
-      next_marker->marker.controls[0].markers[0].color.r = 0.f;
-      next_marker->marker.controls[0].markers[0].color.g = 1.f;
-      it->marker.controls[0].markers[0].color.r = 1.f;
-      it->marker.controls[0].markers[0].color.g = 0.f;
-
-      // update server
-      visualization_msgs::InteractiveMarker int_marker;
-      server_->get(next_marker->marker.name, int_marker);
-      int_marker.controls[0].markers[0].color.r = 0.f;
-      int_marker.controls[0].markers[0].color.g = 1.f;
-      server_->erase(next_marker->marker.name);
-      server_->insert(int_marker);
-
-      server_->get(it->marker.name, int_marker);
-      int_marker.controls[0].markers[0].color.r = 1.f;
-      int_marker.controls[0].markers[0].color.g = 0.f;
-      server_->erase(it->marker.name);
-      server_->insert(int_marker);
-
-      server_->applyChanges();
-
-      // update current marker to next marker
-      current_marker_ = *next_marker;
-
-      // update gui elements
-      setValueQuietly(ui_.translation_x_spin_box, current_marker_.marker.pose.position.x);
-      setValueQuietly(ui_.translation_y_spin_box, current_marker_.marker.pose.position.y);
-      setValueQuietly(ui_.translation_z_spin_box, current_marker_.marker.pose.position.z);
-
-      setValueQuietly(ui_.rotation_x_spin_box, current_marker_.marker.pose.orientation.x);
-      setValueQuietly(ui_.rotation_y_spin_box, current_marker_.marker.pose.orientation.y);
-      setValueQuietly(ui_.rotation_z_spin_box, current_marker_.marker.pose.orientation.z);
-      setValueQuietly(ui_.rotation_w_spin_box, current_marker_.marker.pose.orientation.w);
-
-      setValueQuietly(ui_.transition_time_spin_box, current_marker_.transition_time);
+      next_marker = it;
+      next_marker++;
       break;
     }
   }
 
-  // TODO: maybe split up publishing and camera movement into separate functions
+  // update member list
+  next_marker->marker.controls[0].markers[0].color.r = 0.f;
+  next_marker->marker.controls[0].markers[0].color.g = 1.f;
+  it->marker.controls[0].markers[0].color.r = 1.f;
+  it->marker.controls[0].markers[0].color.g = 0.f;
+
+  // update server
+  visualization_msgs::InteractiveMarker int_marker;
+  server_->get(next_marker->marker.name, int_marker);
+  int_marker.controls[0].markers[0].color.r = 0.f;
+  int_marker.controls[0].markers[0].color.g = 1.f;
+  server_->erase(next_marker->marker.name);
+  server_->insert(int_marker);
+
+  server_->get(it->marker.name, int_marker);
+  int_marker.controls[0].markers[0].color.r = 1.f;
+  int_marker.controls[0].markers[0].color.g = 0.f;
+  server_->erase(it->marker.name);
+  server_->insert(int_marker);
+
+  server_->applyChanges();
+
+  // update current marker to next marker
+  current_marker_ = *next_marker;
+
+  updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
+
+
   // initiate publishing of steps between current and next marker. see transitionStepsPublisherCallback()
-  current_transition_duration_ = ros::Duration(current_marker_.transition_time);
+  start_pose_ = it->marker.pose;
+  end_pose_ = next_marker->marker.pose;
+  current_transition_duration_ = ros::Duration(next_marker->transition_time);
   transition_start_time_ = ros::Time::now();
   publish_transition_steps_ = true;
 
@@ -910,6 +855,21 @@ void TrajectoryEditor::moveCamToMarker(const TimedMarker& marker)
   camera_placement_pub_.publish(cp);
 }
 
+void TrajectoryEditor::updatePoseInGUI(const geometry_msgs::Pose& pose,
+                                       double transition_time)
+{
+  setValueQuietly(ui_.translation_x_spin_box, pose.position.x);
+  setValueQuietly(ui_.translation_y_spin_box, pose.position.y);
+  setValueQuietly(ui_.translation_z_spin_box, pose.position.z);
+
+  setValueQuietly(ui_.rotation_x_spin_box, pose.orientation.x);
+  setValueQuietly(ui_.rotation_y_spin_box, pose.orientation.y);
+  setValueQuietly(ui_.rotation_z_spin_box, pose.orientation.z);
+  setValueQuietly(ui_.rotation_w_spin_box, pose.orientation.w);
+
+  setValueQuietly(ui_.transition_time_spin_box, transition_time);
+}
+
 void TrajectoryEditor::setValueQuietly(QDoubleSpinBox* spin_box, double value)
 {
   bool old_block_state = spin_box->blockSignals(true);
@@ -928,18 +888,7 @@ void TrajectoryEditor::processFeedback(const visualization_msgs::InteractiveMark
     current_marker_.marker.pose = feedback->pose;
     current_marker_.transition_time = getMarkerByName(feedback->marker_name).transition_time;
 
-    // update gui elements
-    setValueQuietly(ui_.translation_x_spin_box, feedback->pose.position.x);
-    setValueQuietly(ui_.translation_y_spin_box, feedback->pose.position.y);
-    setValueQuietly(ui_.translation_z_spin_box, feedback->pose.position.z);
-
-    setValueQuietly(ui_.rotation_x_spin_box, feedback->pose.orientation.x);
-    setValueQuietly(ui_.rotation_y_spin_box, feedback->pose.orientation.y);
-    setValueQuietly(ui_.rotation_z_spin_box, feedback->pose.orientation.z);
-    setValueQuietly(ui_.rotation_w_spin_box, feedback->pose.orientation.w);
-
-    setValueQuietly(ui_.transition_time_spin_box, getMarkerByName(feedback->marker_name).transition_time);
-
+    updatePoseInGUI(feedback->pose, getMarkerByName(feedback->marker_name).transition_time);
 
     // update marker pose
     marker.pose = feedback->pose;

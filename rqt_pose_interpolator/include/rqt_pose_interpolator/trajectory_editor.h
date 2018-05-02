@@ -252,6 +252,15 @@ private:
   void setCurrentTo(TimedMarker& marker);
 
   /**
+   * @brief Sets the Pose in the GUI to the provided input values.
+   *
+   * @param[in] pose            pose
+   * @param[in] transition_time transition time
+   */
+  void updatePoseInGUI(const geometry_msgs::Pose& pose,
+                       double transition_time=0.5);
+
+  /**
    * @brief Sets the value of the spin_box to the value without triggering a signal.
    *
    * @param[in,out] spin_box    the updated spin box.
