@@ -17,6 +17,7 @@
 #include <tf/transform_datatypes.h>
 
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseArray.h>
 #include <view_controller_msgs/CameraPlacement.h>
 #include <nav_msgs/Path.h>
 
@@ -246,8 +247,10 @@ private:
 
   /** @brief Publishes the camera placement. */
   ros::Publisher camera_placement_pub_;
-  /** @brief //TODO */
+  /** @brief Publishes the trajectory that is defined by the markers. */
   ros::Publisher view_poses_array_pub_;
+  /** @brief Publishes the transition steps between two markers. */
+  ros::Publisher transition_steps_pub_;
   /** @brief Subscribes to the camera pose. */
   ros::Subscriber camera_pose_sub_;
   /** @brief Publishes the trajectory steps in a specified rate. */
@@ -259,24 +262,26 @@ private:
   interactive_markers::MenuHandler menu_handler_;
   /** @brief Stores markers - needed for #menu_handler. */
   std::shared_ptr<interactive_markers::InteractiveMarkerServer> server_;
-  /** @brief Marker defining the start position. */
-  visualization_msgs::InteractiveMarker start_marker_;
-  /** @brief Marker defining the end position. */
-  visualization_msgs::InteractiveMarker end_marker_;
 
   /** @brief Current camera pose. */
   geometry_msgs::Pose cam_pose_;
-
-  /** @brief Focus point of the start pose. */
-  geometry_msgs::Point start_look_at_;
-  /** @brief Focus point of the end pose. */
-  geometry_msgs::Point end_look_at_;
 
   /** @brief Currently selected marker. */
   TimedMarker current_marker_;
 
   /** @brief Currently maintained list of TimedMarkers. */
   MarkerList markers_;
+
+  /** @brief Flag that initiates the publishing of the transition steps. */
+  bool publish_transition_steps_;
+  /** @brief Duration of the current transition. */
+  ros::Duration current_transition_duration_;
+  /** @brief Time the current transition started. */
+  ros::Time transition_start_time_;
+  /** @brief Pose defining the start of the current transition. */
+  geometry_msgs::Pose start_pose_;
+  /** @brief Marker defining the end position. */
+  geometry_msgs::Pose end_pose_;
 };
 
 } // namespace
