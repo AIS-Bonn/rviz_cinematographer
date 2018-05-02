@@ -539,6 +539,34 @@
        </widget>
       </item>
       <item>
+       <widget class="QDoubleSpinBox" name="publish_rate_spin_box">
+        <property name="toolTip">
+         <string>Rate that specifies how often the pose is published while the camera is moved with the GUI buttons.</string>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+        <property name="prefix">
+         <string>publishing rate : </string>
+        </property>
+        <property name="suffix">
+         <string> Hz</string>
+        </property>
+        <property name="decimals">
+         <number>0</number>
+        </property>
+        <property name="minimum">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>10.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item>
        <layout class="QHBoxLayout" name="horizontalLayout_4">
         <property name="sizeConstraint">
          <enum>QLayout::SetDefaultConstraint</enum>

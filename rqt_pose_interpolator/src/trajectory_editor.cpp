@@ -54,6 +54,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 
   connect(ui_.transition_time_spin_box, SIGNAL(valueChanged(double)), this, SLOT(updateCurrentMarker()));
 
+  connect(ui_.publish_rate_spin_box, SIGNAL(valueChanged(double)), this, SLOT(updatePublishingRate()));
 
   connect(ui_.move_to_current_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToCurrent()));
   connect(ui_.move_to_prev_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToPrev()));
@@ -147,7 +148,7 @@ void TrajectoryEditor::transitionStepsPublisherCallback(const ros::TimerEvent &e
     if(transition_steps_pub_.getNumSubscribers() == 0)
       return;
 
-    // TODO replace by slerp.
+    // TODO add more options
     double progress = 0.5 * (1 - cos(fraction * M_PI));
 
     geometry_msgs::Pose intermediate_pose;
@@ -169,7 +170,7 @@ void TrajectoryEditor::transitionStepsPublisherCallback(const ros::TimerEvent &e
     pose_array.header.stamp = ros::Time::now();
     transition_steps_pub_.publish(pose_array);
   }
-  ROS_DEBUG_STREAM("Timer: time is " << ros::Time::now().toSec());
+  ROS_DEBUG_STREAM("Timer: time is " << ros::Time::now());
 }
 
 void TrajectoryEditor::updateTrajectory()
@@ -532,6 +533,13 @@ void TrajectoryEditor::setMarkerFrames()
   server_->applyChanges();
 
   updateTrajectory();
+}
+
+void TrajectoryEditor::updatePublishingRate()
+{
+  trajectory_publish_timer_.stop();
+  trajectory_publish_timer_.setPeriod(ros::Duration(1.0 / ui_.publish_rate_spin_box->value()));
+  trajectory_publish_timer_.start();
 }
 
 void TrajectoryEditor::loadTrajectoryFromFile()

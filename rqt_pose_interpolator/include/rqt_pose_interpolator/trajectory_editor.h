@@ -129,6 +129,8 @@ public slots:
   void setCurrentPoseToCam();
   /** @brief Sets the frame_id of the markers.*/
   void setMarkerFrames();
+  /** @brief Sets #timer_rate_.*/
+  void updatePublishingRate();
   /** @brief Loads a series of markers from a file.*/
   void loadTrajectoryFromFile();
   /** @brief Saves poses and transition times of interactive markers to a file.*/
