@@ -29,7 +29,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1);
   transition_steps_pub_ = ph.advertise<geometry_msgs::PoseArray>("/trajectory_steps", 1);
 
-  trajectory_publish_timer_ = ph.createTimer(ros::Duration(timer_rate_), &TrajectoryEditor::trajectoryStepsPublisherCallback, this);
+  trajectory_publish_timer_ = ph.createTimer(ros::Duration(timer_rate_), &TrajectoryEditor::transitionStepsPublisherCallback, this);
 
   //TODO: remove?
   std::string frame_id_param_name = "frame_id";
@@ -107,6 +107,9 @@ void TrajectoryEditor::shutdownPlugin()
   camera_pose_sub_.shutdown();
   camera_placement_pub_.shutdown();
   view_poses_array_pub_.shutdown();
+  transition_steps_pub_.shutdown();
+
+  trajectory_publish_timer_.stop();
 }
 
 void TrajectoryEditor::saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const
@@ -126,7 +129,7 @@ void TrajectoryEditor::camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_
   cam_pose_ = geometry_msgs::Pose(*cam_pose);
 }
 
-void TrajectoryEditor::trajectoryStepsPublisherCallback(const ros::TimerEvent& event)
+void TrajectoryEditor::transitionStepsPublisherCallback(const ros::TimerEvent &event)
 {
   if(publish_transition_steps_)
   {
@@ -150,7 +153,6 @@ void TrajectoryEditor::trajectoryStepsPublisherCallback(const ros::TimerEvent& e
     intermediate_pose.position.y = start_pose_.position.y + progress * (end_pose_.position.y - start_pose_.position.y);
     intermediate_pose.position.z = start_pose_.position.z + progress * (end_pose_.position.z - start_pose_.position.z);
 
-    //Interpolate rotation
     tf::Quaternion start_orientation, end_orientation, intermediate_orientation;
     tf::quaternionMsgToTF(start_pose_.orientation, start_orientation);
     tf::quaternionMsgToTF(end_pose_.orientation, end_orientation);
@@ -737,7 +739,7 @@ void TrajectoryEditor::moveCamToPrev()
     }
   }
 
-  // initiate publishing of steps between current and prev marker. see trajectoryStepsPublisherCallback()
+  // initiate publishing of steps between current and prev marker. see transitionStepsPublisherCallback()
   current_transition_duration_ = ros::Duration(current_marker_.transition_time);
   transition_start_time_ = ros::Time::now();
   publish_transition_steps_ = true;
@@ -806,7 +808,7 @@ void TrajectoryEditor::moveCamToNext()
   }
 
   // TODO: maybe split up publishing and camera movement into separate functions
-  // initiate publishing of steps between current and next marker. see trajectoryStepsPublisherCallback()
+  // initiate publishing of steps between current and next marker. see transitionStepsPublisherCallback()
   current_transition_duration_ = ros::Duration(current_marker_.transition_time);
   transition_start_time_ = ros::Time::now();
   publish_transition_steps_ = true;

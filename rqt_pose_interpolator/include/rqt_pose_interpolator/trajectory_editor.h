@@ -49,8 +49,8 @@ public:
   struct InteractiveMarkerWithTime
   {
     InteractiveMarkerWithTime(visualization_msgs::InteractiveMarker&& input_marker, const double time)
-            : marker(input_marker)
-              , transition_time(time)
+    : marker(input_marker)
+      , transition_time(time)
     {
     }
 
@@ -103,11 +103,11 @@ public:
   void camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_pose);
 
   /**
-  * @brief Publishes the trajectory step by step.
+  * @brief Publishes the transition step by step.
   *
   * @param[in] event    timer information.
   */
-  void trajectoryStepsPublisherCallback(const ros::TimerEvent& event);
+  void transitionStepsPublisherCallback(const ros::TimerEvent &event);
 
 Q_SIGNALS:
   void updateRequested();
@@ -236,7 +236,21 @@ private:
    */
   InteractiveMarkerWithTime& getMarkerByName(const std::string& marker_name);
 
+  /**
+   * @brief Sets the input as the #current_marker_.
+   *
+   * Additionally updates the GUI elements and sets the color of the input marker from to green.
+   *
+   * @param[in] marker  input marker.
+   */
   void setCurrentTo(TimedMarker& marker);
+
+  /**
+   * @brief Sets the value of the spin_box to the value without triggering a signal.
+   *
+   * @param[in,out] spin_box    the updated spin box.
+   * @param[in]     value       the value the spin box is set to.
+   */
   void setValueQuietly(QDoubleSpinBox* spin_box, double value);
 
 
