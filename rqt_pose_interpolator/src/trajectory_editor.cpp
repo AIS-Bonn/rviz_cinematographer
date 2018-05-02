@@ -57,7 +57,9 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 
   connect(ui_.move_to_current_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToCurrent()));
   connect(ui_.move_to_prev_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToPrev()));
+  connect(ui_.move_to_first_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToFirst()));
   connect(ui_.move_to_next_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToNext()));
+  connect(ui_.move_to_last_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToLast()));
   connect(ui_.set_pose_to_cam_button, SIGNAL(clicked(bool)), this, SLOT(setCurrentPoseToCam()));
   connect(ui_.frame_line_edit, SIGNAL(editingFinished()), this, SLOT(setMarkerFrames()));
   connect(ui_.open_file_push_button, SIGNAL(clicked(bool)), this, SLOT(loadTrajectoryFromFile()));
@@ -682,6 +684,27 @@ void TrajectoryEditor::moveCamToCurrent()
   moveCamToMarker(current_marker_);
 }
 
+void TrajectoryEditor::moveCamToFirst()
+{
+  if(markers_.begin()->marker.name == current_marker_.marker.name)
+    return;
+
+  // find current marker
+  auto it = ++(markers_.begin());
+  for(; it != markers_.end(); ++it)
+    if(it->marker.name == current_marker_.marker.name)
+      break;
+
+  auto previous = it;
+  do
+  {
+    previous--;
+    moveCamToPrev();
+    ros::Duration(previous->transition_time).sleep();
+  }
+  while(previous != markers_.begin());
+}
+
 void TrajectoryEditor::moveCamToPrev()
 {
   if(markers_.begin()->marker.name == current_marker_.marker.name)
@@ -814,6 +837,28 @@ void TrajectoryEditor::moveCamToNext()
   publish_transition_steps_ = true;
 
   moveCamToMarker(current_marker_);
+}
+
+void TrajectoryEditor::moveCamToLast()
+{
+  // do nothing if current is already the last marker
+  auto last_marker = markers_.end();
+  last_marker--;
+  if(last_marker->marker.name == current_marker_.marker.name)
+    return;
+
+  // find current marker
+  auto it = markers_.begin();
+  for(; it != markers_.end(); ++it)
+    if(it->marker.name == current_marker_.marker.name)
+      break;
+
+  for(auto next = it; next != markers_.end();)
+  {
+    moveCamToNext();
+    next++;
+    ros::Duration(next->transition_time).sleep();
+  }
 }
 
 void TrajectoryEditor::moveCamToMarker(const TimedMarker& marker)

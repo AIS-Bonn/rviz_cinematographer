@@ -117,8 +117,12 @@ public slots:
   void moveCamToCurrent();
   /** @brief Moves rviz camera to pose before currently selected one.*/
   void moveCamToPrev();
+  /** @brief Moves rviz camera subsequently to the first pose in the trajectory.*/
+  void moveCamToFirst();
   /** @brief Moves rviz camera to pose after currently selected one.*/
   void moveCamToNext();
+  /** @brief Moves rviz camera subsequently to the last pose in the trajectory.*/
+  void moveCamToLast();
   /** @brief Update marker with values from GUI.*/
   void updateCurrentMarker();
   /** @brief Sets currently selected pose to the current pose of the rviz camera.*/
