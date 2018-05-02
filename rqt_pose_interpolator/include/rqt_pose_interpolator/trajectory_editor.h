@@ -35,6 +35,10 @@
 #include <boost/filesystem.hpp>
 #include <yaml-cpp/yaml.h>
 
+#include "spline_library/splines/natural_spline.h"
+#include <spline_library/splines/uniform_cr_spline.h>
+#include <spline_library/vector.h>
+
 
 namespace pose_interpolator {
 
