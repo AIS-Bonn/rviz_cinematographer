@@ -14,7 +14,7 @@
 #include <tf/transform_datatypes.h>
 
 #include <geometry_msgs/Pose.h>
-#include <view_controller_msgs/CameraPlacement.h>
+#include <rviz_animated_view_controller/CameraMovement.h>
 
 #include <interactive_markers/interactive_marker_server.h>
 #include <interactive_markers/menu_handler.h>
@@ -98,10 +98,10 @@ public slots:
 
 private:
   /**
-   * @brief Creates a CameraPlacement hull.
-   * @return CameraPlacement.
+   * @brief Creates a CameraMovement hull.
+   * @return CameraMovement.
    */
-  view_controller_msgs::CameraPlacement makeCameraPlacement();
+  rviz_animated_view_controller::CameraMovement makeCameraMovement();
 
   /**
    * @brief Creates an InteractiveMarker hull.

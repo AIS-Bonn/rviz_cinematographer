@@ -15,7 +15,6 @@ find_package(catkin REQUIRED COMPONENTS
   rqt_gui
   rqt_gui_cpp
   tf
-  view_controller_msgs
   rviz_animated_view_controller
 )
 
@@ -43,7 +42,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS interactive_markers nav_msgs roscpp rqt_gui rqt_gui_cpp tf view_controller_msgs rviz_animated_view_controller
+  CATKIN_DEPENDS interactive_markers nav_msgs roscpp rqt_gui rqt_gui_cpp tf rviz_animated_view_controller
 )
 
 ###########
@@ -86,6 +85,10 @@ target_link_libraries(pose_interpolator_plugins
     ${catkin_LIBRARIES}
     ${QT_LIBRARIES}
     yaml-cpp
+)
+
+add_dependencies(pose_interpolator_plugins
+    ${catkin_EXPORTED_TARGETS}
 )
 
 #############

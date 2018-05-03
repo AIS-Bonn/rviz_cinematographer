@@ -23,7 +23,7 @@ void PoseInterpolator::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   ros::NodeHandle ph("~");
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &PoseInterpolator::camPoseCallback, this);
-  camera_placement_pub_ = ph.advertise<view_controller_msgs::CameraPlacement>("/rviz/camera_placement", 1);
+  camera_placement_pub_ = ph.advertise<rviz_animated_view_controller::CameraMovement>("/rviz/camera_placement", 1);
 
   // access standalone command line arguments
   QStringList argv = context.argv();
@@ -149,13 +149,13 @@ void PoseInterpolator::setMarkerFrames()
   server_->applyChanges();
 }
 
-view_controller_msgs::CameraPlacement PoseInterpolator::makeCameraPlacement()
+rviz_animated_view_controller::CameraMovement PoseInterpolator::makeCameraMovement()
 {
-  view_controller_msgs::CameraPlacement cp;
+  rviz_animated_view_controller::CameraMovement cp;
   cp.eye.header.stamp = ros::Time::now();
   cp.eye.header.frame_id = ui_.frame_text_edit->toPlainText().toStdString();
   cp.target_frame = ui_.frame_text_edit->toPlainText().toStdString();
-  cp.interpolation_mode = view_controller_msgs::CameraPlacement::FPS; // SPHERICAL
+  cp.interpolation_mode = rviz_animated_view_controller::CameraMovement::FPS; // SPHERICAL
   cp.time_from_start = ros::Duration(0);
 
   cp.up.header = cp.focus.header = cp.eye.header;
@@ -212,7 +212,7 @@ void PoseInterpolator::moveCamToStart()
 
 void PoseInterpolator::moveCamToStart(double transition_time)
 {
-  view_controller_msgs::CameraPlacement cp = makeCameraPlacement();
+  rviz_animated_view_controller::CameraMovement cp = makeCameraMovement();
   cp.time_from_start = ros::Duration(transition_time);
 
   if(!ui_.use_up_of_world_radio_button->isChecked())
@@ -237,7 +237,7 @@ void PoseInterpolator::moveCamToStart(double transition_time)
 
 void PoseInterpolator::moveCamToEnd()
 {
-  view_controller_msgs::CameraPlacement cp = makeCameraPlacement();
+  rviz_animated_view_controller::CameraMovement cp = makeCameraMovement();
   cp.time_from_start = ros::Duration(ui_.transition_time_spin_box->value());
 
   if(!ui_.use_up_of_world_radio_button->isChecked())

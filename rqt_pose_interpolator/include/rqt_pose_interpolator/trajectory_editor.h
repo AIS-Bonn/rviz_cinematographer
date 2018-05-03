@@ -18,7 +18,7 @@
 
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseArray.h>
-#include <view_controller_msgs/CameraPlacement.h>
+#include <rviz_animated_view_controller/CameraMovement.h>
 #include <nav_msgs/Path.h>
 
 #include <interactive_markers/interactive_marker_server.h>
@@ -35,7 +35,7 @@
 #include <boost/filesystem.hpp>
 #include <yaml-cpp/yaml.h>
 
-#include "spline_library/splines/natural_spline.h"
+#include <spline_library/splines/natural_spline.h>
 #include <spline_library/splines/uniform_cr_spline.h>
 #include <spline_library/vector.h>
 
@@ -142,10 +142,10 @@ public slots:
 
 private:
   /**
-   * @brief Creates a CameraPlacement hull.
-   * @return CameraPlacement.
+   * @brief Creates a CameraMovement hull.
+   * @return CameraMovement.
    */
-  view_controller_msgs::CameraPlacement makeCameraPlacement();
+  rviz_animated_view_controller::CameraMovement makeCameraMovement();
 
   /**
    * @brief Creates an InteractiveMarker hull.

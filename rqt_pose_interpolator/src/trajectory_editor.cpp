@@ -25,7 +25,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   ros::NodeHandle ph("~");
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
-  camera_placement_pub_ = ph.advertise<view_controller_msgs::CameraPlacement>("/rviz/camera_placement", 1);
+  camera_placement_pub_ = ph.advertise<rviz_animated_view_controller::CameraMovement>("/rviz/camera_placement", 1);
   view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1);
   transition_steps_pub_ = ph.advertise<geometry_msgs::PoseArray>("/trajectory_steps", 1);
 
@@ -649,14 +649,14 @@ void TrajectoryEditor::saveTrajectoryToFile()
   }
 }
 
-view_controller_msgs::CameraPlacement TrajectoryEditor::makeCameraPlacement()
+rviz_animated_view_controller::CameraMovement TrajectoryEditor::makeCameraMovement()
 {
-  view_controller_msgs::CameraPlacement cp;
+  rviz_animated_view_controller::CameraMovement cp;
   cp.eye.header.stamp = ros::Time::now();
   cp.eye.header.frame_id = ui_.frame_line_edit->text().toStdString();
   cp.target_frame = ui_.frame_line_edit->text().toStdString();
-  cp.interpolation_mode = view_controller_msgs::CameraPlacement::SPHERICAL;
-  cp.mouse_interaction_mode = view_controller_msgs::CameraPlacement::NO_CHANGE;
+  cp.interpolation_mode = rviz_animated_view_controller::CameraMovement::SPHERICAL;
+  cp.mouse_interaction_mode = rviz_animated_view_controller::CameraMovement::NO_CHANGE;
   cp.time_from_start = ros::Duration(0);
 
   cp.up.header = cp.focus.header = cp.eye.header;
@@ -869,7 +869,7 @@ void TrajectoryEditor::moveCamToLast()
 
 void TrajectoryEditor::moveCamToMarker(const TimedMarker& marker)
 {
-  view_controller_msgs::CameraPlacement cp = makeCameraPlacement();
+  rviz_animated_view_controller::CameraMovement cp = makeCameraMovement();
   cp.time_from_start = ros::Duration(marker.transition_time);
 
   if(!ui_.use_up_of_world_radio_button->isChecked())
