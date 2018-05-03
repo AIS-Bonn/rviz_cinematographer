@@ -859,7 +859,7 @@ void TrajectoryEditor::moveCamToMarker(const TimedMarker& marker)
   cp.time_from_start = ros::Duration(marker.transition_time);
   cp.interpolation_speed = interpolation_speed_;
 
-  if(!ui_.use_up_of_world_radio_button->isChecked())
+  if(!ui_.use_up_of_world_check_box->isChecked())
   {
     // in the cam frame up is the negative x direction
     tf::Vector3 rotated_vector = rotateVector(tf::Vector3(-1, 0, 0), marker.marker.pose.orientation);

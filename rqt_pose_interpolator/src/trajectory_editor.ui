@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>610</width>
+    <width>338</width>
     <height>946</height>
    </rect>
   </property>
@@ -19,7 +19,7 @@
      <x>8</x>
      <y>8</y>
      <width>322</width>
-     <height>921</height>
+     <height>957</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -498,18 +498,25 @@
        </widget>
       </item>
       <item>
-       <widget class="QRadioButton" name="use_up_of_world_radio_button">
-        <property name="toolTip">
-         <string>If checked, camera can't roll. Uncheck for fancy movements. </string>
-        </property>
+       <widget class="QCheckBox" name="use_up_of_world_check_box">
         <property name="layoutDirection">
          <enum>Qt::RightToLeft</enum>
         </property>
         <property name="text">
-         <string>Use Up of Wor&amp;ld</string>
+         <string>Use Up of World</string>
         </property>
         <property name="checked">
          <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox">
+        <property name="layoutDirection">
+         <enum>Qt::RightToLeft</enum>
+        </property>
+        <property name="text">
+         <string>Spline</string>
         </property>
        </widget>
       </item>
