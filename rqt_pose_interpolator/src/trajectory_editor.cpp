@@ -72,6 +72,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 
   menu_handler_.insert("Remove marker", boost::bind(&TrajectoryEditor::removeMarker, this, _1));
   menu_handler_.insert("Add marker after", boost::bind(&TrajectoryEditor::addMarkerBehind, this, _1));
+  menu_handler_.insert("Add marker here", boost::bind(&TrajectoryEditor::addMarkerHere, this, _1));
   menu_handler_.insert("Add marker before", boost::bind(&TrajectoryEditor::addMarkerBefore, this, _1));
   menu_handler_.insert("Publish trajectory", boost::bind(&TrajectoryEditor::publishTrajectory, this, _1));
 
@@ -337,6 +338,34 @@ void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMark
       new_marker.pose.position.x -= 0.5;
     }
     searched_element = markers_.insert(searched_element, TimedMarker(std::move(new_marker), searched_element->transition_time));
+  }
+
+  // refill server with member markers
+  fillServer(markers_);
+
+  updateTrajectory();
+}
+
+void TrajectoryEditor::addMarkerHere(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
+{
+  // delete all markers from server and safe clicked marker
+  auto searched_element = markers_.end();
+  for(auto it = markers_.begin(); it != markers_.end(); ++it)
+  {
+    server_->get(it->marker.name, it->marker);
+    server_->erase(it->marker.name);
+    if(it->marker.name == feedback->marker_name)
+      searched_element = it;
+  }
+
+  // initialize new marker
+  if(searched_element != markers_.end())
+  {
+    visualization_msgs::InteractiveMarker new_marker = searched_element->marker;
+    new_marker.controls[0].markers[0].color.r = 1.f;
+    new_marker.controls[0].markers[0].color.g = 0.f;
+
+    markers_.insert(searched_element, TimedMarker(std::move(new_marker), searched_element->transition_time));
   }
 
   // refill server with member markers

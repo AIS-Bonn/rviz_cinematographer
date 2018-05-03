@@ -209,6 +209,13 @@ private:
   void addMarkerBefore(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
 
   /**
+   * @brief Adds a marker at the pose of the selected marker - useful for sharp edges in splines.
+   *
+   * @param[in] feedback    feedback from selected marker.
+   */
+  void addMarkerHere(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+
+  /**
    * @brief Adds a marker between the selected marker and the one after.
    *
    * @param[in] feedback    feedback from selected marker.
