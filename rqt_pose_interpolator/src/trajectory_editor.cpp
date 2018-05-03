@@ -14,6 +14,7 @@ TrajectoryEditor::TrajectoryEditor()
   , widget_(0)
   , timer_rate_(0.1)
   , current_marker_(visualization_msgs::InteractiveMarker(), 0.5)
+  , interpolation_speed_(3u)
 {
   cam_pose_.orientation.w = 1.0;
 
@@ -722,14 +723,31 @@ void TrajectoryEditor::moveCamToFirst()
     if(it->marker.name == current_marker_.marker.name)
       break;
 
+  bool first = true;
   auto previous = it;
   do
   {
     previous--;
+    // set interpolation speed first rising, then full speed, then declining
+    interpolation_speed_ = (first) ? rviz_animated_view_controller::CameraMovement::RISING : rviz_animated_view_controller::CameraMovement::FULL;
+    if(previous == markers_.begin())
+    {
+      // if the whole trajectory is between the first two markers, use WAVE, else decline
+      if(first)
+        interpolation_speed_ = rviz_animated_view_controller::CameraMovement::WAVE;
+      else
+        interpolation_speed_ = rviz_animated_view_controller::CameraMovement::DECLINING;
+    }
+
     moveCamToPrev();
+    // wait until rviz camera has performed the movement
     ros::Duration(previous->transition_time).sleep();
+    first = false;
   }
   while(previous != markers_.begin());
+
+  // reset interpolation speed to default
+  interpolation_speed_ = rviz_animated_view_controller::CameraMovement::WAVE;
 }
 
 void TrajectoryEditor::moveCamToPrev()
@@ -859,18 +877,35 @@ void TrajectoryEditor::moveCamToLast()
     if(it->marker.name == current_marker_.marker.name)
       break;
 
-  for(auto next = it; next != markers_.end();)
+  bool first = true;
+  auto next = it;
+  for(++next; next != markers_.end(); it++, next++)
   {
+    // set interpolation speed first rising, then full speed, then declining
+    interpolation_speed_ = (first) ? rviz_animated_view_controller::CameraMovement::RISING : rviz_animated_view_controller::CameraMovement::FULL;
+    if(next == last_marker)
+    {
+      // if the whole trajectory is between the last two markers, use WAVE, else decline
+      if(first)
+        interpolation_speed_ = rviz_animated_view_controller::CameraMovement::WAVE;
+      else
+        interpolation_speed_ = rviz_animated_view_controller::CameraMovement::DECLINING;
+    }
+
     moveCamToNext();
-    next++;
+    // wait until rviz camera has performed the movement
     ros::Duration(next->transition_time).sleep();
+    first = false;
   }
+
+  interpolation_speed_ = rviz_animated_view_controller::CameraMovement::WAVE;
 }
 
 void TrajectoryEditor::moveCamToMarker(const TimedMarker& marker)
 {
   rviz_animated_view_controller::CameraMovement cp = makeCameraMovement();
   cp.time_from_start = ros::Duration(marker.transition_time);
+  cp.interpolation_speed = interpolation_speed_;
 
   if(!ui_.use_up_of_world_radio_button->isChecked())
   {

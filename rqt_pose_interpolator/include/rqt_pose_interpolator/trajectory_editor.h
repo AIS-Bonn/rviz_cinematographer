@@ -288,7 +288,7 @@ private:
   ros::Subscriber camera_pose_sub_;
   /** @brief Publishes the trajectory steps in a specified rate. */
   ros::Timer trajectory_publish_timer_;
-   /** @brief Publishing rate. */
+  /** @brief Publishing rate. */
   double timer_rate_;
 
   /** @brief Connects markers to callbacks. */
@@ -315,6 +315,8 @@ private:
   geometry_msgs::Pose start_pose_;
   /** @brief Marker defining the end position. */
   geometry_msgs::Pose end_pose_;
+
+  uint8_t interpolation_speed_;
 };
 
 } // namespace
