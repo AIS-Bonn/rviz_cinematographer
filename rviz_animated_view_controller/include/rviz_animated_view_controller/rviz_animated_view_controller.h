@@ -37,7 +37,7 @@
 #include <ros/subscriber.h>
 #include <ros/ros.h>
 
-#include "view_controller_msgs/CameraPlacement.h"
+#include "rviz_animated_view_controller/CameraMovement.h"
 
 #include <OGRE/OgreVector3.h>
 #include <OGRE/OgreQuaternion.h>
@@ -168,9 +168,9 @@ protected:  //methods
    * frame specified in the Attached Frame property. */
   void updateAttachedSceneNode();
 
-  void cameraPlacementCallback(const view_controller_msgs::CameraPlacementConstPtr &cp_ptr);
+  void cameraPlacementCallback(const CameraMovementConstPtr &cp_ptr);
   //void cameraPlacementTrajectoryCallback(const view_controller_msgs::CameraPlacementTrajectoryConstPtr &cptptr);
-  void transformCameraPlacementToAttachedFrame(view_controller_msgs::CameraPlacement &cp);
+  void transformCameraPlacementToAttachedFrame(CameraMovement &cp);
 
   //void setUpVectorPropertyModeDependent( const Ogre::Vector3 &vector );
 

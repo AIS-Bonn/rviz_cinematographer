@@ -44,18 +44,13 @@
 #include "rviz/properties/editable_enum_property.h"
 #include "rviz/properties/ros_topic_property.h"
 
-#include "view_controller_msgs/CameraPlacement.h"
-
 #include <OGRE/OgreViewport.h>
-#include <OGRE/OgreQuaternion.h>
-#include <OGRE/OgreVector3.h>
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreSceneManager.h>
 #include <OGRE/OgreCamera.h>
 
 namespace rviz_animated_view_controller
 {
-using namespace view_controller_msgs;
 using namespace rviz;
 
 // Strings for selecting control mode styles
@@ -127,8 +122,8 @@ AnimatedViewController::AnimatedViewController()
                                                          "The default time to use for camera transitions.",
                                                          this );
   camera_placement_topic_property_ = new RosTopicProperty("Placement Topic", "/rviz/camera_placement",
-                                                          QString::fromStdString(ros::message_traits::datatype<view_controller_msgs::CameraPlacement>() ),
-                                                          "Topic for CameraPlacement messages", this, SLOT(updateTopics()));
+                                                          QString::fromStdString(ros::message_traits::datatype<CameraMovement>() ),
+                                                          "Topic for CameraMovement messages", this, SLOT(updateTopics()));
 
 //  camera_placement_trajectory_topic_property_ = new RosTopicProperty("Trajectory Topic", "/rviz/camera_placement_trajectory",
 //                                                          QString::fromStdString(ros::message_traits::datatype<view_controller_msgs::CameraPlacementTrajectory>() ),
@@ -146,7 +141,7 @@ void AnimatedViewController::updateTopics()
 //  trajectory_subscriber_ = nh_.subscribe<view_controller_msgs::CameraPlacementTrajectory>
 //                              (camera_placement_trajectory_topic_property_->getStdString(), 1,
 //                              boost::bind(&AnimatedViewController::cameraPlacementTrajectoryCallback, this, _1));
-  placement_subscriber_  = nh_.subscribe<view_controller_msgs::CameraPlacement>
+  placement_subscriber_  = nh_.subscribe<CameraMovement>
                               (camera_placement_topic_property_->getStdString(), 1,
                               boost::bind(&AnimatedViewController::cameraPlacementCallback, this, _1));
   placement_publisher_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
@@ -539,9 +534,9 @@ void AnimatedViewController::cancelTransition()
   animate_ = false;
 }
 
-void AnimatedViewController::cameraPlacementCallback(const CameraPlacementConstPtr &cp_ptr)
+void AnimatedViewController::cameraPlacementCallback(const CameraMovementConstPtr &cp_ptr)
 {
-  CameraPlacement cp = *cp_ptr;
+  CameraMovement cp = *cp_ptr;
 
   // Handle control parameters
   mouse_enabled_property_->setBool( !cp.interaction_disabled );
@@ -610,7 +605,7 @@ void AnimatedViewController::cameraPlacementCallback(const CameraPlacementConstP
 //  beginNewTransition(eye, focus, up, cp.time_from_start);
 //}
 
-void AnimatedViewController::transformCameraPlacementToAttachedFrame(CameraPlacement &cp)
+void AnimatedViewController::transformCameraPlacementToAttachedFrame(CameraMovement &cp)
 {
   Ogre::Vector3 position_fixed_eye, position_fixed_focus, position_fixed_up; // position_fixed_attached;
   Ogre::Quaternion rotation_fixed_eye, rotation_fixed_focus, rotation_fixed_up; // rotation_fixed_attached;

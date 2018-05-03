@@ -12,11 +12,16 @@ add_definitions(-DQT_NO_KEYWORDS)
 
 find_package(OpenGL REQUIRED)
 
+set(MSG_DEPS
+  std_msgs
+  geometry_msgs)
+
 find_package(catkin REQUIRED COMPONENTS
   rviz
   pluginlib
-  view_controller_msgs
-) 
+  message_generation
+  ${MSG_DEPS}
+)
 
 # Qt Stuff
 find_package(Qt5 ${rviz_QT_VERSION} EXACT REQUIRED Core Widgets)
@@ -26,10 +31,14 @@ set(QT_INCLUDE_DIRS
   ${Qt5Widgets_INCLUDE_DIRS}
 )
 
+add_message_files(DIRECTORY msg FILES CameraMovement.msg)
+
+generate_messages(DEPENDENCIES ${MSG_DEPS})
+
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS view_controller_msgs)
+  CATKIN_DEPENDS message_runtime ${MSG_DEPS})
 
 qt5_wrap_cpp(MOC_FILES
   include/${PROJECT_NAME}/rviz_animated_view_controller.h
@@ -54,6 +63,12 @@ target_link_libraries(
   ${OGRE_LIBRARIES}
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
+)
+
+add_dependencies(
+  ${PROJECT_NAME}
+  ${PROJECT_NAME}_generate_messages_cpp
+  ${catkin_EXPORTED_TARGETS}
 )
 
 install(DIRECTORY include/${PROJECT_NAME}/
