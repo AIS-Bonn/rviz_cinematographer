@@ -39,6 +39,8 @@
 
 #include "rviz_animated_view_controller/CameraMovement.h"
 
+#include <geometry_msgs/PoseArray.h>
+
 #include <OGRE/OgreVector3.h>
 #include <OGRE/OgreQuaternion.h>
 
@@ -242,6 +244,9 @@ protected:    //members
   ros::Publisher placement_publisher_;
 
   uint8_t interpolation_speed_;
+
+  ros::Publisher transition_poses_publisher_;
+
 };
 
 }  // namespace rviz_animated_view_controller

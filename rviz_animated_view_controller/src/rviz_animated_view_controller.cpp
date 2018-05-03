@@ -132,8 +132,9 @@ AnimatedViewController::AnimatedViewController()
 
 AnimatedViewController::~AnimatedViewController()
 {
-    delete focal_shape_;
-    context_->getSceneManager()->destroySceneNode( attached_scene_node_ );
+  delete focal_shape_;
+  context_->getSceneManager()->destroySceneNode( attached_scene_node_ );
+  transition_poses_publisher_.shutdown();
 }
 
 void AnimatedViewController::updateTopics()
@@ -145,6 +146,7 @@ void AnimatedViewController::updateTopics()
                               (camera_placement_topic_property_->getStdString(), 1,
                               boost::bind(&AnimatedViewController::cameraPlacementCallback, this, _1));
   placement_publisher_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
+  transition_poses_publisher_ = nh_.advertise<geometry_msgs::PoseArray>("/rviz/trajectory_steps", 1);
 }
 
 void AnimatedViewController::onInitialize()
@@ -673,16 +675,17 @@ void AnimatedViewController::update(float dt, float ros_dt)
   if(animate_)
   {
     ros::Duration time_from_start = ros::Time::now() - transition_start_time_;
-    float fraction = time_from_start.toSec()/current_transition_duration_.toSec();
+    double fraction = time_from_start.toSec()/current_transition_duration_.toSec();
     // make sure we get all the way there before turning off
-    if(fraction > 1.0f)
+    if(fraction > 1.0)
     {
-      fraction = 1.0f;
+      fraction = 1.0;
       animate_ = false;
     }
 
     float progress = 0.0f;
-    switch(interpolation_speed_) {
+    switch(interpolation_speed_)
+    {
       case rviz_animated_view_controller::CameraMovement::RISING:
         progress = 1.f - static_cast<float>(cos(fraction * M_PI_2));
         break;
@@ -713,6 +716,31 @@ void AnimatedViewController::update(float dt, float ros_dt)
     camera_->setDirection(reference_orientation_ * (focus_point_property_->getVector() - eye_point_property_->getVector()));
 
     publishCameraPose();
+
+    if(transition_poses_publisher_.getNumSubscribers() != 0)
+    {
+      geometry_msgs::Pose intermediate_pose;
+      intermediate_pose.position.x = start_position_.x + progress * (goal_position_.x - start_position_.x);
+      intermediate_pose.position.y = start_position_.y + progress * (goal_position_.y - start_position_.y);
+      intermediate_pose.position.z = start_position_.z + progress * (goal_position_.z - start_position_.z);
+
+      intermediate_pose.orientation.w = 1.0;
+      // TODO: regenerate quaternion from position, focus and up vectors
+//      tf::Quaternion start_orientation, end_orientation, intermediate_orientation;
+//      tf::quaternionMsgToTF(start_pose_.orientation, start_orientation);
+//      tf::quaternionMsgToTF(end_pose_.orientation, end_orientation);
+//
+//      // Compute the slerp-ed rotation
+//      intermediate_orientation = start_orientation.slerp(end_orientation, progress);
+//      tf::quaternionTFToMsg(intermediate_orientation, intermediate_pose.orientation);
+
+      geometry_msgs::PoseArray pose_array;
+      pose_array.poses.push_back(std::move(intermediate_pose));
+      pose_array.header.frame_id = attached_frame_property_->getFrameStd();
+      pose_array.header.stamp = ros::Time::now();
+      transition_poses_publisher_.publish(pose_array);
+    }
+
   }
   updateCamera();
 }
