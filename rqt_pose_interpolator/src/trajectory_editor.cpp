@@ -12,7 +12,6 @@ namespace pose_interpolator {
 TrajectoryEditor::TrajectoryEditor()
 : rqt_gui_cpp::Plugin()
   , widget_(0)
-  , timer_rate_(0.1)
   , current_marker_(visualization_msgs::InteractiveMarker(), 0.5)
   , interpolation_speed_(3u)
 {
@@ -28,9 +27,6 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
   camera_placement_pub_ = ph.advertise<rviz_animated_view_controller::CameraMovement>("/rviz/camera_placement", 1);
   view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1);
-  transition_steps_pub_ = ph.advertise<geometry_msgs::PoseArray>("/trajectory_steps", 1);
-
-  trajectory_publish_timer_ = ph.createTimer(ros::Duration(timer_rate_), &TrajectoryEditor::transitionStepsPublisherCallback, this);
 
   //TODO: remove?
   std::string frame_id_param_name = "frame_id";
@@ -112,9 +108,6 @@ void TrajectoryEditor::shutdownPlugin()
   camera_pose_sub_.shutdown();
   camera_placement_pub_.shutdown();
   view_poses_array_pub_.shutdown();
-  transition_steps_pub_.shutdown();
-
-  trajectory_publish_timer_.stop();
 }
 
 void TrajectoryEditor::saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const
@@ -132,47 +125,6 @@ void TrajectoryEditor::restoreSettings(const qt_gui_cpp::Settings& plugin_settin
 void TrajectoryEditor::camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_pose)
 {
   cam_pose_ = geometry_msgs::Pose(*cam_pose);
-}
-
-void TrajectoryEditor::transitionStepsPublisherCallback(const ros::TimerEvent &event)
-{
-  if(publish_transition_steps_)
-  {
-    ros::Duration time_from_start = ros::Time::now() - transition_start_time_;
-    double fraction = time_from_start.toSec()/current_transition_duration_.toSec();
-    // make sure we get all the way there before turning off
-    if(fraction > 1.0)
-    {
-      fraction = 1.0;
-      publish_transition_steps_ = false;
-    }
-
-    if(transition_steps_pub_.getNumSubscribers() == 0)
-      return;
-
-    // TODO add more options
-    double progress = 0.5 * (1 - cos(fraction * M_PI));
-
-    geometry_msgs::Pose intermediate_pose;
-    intermediate_pose.position.x = start_pose_.position.x + progress * (end_pose_.position.x - start_pose_.position.x);
-    intermediate_pose.position.y = start_pose_.position.y + progress * (end_pose_.position.y - start_pose_.position.y);
-    intermediate_pose.position.z = start_pose_.position.z + progress * (end_pose_.position.z - start_pose_.position.z);
-
-    tf::Quaternion start_orientation, end_orientation, intermediate_orientation;
-    tf::quaternionMsgToTF(start_pose_.orientation, start_orientation);
-    tf::quaternionMsgToTF(end_pose_.orientation, end_orientation);
-
-    // Compute the slerp-ed rotation
-    intermediate_orientation = start_orientation.slerp(end_orientation, progress);
-    tf::quaternionTFToMsg(intermediate_orientation, intermediate_pose.orientation);
-
-    geometry_msgs::PoseArray pose_array;
-    pose_array.poses.push_back(std::move(intermediate_pose));
-    pose_array.header.frame_id = ui_.frame_line_edit->text().toStdString();
-    pose_array.header.stamp = ros::Time::now();
-    transition_steps_pub_.publish(pose_array);
-  }
-  ROS_DEBUG_STREAM("Timer: time is " << ros::Time::now());
 }
 
 void TrajectoryEditor::updateTrajectory()
@@ -281,8 +233,6 @@ void TrajectoryEditor::publishTrajectory(const visualization_msgs::InteractiveMa
 
   view_poses_array_pub_.publish(path);
 }
-
-//TODO: add addMarkerHere function after splines are involved to construct non-smooth transitions
 
 void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
@@ -588,13 +538,6 @@ void TrajectoryEditor::setMarkerFrames()
   server_->applyChanges();
 
   updateTrajectory();
-}
-
-void TrajectoryEditor::updatePublishingRate()
-{
-  trajectory_publish_timer_.stop();
-  trajectory_publish_timer_.setPeriod(ros::Duration(1.0 / ui_.publish_rate_spin_box->value()));
-  trajectory_publish_timer_.start();
 }
 
 void TrajectoryEditor::loadTrajectoryFromFile()
