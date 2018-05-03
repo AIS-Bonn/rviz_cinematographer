@@ -195,8 +195,8 @@ void TrajectoryEditor::updateTrajectory()
 
   // put all markers positions into a vector. First and last double.
   std::vector<Vector3> spline_points;
-  bool first = true;
   Vector3 position;
+  bool first = true;
   for(const auto& marker : markers_)
   {
     position[0] = marker.marker.pose.position.x;
@@ -204,32 +204,26 @@ void TrajectoryEditor::updateTrajectory()
     position[2] = marker.marker.pose.position.z;
     spline_points.push_back(position);
 
-    if(first){
+    if(first)
+    {
       spline_points.push_back(position);
       first = false;
     }
   }
-
   spline_points.push_back(position);
 
   // rate to sample from spline and get points
-  NaturalSpline<Vector3> my_spline(spline_points);
+  UniformCRSpline<Vector3> my_spline(spline_points);
   std::vector<geometry_msgs::Point> points_vec;
   float rate = 1.0 / ui_.publish_rate_spin_box->value();
   float max_t = my_spline.getMaxT();
-  float steps = max_t / rate;
-  for(float i = 0.f; i <= steps; i += rate)
+  for(float i = 0.f; i <= max_t; i += rate)
   {
     Vector3 interpolated_position = my_spline.getPosition(i);
     geometry_msgs::Point point;
     point.x = interpolated_position[0];
     point.y = interpolated_position[1];
     point.z = interpolated_position[2];
-    points_vec.push_back(point);
-  }
-
-  for(const auto& point : points_vec)
-  {
     trajectory.controls.front().markers.front().points.push_back(point);
   }
 
@@ -282,6 +276,8 @@ void TrajectoryEditor::publishTrajectory(const visualization_msgs::InteractiveMa
     waypoint.header = path.header;
     path.poses.push_back(waypoint);
   }
+
+  // TODO: linear or spline
 
   view_poses_array_pub_.publish(path);
 }

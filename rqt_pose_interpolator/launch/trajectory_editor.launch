@@ -1,15 +1,11 @@
 <launch>
 
+    <!-- Start RViz separately, because the rqt rviz plugin can't handle published trajectories. -->
     <node name="rivz" pkg="rviz" type="rviz" />
 
     <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" required="true" args="-s pose_interpolator/TrajectoryEditor">
         <param name="/trajectory_editor/frame_id" value="laser_map" />
         <rosparam command="load" file="$(find rqt_pose_interpolator)/trajectories/example_trajectory.yaml"/>
-
     </node>
-
-    <!--<node name="trajectory_selector" pkg="rqt_pose_interpolator" type="interactive_trajectory_control">
-    <rosparam command="load" file="$(find rqt_pose_interpolator)/trajectories/example_trajectory.yaml"/>
-    </node>-->
 
 </launch>
