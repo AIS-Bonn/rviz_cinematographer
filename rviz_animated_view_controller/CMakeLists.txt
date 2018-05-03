@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(rviz_animated_view_controller)
 
+## Compile as C++11, supported in ROS Kinetic and newer
+add_compile_options(-std=c++11)
+
 find_package(cmake_modules REQUIRED)
 find_package(Eigen REQUIRED)
 find_package(Boost REQUIRED system filesystem)
