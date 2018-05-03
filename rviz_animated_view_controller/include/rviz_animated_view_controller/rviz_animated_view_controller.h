@@ -240,6 +240,8 @@ protected:    //members
 //  ros::Subscriber trajectory_subscriber_;
   ros::Subscriber placement_subscriber_;
   ros::Publisher placement_publisher_;
+
+  uint8_t interpolation_speed_;
 };
 
 }  // namespace rviz_animated_view_controller

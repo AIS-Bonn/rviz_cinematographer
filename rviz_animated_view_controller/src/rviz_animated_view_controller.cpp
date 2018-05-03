@@ -87,7 +87,7 @@ static inline void vectorOgreToMsg(const Ogre::Vector3 &o, geometry_msgs::Vector
 
 
 AnimatedViewController::AnimatedViewController()
-  : nh_(""), animate_(false), dragging_( false )
+  : nh_(""), animate_(false), dragging_( false ), interpolation_speed_(3u)
 {
   interaction_disabled_cursor_ = makeIconCursor( "package://rviz/icons/forbidden.svg" );
 
@@ -565,6 +565,8 @@ void AnimatedViewController::cameraPlacementCallback(const CameraMovementConstPt
     Ogre::Vector3 focus = vectorFromMsg(cp.focus.point);
     Ogre::Vector3 up = vectorFromMsg(cp.up.vector);
 
+    interpolation_speed_ = cp.interpolation_speed;
+
     beginNewTransition(eye, focus, up, cp.time_from_start);
   }
 }
@@ -679,8 +681,21 @@ void AnimatedViewController::update(float dt, float ros_dt)
       animate_ = false;
     }
 
-    // TODO remap progress to progress_out, which can give us a new interpolation profile.
-    float progress = 0.5*(1-cos(fraction*M_PI));
+    float progress = 0.0f;
+    switch(interpolation_speed_) {
+      case rviz_animated_view_controller::CameraMovement::RISING:
+        progress = 1.f - static_cast<float>(cos(fraction * M_PI_2));
+        break;
+      case rviz_animated_view_controller::CameraMovement::DECLINING:
+        progress = static_cast<float>(-cos(fraction * M_PI_2 + M_PI_2));
+        break;
+      case rviz_animated_view_controller::CameraMovement::FULL:
+        progress = fraction;
+        break;
+      case rviz_animated_view_controller::CameraMovement::WAVE:
+        progress = 0.5f * ( 1.f - static_cast<float>(cos(fraction * M_PI)));
+        break;
+    }
 
     Ogre::Vector3 new_position = start_position_ + progress*(goal_position_ - start_position_);
     Ogre::Vector3 new_focus  = start_focus_ + progress*(goal_focus_ - start_focus_);
