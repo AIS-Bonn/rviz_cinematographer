@@ -299,17 +299,6 @@ private:
   /** @brief Currently maintained list of TimedMarkers. */
   MarkerList markers_;
 
-  /** @brief Flag that initiates the publishing of the transition steps. */
-  bool publish_transition_steps_;
-  /** @brief Duration of the current transition. */
-  ros::Duration current_transition_duration_;
-  /** @brief Time the current transition started. */
-  ros::Time transition_start_time_;
-  /** @brief Pose defining the start of the current transition. */
-  geometry_msgs::Pose start_pose_;
-  /** @brief Marker defining the end position. */
-  geometry_msgs::Pose end_pose_;
-
   uint8_t interpolation_speed_;
 };
 

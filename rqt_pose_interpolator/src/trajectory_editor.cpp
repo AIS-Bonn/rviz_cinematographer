@@ -762,14 +762,6 @@ void TrajectoryEditor::moveCamToPrev()
 
   updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
 
-
-  // initiate publishing of steps between current and prev marker. see transitionStepsPublisherCallback()
-  start_pose_ = it->marker.pose;
-  end_pose_ = prev_marker->marker.pose;
-  current_transition_duration_ = ros::Duration(prev_marker->transition_time);
-  transition_start_time_ = ros::Time::now();
-  publish_transition_steps_ = true;
-
   moveCamToMarker(current_marker_);
 }
 
@@ -819,14 +811,6 @@ void TrajectoryEditor::moveCamToNext()
   current_marker_ = *next_marker;
 
   updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
-
-
-  // initiate publishing of steps between current and next marker. see transitionStepsPublisherCallback()
-  start_pose_ = it->marker.pose;
-  end_pose_ = next_marker->marker.pose;
-  current_transition_duration_ = ros::Duration(next_marker->transition_time);
-  transition_start_time_ = ros::Time::now();
-  publish_transition_steps_ = true;
 
   moveCamToMarker(current_marker_);
 }
