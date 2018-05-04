@@ -60,6 +60,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   connect(ui_.move_to_last_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToLast()));
   connect(ui_.set_pose_to_cam_button, SIGNAL(clicked(bool)), this, SLOT(setCurrentPoseToCam()));
   connect(ui_.frame_line_edit, SIGNAL(editingFinished()), this, SLOT(setMarkerFrames()));
+  connect(ui_.splines_check_box, SIGNAL(stateChanged(int)), this, SLOT(updateTrajectory()));
   connect(ui_.open_file_push_button, SIGNAL(clicked(bool)), this, SLOT(loadTrajectoryFromFile()));
   connect(ui_.save_file_push_button, SIGNAL(clicked(bool)), this, SLOT(saveTrajectoryToFile()));
 
@@ -145,46 +146,52 @@ void TrajectoryEditor::updateTrajectory()
   trajectory.scale = 1.0;
   trajectory.controls.push_back(std::move(control));
 
-  // put all markers positions into a vector. First and last double.
-  std::vector<Vector3> spline_points;
-  Vector3 position;
-  bool first = true;
-  for(const auto& marker : markers_)
+  if(ui_.splines_check_box->isChecked())
   {
-    position[0] = marker.marker.pose.position.x;
-    position[1] = marker.marker.pose.position.y;
-    position[2] = marker.marker.pose.position.z;
+    // put all markers positions into a vector. First and last double.
+    std::vector<Vector3> spline_points;
+    Vector3 position;
+    bool first = true;
+    for(const auto& marker : markers_)
+    {
+      position[0] = marker.marker.pose.position.x;
+      position[1] = marker.marker.pose.position.y;
+      position[2] = marker.marker.pose.position.z;
+      spline_points.push_back(position);
+
+      if(first)
+      {
+        spline_points.push_back(position);
+        first = false;
+      }
+    }
     spline_points.push_back(position);
 
-    if(first)
+    // rate to sample from spline and get points
+    UniformCRSpline<Vector3> my_spline(spline_points);
+    std::vector<geometry_msgs::Point> points_vec;
+    float rate = 1.0 / ui_.publish_rate_spin_box->value();
+    float max_t = my_spline.getMaxT();
+    for(float i = 0.f; i <= max_t; i += rate)
     {
-      spline_points.push_back(position);
-      first = false;
+      Vector3 interpolated_position = my_spline.getPosition(i);
+      geometry_msgs::Point point;
+      point.x = interpolated_position[0];
+      point.y = interpolated_position[1];
+      point.z = interpolated_position[2];
+      trajectory.controls.front().markers.front().points.push_back(point);
     }
   }
-  spline_points.push_back(position);
-
-  // rate to sample from spline and get points
-  UniformCRSpline<Vector3> my_spline(spline_points);
-  std::vector<geometry_msgs::Point> points_vec;
-  float rate = 1.0 / ui_.publish_rate_spin_box->value();
-  float max_t = my_spline.getMaxT();
-  for(float i = 0.f; i <= max_t; i += rate)
+  else
   {
-    Vector3 interpolated_position = my_spline.getPosition(i);
-    geometry_msgs::Point point;
-    point.x = interpolated_position[0];
-    point.y = interpolated_position[1];
-    point.z = interpolated_position[2];
-    trajectory.controls.front().markers.front().points.push_back(point);
+    for(const auto& marker : markers_)
+    {
+      visualization_msgs::InteractiveMarker int_marker;
+      server_->get(marker.marker.name, int_marker);
+      trajectory.controls.front().markers.front().points.push_back(int_marker.pose.position);
+    }
   }
 
-//  for(const auto& marker : markers_)
-//  {
-//    visualization_msgs::InteractiveMarker int_marker;
-//    server_->get(marker.marker.name, int_marker);
-//    trajectory.controls.front().markers.front().points.push_back(int_marker.pose.position);
-//  }
   server_->erase("trajectory");
   server_->insert(trajectory);
   server_->applyChanges();

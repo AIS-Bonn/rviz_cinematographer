@@ -124,6 +124,8 @@ public slots:
   void updateCurrentMarker();
   /** @brief Sets currently selected pose to the current pose of the rviz camera.*/
   void setCurrentPoseToCam();
+  /** @brief Reconstructs trajectory from current markers. */
+  void updateTrajectory();
   /** @brief Sets the frame_id of the markers.*/
   void setMarkerFrames();
   /** @brief Sets #timer_rate_.*/
@@ -174,11 +176,6 @@ private:
    */
   tf::Vector3 rotateVector(const tf::Vector3& vector,
                            const geometry_msgs::Quaternion& quat);
-
-  /**
-   * @brief Reconstructs trajectory from current markers.
-   */
-  void updateTrajectory();
 
   /**
    * @brief Safes poses and times of markers to yaml file.
