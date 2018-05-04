@@ -95,6 +95,12 @@ bool Tracker::transformToFrame(std::vector<Measurement>& measurements,
     mes_in_origin_frame.point.y = measurement.pos(1);
     mes_in_origin_frame.point.z = measurement.pos(2);
 
+
+    if(!m_transform_listener->waitForTransform (target_frame, mes_in_origin_frame.header.frame_id, mes_in_origin_frame.header.stamp, ros::Duration(1.0)))
+    {
+      ROS_ERROR_STREAM("Could not wait for transform at time " << mes_in_origin_frame.header.stamp);
+      return false;
+    }
     try
     {
       m_transform_listener->transformPoint(target_frame, mes_in_origin_frame, mes_in_target_frame);
