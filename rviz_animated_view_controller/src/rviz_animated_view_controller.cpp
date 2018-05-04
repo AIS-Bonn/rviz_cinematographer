@@ -121,13 +121,13 @@ AnimatedViewController::AnimatedViewController()
   default_transition_time_property_ = new FloatProperty( "Transition Time", 0.5,
                                                          "The default time to use for camera transitions.",
                                                          this );
-  camera_placement_topic_property_ = new RosTopicProperty("Placement Topic", "/rviz/camera_placement",
+  camera_placement_topic_property_ = new RosTopicProperty("Placement Topic", "/rviz/camera_movement",
                                                           QString::fromStdString(ros::message_traits::datatype<CameraMovement>() ),
                                                           "Topic for CameraMovement messages", this, SLOT(updateTopics()));
 
-//  camera_placement_trajectory_topic_property_ = new RosTopicProperty("Trajectory Topic", "/rviz/camera_placement_trajectory",
-//                                                          QString::fromStdString(ros::message_traits::datatype<view_controller_msgs::CameraPlacementTrajectory>() ),
-//                                                          "Topic for CameraPlacementTrajectory messages", this, SLOT(updateTopics()));
+  camera_trajectory_topic_property_ = new RosTopicProperty("Trajectory Topic", "/rviz/camera_trajectory",
+                                                          QString::fromStdString(ros::message_traits::datatype<CameraTrajectory>() ),
+                                                          "Topic for CameraTrajectory messages", this, SLOT(updateTopics()));
 }
 
 AnimatedViewController::~AnimatedViewController()
@@ -139,9 +139,9 @@ AnimatedViewController::~AnimatedViewController()
 
 void AnimatedViewController::updateTopics()
 {
-//  trajectory_subscriber_ = nh_.subscribe<view_controller_msgs::CameraPlacementTrajectory>
-//                              (camera_placement_trajectory_topic_property_->getStdString(), 1,
-//                              boost::bind(&AnimatedViewController::cameraPlacementTrajectoryCallback, this, _1));
+  trajectory_subscriber_ = nh_.subscribe<CameraTrajectory>
+                              (camera_trajectory_topic_property_->getStdString(), 1,
+                              boost::bind(&AnimatedViewController::cameraTrajectoryCallback, this, _1));
   placement_subscriber_  = nh_.subscribe<CameraMovement>
                               (camera_placement_topic_property_->getStdString(), 1,
                               boost::bind(&AnimatedViewController::cameraPlacementCallback, this, _1));
@@ -247,6 +247,7 @@ void AnimatedViewController::updateAttachedFrame()
 
 void AnimatedViewController::updateAttachedSceneNode()
 {
+  // TODO: this can be wildly refactored
   Ogre::Vector3 new_reference_position;
   Ogre::Quaternion new_reference_orientation;
 
@@ -502,8 +503,10 @@ void AnimatedViewController::transitionFrom( ViewController* previous_view )
   }
 }
 
-void AnimatedViewController::beginNewTransition(const Ogre::Vector3 &eye, const Ogre::Vector3 &focus, const Ogre::Vector3 &up,
-                                            const ros::Duration &transition_time)
+void AnimatedViewController::beginNewTransition(const Ogre::Vector3 &eye,
+                                                const Ogre::Vector3 &focus,
+                                                const Ogre::Vector3 &up,
+                                                const ros::Duration &transition_time)
 {
   if(ros::Duration(transition_time).isZero())
   {
@@ -573,41 +576,45 @@ void AnimatedViewController::cameraPlacementCallback(const CameraMovementConstPt
   }
 }
 
-//void AnimatedViewController::cameraPlacementTrajectoryCallback(const CameraPlacementTrajectoryConstPtr &cptptr)
-//{
-//  CameraPlacementTrajectory cpt = *cptptr;
-//  ROS_DEBUG_STREAM("Received a camera placement trajectory request! \n" << cpt);
-  
-//  // Handle control parameters
-//  mouse_enabled_property_->setBool( cpt.interaction_enabled );
-//  fixed_up_property_->setBool( !cpt.allow_free_yaw_axis );
-//  if(cpt.mouse_interaction_mode != cpt.NO_CHANGE)
-//  {
-//    std::string name = "";
-//    if(cpt.mouse_interaction_mode == cpt.ORBIT) name = MODE_ORBIT;
-//    else if(cpt.mouse_interaction_mode == cpt.FPS) name = MODE_FPS;
-//    interaction_mode_property_->setStdString(name);
-//  }
+void AnimatedViewController::cameraTrajectoryCallback(const CameraTrajectoryConstPtr &ct_ptr)
+{
+  CameraTrajectory ct = *ct_ptr;
+  ROS_INFO_STREAM("Received a camera trajectory request! \n" << ct);
 
-//  // TODO should transform the interpolated positions (later), or transform info will only reflect the TF tree state at the beginning...
-//  for(size_t i = 0; i<cpt.placements.size(); i++)
-//  {
-//    transformCameraPlacementToAttachedFrame(cpt.placements[i]);
-//  }
+  if(ct.trajectory.empty())
+    return;
 
-//  // For now, just transition to the first placement until we put in the capacity for a trajectory
-//  CameraPlacement cp = cpt.placements[0];
-//  if(cp.target_frame != "")
-//  {
-//    attached_frame_property_->setStdString(cp.target_frame);
-//    updateAttachedFrame();
-//  }
-//  Ogre::Vector3 eye = vectorFromMsg(cp.eye.point);
-//  Ogre::Vector3 focus = vectorFromMsg(cp.focus.point);
-//  Ogre::Vector3 up = vectorFromMsg(cp.up.vector);
+  // Handle control parameters
+  mouse_enabled_property_->setBool(!ct.trajectory.at(0).interaction_disabled);
+  fixed_up_property_->setBool(!ct.trajectory.at(0).allow_free_yaw_axis);
+  if(ct.trajectory.at(0).mouse_interaction_mode != CameraMovement::NO_CHANGE)
+  {
+    std::string name = "";
+    if(ct.trajectory.at(0).mouse_interaction_mode == CameraMovement::ORBIT)
+      name = MODE_ORBIT;
+    else if(ct.trajectory.at(0).mouse_interaction_mode == CameraMovement::FPS)
+      name = MODE_FPS;
+    interaction_mode_property_->setStdString(name);
+  }
 
-//  beginNewTransition(eye, focus, up, cp.time_from_start);
-//}
+  for(auto& cam_movement : ct.trajectory)
+  {
+    transformCameraPlacementToAttachedFrame(cam_movement);
+
+    if(cam_movement.target_frame != "")
+    {
+      attached_frame_property_->setStdString(cam_movement.target_frame);
+      updateAttachedFrame();
+    }
+    Ogre::Vector3 eye = vectorFromMsg(cam_movement.eye.point);
+    Ogre::Vector3 focus = vectorFromMsg(cam_movement.focus.point);
+    Ogre::Vector3 up = vectorFromMsg(cam_movement.up.vector);
+
+    beginNewTransition(eye, focus, up, cam_movement.time_from_start);
+
+//    ros::Duration(cam_movement.time_from_start).sleep();
+  }
+}
 
 void AnimatedViewController::transformCameraPlacementToAttachedFrame(CameraMovement &cp)
 {

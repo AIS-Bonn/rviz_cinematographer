@@ -172,7 +172,7 @@ protected:  //methods
   void updateAttachedSceneNode();
 
   void cameraPlacementCallback(const CameraMovementConstPtr &cp_ptr);
-  //void cameraPlacementTrajectoryCallback(const view_controller_msgs::CameraPlacementTrajectoryConstPtr &cptptr);
+  void cameraTrajectoryCallback(const CameraTrajectoryConstPtr &ct_ptr);
   void transformCameraPlacementToAttachedFrame(CameraMovement &cp);
 
   //void setUpVectorPropertyModeDependent( const Ogre::Vector3 &vector );
@@ -218,7 +218,7 @@ protected:    //members
   rviz::FloatProperty* default_transition_time_property_; ///< A default time for any animation requests.
 
   rviz::RosTopicProperty* camera_placement_topic_property_;
-//  rviz::RosTopicProperty* camera_placement_trajectory_topic_property_;
+  rviz::RosTopicProperty* camera_trajectory_topic_property_;
 
   rviz::TfFrameProperty* attached_frame_property_;
   Ogre::SceneNode* attached_scene_node_;
@@ -240,7 +240,7 @@ protected:    //members
 
   QCursor interaction_disabled_cursor_;         ///< A cursor for indicating mouse interaction is disabled.
   
-//  ros::Subscriber trajectory_subscriber_;
+  ros::Subscriber trajectory_subscriber_;
   ros::Subscriber placement_subscriber_;
   ros::Publisher placement_publisher_;
 
