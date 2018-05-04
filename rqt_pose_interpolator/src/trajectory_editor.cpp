@@ -25,7 +25,8 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   ros::NodeHandle ph("~");
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
-  camera_placement_pub_ = ph.advertise<rviz_animated_view_controller::CameraMovement>("/rviz/camera_placement", 1);
+  camera_movement_pub_ = ph.advertise<rviz_animated_view_controller::CameraMovement>("/rviz/camera_placement", 1);
+  camera_trajectory_pub_ = ph.advertise<rviz_animated_view_controller::CameraTrajectory>("/rviz/camera_trajectory", 1);
   view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1);
 
   //TODO: remove?
@@ -107,7 +108,8 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 void TrajectoryEditor::shutdownPlugin()
 {
   camera_pose_sub_.shutdown();
-  camera_placement_pub_.shutdown();
+  camera_movement_pub_.shutdown();
+  camera_trajectory_pub_.shutdown();
   view_poses_array_pub_.shutdown();
 }
 
@@ -381,6 +383,37 @@ void TrajectoryEditor::setCurrentTo(TimedMarker& marker)
   updatePoseInGUI(marker.marker.pose, marker.transition_time);
 }
 
+void TrajectoryEditor::setCurrentFromTo(TimedMarker& old_current,
+                                        TimedMarker& new_current)
+{
+  // update member list
+  new_current.marker.controls[0].markers[0].color.r = 0.f;
+  new_current.marker.controls[0].markers[0].color.g = 1.f;
+  old_current.marker.controls[0].markers[0].color.r = 1.f;
+  old_current.marker.controls[0].markers[0].color.g = 0.f;
+
+  // update server
+  visualization_msgs::InteractiveMarker int_marker;
+  server_->get(new_current.marker.name, int_marker);
+  int_marker.controls[0].markers[0].color.r = 0.f;
+  int_marker.controls[0].markers[0].color.g = 1.f;
+  server_->erase(new_current.marker.name);
+  server_->insert(int_marker);
+
+  server_->get(old_current.marker.name, int_marker);
+  int_marker.controls[0].markers[0].color.r = 1.f;
+  int_marker.controls[0].markers[0].color.g = 0.f;
+  server_->erase(old_current.marker.name);
+  server_->insert(int_marker);
+
+  server_->applyChanges();
+
+  // update current marker to prev marker
+  current_marker_ = new_current;
+
+  updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
+}
+
 void TrajectoryEditor::removeMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   if(markers_.size() == 1)
@@ -595,7 +628,7 @@ void TrajectoryEditor::saveTrajectoryToFile()
   std::string directory_path = ros::package::getPath("rqt_pose_interpolator")  + "/trajectories/";
 
   std::string file_path = QFileDialog::getSaveFileName(widget_, "Save Trajectory", QString(directory_path.c_str()), "All Files (*)").toStdString();
-  if(file_path == "")
+  if(file_path.empty())
   {
     ROS_ERROR_STREAM("No file specified.");
   }
@@ -618,6 +651,7 @@ rviz_animated_view_controller::CameraMovement TrajectoryEditor::makeCameraMoveme
   cp.target_frame = ui_.frame_line_edit->text().toStdString();
   cp.interpolation_mode = rviz_animated_view_controller::CameraMovement::SPHERICAL;
   cp.mouse_interaction_mode = rviz_animated_view_controller::CameraMovement::NO_CHANGE;
+  cp.interpolation_speed = rviz_animated_view_controller::CameraMovement::WAVE;
   cp.time_from_start = ros::Duration(0);
 
   cp.up.header = cp.focus.header = cp.eye.header;
@@ -666,6 +700,32 @@ visualization_msgs::InteractiveMarker TrajectoryEditor::makeMarker(double x, dou
   return marker;
 }
 
+void TrajectoryEditor::convertMarkerToCamMovement(const TimedMarker& marker,
+                                                  rviz_animated_view_controller::CameraMovement& cam_movement)
+{
+  cam_movement = makeCameraMovement();
+  cam_movement.time_from_start = ros::Duration(marker.transition_time);
+
+  if(!ui_.use_up_of_world_check_box->isChecked())
+  {
+    // in the cam frame up is the negative x direction
+    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(-1, 0, 0), marker.marker.pose.orientation);
+    cam_movement.up.vector.x = rotated_vector.x();
+    cam_movement.up.vector.y = rotated_vector.y();
+    cam_movement.up.vector.z = rotated_vector.z();
+
+    cam_movement.allow_free_yaw_axis = true;
+  }
+
+  // look from
+  cam_movement.eye.point = marker.marker.pose.position;
+
+  // look at
+  tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), marker.marker.pose.orientation);
+  cam_movement.focus.point.x = marker.marker.pose.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
+  cam_movement.focus.point.y = marker.marker.pose.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
+  cam_movement.focus.point.z = marker.marker.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
+}
 
 void TrajectoryEditor::moveCamToCurrent()
 {
@@ -683,31 +743,36 @@ void TrajectoryEditor::moveCamToFirst()
     if(it->marker.name == current_marker_.marker.name)
       break;
 
+  // fill Camera Trajectory msg with markers and times
+  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());;
+  rviz_animated_view_controller::CameraMovement cam_movement;
   bool first = true;
   auto previous = it;
   do
   {
     previous--;
+    convertMarkerToCamMovement(*previous, cam_movement);
+
     // set interpolation speed first rising, then full speed, then declining
-    interpolation_speed_ = (first) ? rviz_animated_view_controller::CameraMovement::RISING : rviz_animated_view_controller::CameraMovement::FULL;
+    cam_movement.interpolation_speed = (first) ? rviz_animated_view_controller::CameraMovement::RISING : rviz_animated_view_controller::CameraMovement::FULL;
     if(previous == markers_.begin())
     {
       // if the whole trajectory is between the first two markers, use WAVE, else decline
       if(first)
-        interpolation_speed_ = rviz_animated_view_controller::CameraMovement::WAVE;
+        cam_movement.interpolation_speed = rviz_animated_view_controller::CameraMovement::WAVE;
       else
-        interpolation_speed_ = rviz_animated_view_controller::CameraMovement::DECLINING;
+        cam_movement.interpolation_speed = rviz_animated_view_controller::CameraMovement::DECLINING;
     }
 
-    moveCamToPrev();
-    // wait until rviz camera has performed the movement
-    ros::Duration(previous->transition_time).sleep();
+    cam_trajectory->trajectory.push_back(cam_movement);
     first = false;
   }
   while(previous != markers_.begin());
 
-  // reset interpolation speed to default
-  interpolation_speed_ = rviz_animated_view_controller::CameraMovement::WAVE;
+  setCurrentFromTo(*it, *previous);
+
+  // publish cam trajectory
+  camera_trajectory_pub_.publish(cam_trajectory);
 }
 
 void TrajectoryEditor::moveCamToPrev()
@@ -727,32 +792,7 @@ void TrajectoryEditor::moveCamToPrev()
     }
   }
 
-  // update member list
-  prev_marker->marker.controls[0].markers[0].color.r = 0.f;
-  prev_marker->marker.controls[0].markers[0].color.g = 1.f;
-  it->marker.controls[0].markers[0].color.r = 1.f;
-  it->marker.controls[0].markers[0].color.g = 0.f;
-
-  // update server
-  visualization_msgs::InteractiveMarker int_marker;
-  server_->get(prev_marker->marker.name, int_marker);
-  int_marker.controls[0].markers[0].color.r = 0.f;
-  int_marker.controls[0].markers[0].color.g = 1.f;
-  server_->erase(prev_marker->marker.name);
-  server_->insert(int_marker);
-
-  server_->get(it->marker.name, int_marker);
-  int_marker.controls[0].markers[0].color.r = 1.f;
-  int_marker.controls[0].markers[0].color.g = 0.f;
-  server_->erase(it->marker.name);
-  server_->insert(int_marker);
-
-  server_->applyChanges();
-
-  // update current marker to prev marker
-  current_marker_ = *prev_marker;
-
-  updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
+  setCurrentFromTo(*it, *prev_marker);
 
   moveCamToMarker(current_marker_);
 }
@@ -777,32 +817,7 @@ void TrajectoryEditor::moveCamToNext()
     }
   }
 
-  // update member list
-  next_marker->marker.controls[0].markers[0].color.r = 0.f;
-  next_marker->marker.controls[0].markers[0].color.g = 1.f;
-  it->marker.controls[0].markers[0].color.r = 1.f;
-  it->marker.controls[0].markers[0].color.g = 0.f;
-
-  // update server
-  visualization_msgs::InteractiveMarker int_marker;
-  server_->get(next_marker->marker.name, int_marker);
-  int_marker.controls[0].markers[0].color.r = 0.f;
-  int_marker.controls[0].markers[0].color.g = 1.f;
-  server_->erase(next_marker->marker.name);
-  server_->insert(int_marker);
-
-  server_->get(it->marker.name, int_marker);
-  int_marker.controls[0].markers[0].color.r = 1.f;
-  int_marker.controls[0].markers[0].color.g = 0.f;
-  server_->erase(it->marker.name);
-  server_->insert(int_marker);
-
-  server_->applyChanges();
-
-  // update current marker to next marker
-  current_marker_ = *next_marker;
-
-  updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
+  setCurrentFromTo(*it, *next_marker);
 
   moveCamToMarker(current_marker_);
 }
@@ -821,35 +836,41 @@ void TrajectoryEditor::moveCamToLast()
     if(it->marker.name == current_marker_.marker.name)
       break;
 
+  // fill Camera Trajectory msg with markers and times
+  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory;
+  rviz_animated_view_controller::CameraMovement cam_movement;
   bool first = true;
   auto next = it;
-  for(++next; next != markers_.end(); it++, next++)
+  for(++next; next != markers_.end(); next++)
   {
+    convertMarkerToCamMovement(*next, cam_movement);
+
     // set interpolation speed first rising, then full speed, then declining
-    interpolation_speed_ = (first) ? rviz_animated_view_controller::CameraMovement::RISING : rviz_animated_view_controller::CameraMovement::FULL;
+    cam_movement.interpolation_speed = (first) ? rviz_animated_view_controller::CameraMovement::RISING : rviz_animated_view_controller::CameraMovement::FULL;
     if(next == last_marker)
     {
       // if the whole trajectory is between the last two markers, use WAVE, else decline
       if(first)
-        interpolation_speed_ = rviz_animated_view_controller::CameraMovement::WAVE;
+        cam_movement.interpolation_speed = rviz_animated_view_controller::CameraMovement::WAVE;
       else
-        interpolation_speed_ = rviz_animated_view_controller::CameraMovement::DECLINING;
+        cam_movement.interpolation_speed = rviz_animated_view_controller::CameraMovement::DECLINING;
     }
 
-    moveCamToNext();
-    // wait until rviz camera has performed the movement
-    ros::Duration(next->transition_time).sleep();
+    cam_trajectory->trajectory.push_back(cam_movement);
     first = false;
   }
 
-  interpolation_speed_ = rviz_animated_view_controller::CameraMovement::WAVE;
+  setCurrentFromTo(*it, *(--next));
+
+  // publish cam trajectory
+  camera_trajectory_pub_.publish(cam_trajectory);
 }
 
 void TrajectoryEditor::moveCamToMarker(const TimedMarker& marker)
 {
   rviz_animated_view_controller::CameraMovement cp = makeCameraMovement();
   cp.time_from_start = ros::Duration(marker.transition_time);
-  cp.interpolation_speed = interpolation_speed_;
+  cp.interpolation_speed = rviz_animated_view_controller::CameraMovement::WAVE;
 
   if(!ui_.use_up_of_world_check_box->isChecked())
   {
@@ -871,7 +892,7 @@ void TrajectoryEditor::moveCamToMarker(const TimedMarker& marker)
   cp.focus.point.y = marker.marker.pose.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
   cp.focus.point.z = marker.marker.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 
-  camera_placement_pub_.publish(cp);
+  camera_movement_pub_.publish(cp);
 }
 
 void TrajectoryEditor::updatePoseInGUI(const geometry_msgs::Pose& pose,
@@ -1007,6 +1028,8 @@ void TrajectoryEditor::splinify(const MarkerList& markers,
     pose.position.y = interpolated_position[1];
     pose.position.z = interpolated_position[2];
 
+    // i from 0 to 1 corresponds to the spline between the first and the second marker
+    // we have to maintain iterators for slerp
     if(last_marker_id != (int)std::floor(i))
     {
       last_marker_id++;

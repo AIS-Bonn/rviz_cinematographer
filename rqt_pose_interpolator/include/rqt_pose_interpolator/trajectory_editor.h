@@ -19,6 +19,8 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseArray.h>
 #include <rviz_animated_view_controller/CameraMovement.h>
+#include <rviz_animated_view_controller/CameraTrajectory.h>
+
 #include <nav_msgs/Path.h>
 
 #include <interactive_markers/interactive_marker_server.h>
@@ -155,6 +157,15 @@ private:
                                                    double z=0.0);
 
   /**
+   * @brief Fills a CameraMovement message with the values of a TimedMarker.
+   *
+   * @param[in]     marker          marker.
+   * @param[out]    cam_movement    message.
+   */
+  void convertMarkerToCamMovement(const TimedMarker& marker,
+                                  rviz_animated_view_controller::CameraMovement& cam_movement);
+
+  /**
    * @brief Moves rviz camera to marker pose by publishing a CameraDisplacement message.
    *
    * @param[in] marker   provides the pose and transition time.
@@ -253,6 +264,17 @@ private:
   void setCurrentTo(TimedMarker& marker);
 
   /**
+   * @brief Resets the #current_marker_ and dependencies from old_current to new_current.
+   *
+   * Dependencies are the marker member, the marker server and the GUI.
+   *
+   * @param[in,out] old_current  marker that was current before.
+   * @param[in,out] new_current  marker that is current now.
+   */
+  void setCurrentFromTo(TimedMarker& old_current,
+                        TimedMarker& new_current);
+
+  /**
    * @brief Sets the Pose in the GUI to the provided input values.
    *
    * @param[in] pose            pose
@@ -285,8 +307,10 @@ private:
   /** @brief Widget. */
   QWidget* widget_;
 
-  /** @brief Publishes the camera placement. */
-  ros::Publisher camera_placement_pub_;
+  /** @brief Publishes camera movement messages. */
+  ros::Publisher camera_movement_pub_;
+  /** @brief Publishes camera trajectory messages. */
+  ros::Publisher camera_trajectory_pub_;
   /** @brief Publishes the trajectory that is defined by the markers. */
   ros::Publisher view_poses_array_pub_;
   /** @brief Subscribes to the camera pose. */
