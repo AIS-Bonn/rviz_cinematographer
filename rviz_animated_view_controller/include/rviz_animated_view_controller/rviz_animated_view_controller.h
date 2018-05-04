@@ -38,6 +38,7 @@
 #include <ros/ros.h>
 
 #include "rviz_animated_view_controller/CameraMovement.h"
+#include "rviz_animated_view_controller/CameraTrajectory.h"
 
 #include <geometry_msgs/PoseArray.h>
 

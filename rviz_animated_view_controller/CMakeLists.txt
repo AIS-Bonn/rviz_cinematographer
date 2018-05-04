@@ -34,7 +34,7 @@ set(QT_INCLUDE_DIRS
   ${Qt5Widgets_INCLUDE_DIRS}
 )
 
-add_message_files(DIRECTORY msg FILES CameraMovement.msg)
+add_message_files(DIRECTORY msg FILES CameraMovement.msg CameraTrajectory.msg)
 
 generate_messages(DEPENDENCIES ${MSG_DEPS})
 
