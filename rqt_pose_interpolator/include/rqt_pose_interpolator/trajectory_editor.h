@@ -269,6 +269,16 @@ private:
    */
   void setValueQuietly(QDoubleSpinBox* spin_box, double value);
 
+  /**
+   * @brief Interpolate markers using a spline and safe that in spline_poses.
+   *
+   * @param[in]     markers         markers to be interpolated.
+   * @param[out]    spline_poses    constructed spline.
+   * @param[in]     frequency       resolution - number of spline points between each marker pair.
+   */
+  void splinify(const MarkerList& markers,
+                std::vector<geometry_msgs::Pose>& spline_poses,
+                double frequency);
 
   /** @brief Ui object - connection to GUI. */
   Ui::trajectory_editor ui_;

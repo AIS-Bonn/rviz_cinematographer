@@ -148,39 +148,11 @@ void TrajectoryEditor::updateTrajectory()
 
   if(ui_.splines_check_box->isChecked())
   {
-    // put all markers positions into a vector. First and last double.
-    std::vector<Vector3> spline_points;
-    Vector3 position;
-    bool first = true;
-    for(const auto& marker : markers_)
-    {
-      position[0] = marker.marker.pose.position.x;
-      position[1] = marker.marker.pose.position.y;
-      position[2] = marker.marker.pose.position.z;
-      spline_points.push_back(position);
+    std::vector<geometry_msgs::Pose> spline_poses;
+    splinify(markers_, spline_poses, ui_.publish_rate_spin_box->value());
+    for(auto& pose : spline_poses)
+      trajectory.controls.front().markers.front().points.push_back(std::move(pose.position));
 
-      if(first)
-      {
-        spline_points.push_back(position);
-        first = false;
-      }
-    }
-    spline_points.push_back(position);
-
-    // rate to sample from spline and get points
-    UniformCRSpline<Vector3> my_spline(spline_points);
-    std::vector<geometry_msgs::Point> points_vec;
-    float rate = 1.0 / ui_.publish_rate_spin_box->value();
-    float max_t = my_spline.getMaxT();
-    for(float i = 0.f; i <= max_t; i += rate)
-    {
-      Vector3 interpolated_position = my_spline.getPosition(i);
-      geometry_msgs::Point point;
-      point.x = interpolated_position[0];
-      point.y = interpolated_position[1];
-      point.z = interpolated_position[2];
-      trajectory.controls.front().markers.front().points.push_back(point);
-    }
   }
   else
   {
@@ -225,18 +197,31 @@ void TrajectoryEditor::publishTrajectory(const visualization_msgs::InteractiveMa
   nav_msgs::Path path;
   path.header = feedback->header;
 
-  for(const auto& marker : markers_)
+  if(ui_.splines_check_box->isChecked())
   {
-    visualization_msgs::InteractiveMarker int_marker;
-    server_->get(marker.marker.name, int_marker);
-
-    geometry_msgs::PoseStamped waypoint;
-    waypoint.pose = int_marker.pose;
-    waypoint.header = path.header;
-    path.poses.push_back(waypoint);
+    std::vector<geometry_msgs::Pose> spline_poses;
+    splinify(markers_, spline_poses, ui_.publish_rate_spin_box->value());
+    for(auto& pose : spline_poses)
+    {
+      geometry_msgs::PoseStamped waypoint;
+      waypoint.pose = pose;
+      waypoint.header = path.header;
+      path.poses.push_back(waypoint);
+    }
   }
+  else
+  {
+    for(const auto& marker : markers_)
+    {
+      visualization_msgs::InteractiveMarker int_marker;
+      server_->get(marker.marker.name, int_marker);
 
-  // TODO: linear or spline
+      geometry_msgs::PoseStamped waypoint;
+      waypoint.pose = int_marker.pose;
+      waypoint.header = path.header;
+      path.poses.push_back(waypoint);
+    }
+  }
 
   view_poses_array_pub_.publish(path);
 }
@@ -980,6 +965,63 @@ tf::Vector3 TrajectoryEditor::rotateVector(const tf::Vector3& vector,
   tf::Quaternion rotation;
   tf::quaternionMsgToTF(quat, rotation);
   return tf::quatRotate(rotation, vector);
+}
+
+void TrajectoryEditor::splinify(const MarkerList& markers,
+                                std::vector<geometry_msgs::Pose>& spline_poses,
+                                double frequency)
+{
+  // put all markers positions into a vector. First and last double.
+  std::vector<Vector3> spline_points;
+  Vector3 position;
+  bool first = true;
+  for(const auto& marker : markers)
+  {
+    position[0] = static_cast<float>(marker.marker.pose.position.x);
+    position[1] = static_cast<float>(marker.marker.pose.position.y);
+    position[2] = static_cast<float>(marker.marker.pose.position.z);
+    spline_points.push_back(position);
+
+    if(first)
+    {
+      spline_points.push_back(position);
+      first = false;
+    }
+  }
+  spline_points.push_back(position);
+
+  UniformCRSpline<Vector3> spline(spline_points);
+
+  // rate to sample from spline and get points
+  double rate = 1.0 / frequency;
+  float max_t = spline.getMaxT();
+  auto current_marker = markers.begin();
+  auto next_marker = ++(markers.begin());
+  int last_marker_id = 0;
+  for(double i = 0.f; i <= max_t; i += rate)
+  {
+    // get position of spline
+    Vector3 interpolated_position = spline.getPosition(i);
+    geometry_msgs::Pose pose;
+    pose.position.x = interpolated_position[0];
+    pose.position.y = interpolated_position[1];
+    pose.position.z = interpolated_position[2];
+
+    if(last_marker_id != (int)std::floor(i))
+    {
+      last_marker_id++;
+      current_marker++;
+      next_marker++;
+    }
+    // get slerped orientation
+    tf::Quaternion start_orientation, end_orientation, intermediate_orientation;
+    tf::quaternionMsgToTF(current_marker->marker.pose.orientation, start_orientation);
+    tf::quaternionMsgToTF(next_marker->marker.pose.orientation, end_orientation);
+    intermediate_orientation = start_orientation.slerp(end_orientation, fmod(i, 1.0));
+    tf::quaternionTFToMsg(intermediate_orientation, pose.orientation);
+
+    spline_poses.push_back(pose);
+  }
 }
 
 } // namespace
