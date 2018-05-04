@@ -122,7 +122,7 @@
       <arg name="max_object_altitude" value="9.9" />
     </include>
 
-    <node pkg="multi_object_tracking" type="multi_object_tracking" name="multi_object_tracking"
+    <node pkg="multi_object_tracking" type="multi_object_tracking_node" name="multi_object_tracking_node"
           output="screen">
       <remap from="/object_poses" to="/object_detection_poses" />
 
