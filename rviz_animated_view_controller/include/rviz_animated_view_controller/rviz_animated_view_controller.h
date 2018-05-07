@@ -68,12 +68,30 @@ class AnimatedViewController : public rviz::ViewController
 Q_OBJECT
 public:
 
-  struct CameraMovementParams
+  struct OgreCameraMovement
   {
-    double bla; //TODO
-  };
+    OgreCameraMovement(){};
+    OgreCameraMovement(const Ogre::Vector3& eye,
+                       const Ogre::Vector3& focus,
+                       const Ogre::Vector3& up,
+                       const ros::Duration& transition_time,
+                       const uint8_t interpolation_speed)
+    : eye(eye)
+      , focus(focus)
+      , up(up)
+      , transition_time(transition_time)
+      , interpolation_speed(interpolation_speed)
+    {
+    }
 
-  typedef boost::circular_buffer<CameraMovementParams> BufferCamMovement;
+    Ogre::Vector3 eye;
+    Ogre::Vector3 focus;
+    Ogre::Vector3 up;
+
+    ros::Duration transition_time;
+    uint8_t interpolation_speed;
+  };
+  typedef boost::circular_buffer<OgreCameraMovement> BufferCamMovements;
 
   enum { TRANSITION_LINEAR = 0,
          TRANSITION_SPHERICAL};
@@ -180,9 +198,8 @@ protected:  //methods
    * frame specified in the Attached Frame property. */
   void updateAttachedSceneNode();
 
-  void cameraMovementCallback(const CameraMovementConstPtr &cp_ptr);
   void cameraTrajectoryCallback(const CameraTrajectoryConstPtr &ct_ptr);
-  void transformCameraMovementToAttachedFrame(CameraMovement &cp);
+  void transformCameraMovementToAttachedFrame(CameraMovement &cm);
 
   //void setUpVectorPropertyModeDependent( const Ogre::Vector3 &vector );
 
@@ -192,8 +209,8 @@ protected:  //methods
   void beginNewTransition(const Ogre::Vector3 &eye,
                           const Ogre::Vector3 &focus,
                           const Ogre::Vector3 &up,
-                          const ros::Duration &transition_time,
-                          uint8_t interpolation_acceleration=rviz_animated_view_controller::CameraMovement::WAVE);
+                          ros::Duration transition_time,
+                          uint8_t interpolation_speed=rviz_animated_view_controller::CameraMovement::WAVE);
 
   /** @brief Cancels any currently active camera movement. */
   void cancelTransition();
@@ -229,7 +246,6 @@ protected:    //members
   rviz::VectorProperty* up_vector_property_;              ///< The up vector for the camera.
   rviz::FloatProperty* default_transition_time_property_; ///< A default time for any animation requests.
 
-  rviz::RosTopicProperty* camera_movement_topic_property_;
   rviz::RosTopicProperty* camera_trajectory_topic_property_;
 
   rviz::TfFrameProperty* attached_frame_property_;
@@ -240,12 +256,11 @@ protected:    //members
 
   // Variables used during animation
   bool animate_;
-  Ogre::Vector3 start_position_, goal_position_;
-  Ogre::Vector3 start_focus_, goal_focus_;
-  Ogre::Vector3 start_up_, goal_up_;
-  ros::Time trajectory_start_time_;
+  Ogre::Vector3 start_position_;
+  Ogre::Vector3 start_focus_;
+  Ogre::Vector3 start_up_;
   ros::Time transition_start_time_;
-  ros::Duration current_transition_duration_;
+  BufferCamMovements cam_movements_buffer_;
 
   rviz::Shape* focal_shape_;    ///< A small ellipsoid to show the focus point.
   bool dragging_;         ///< A flag indicating the dragging state of the mouse.
@@ -253,13 +268,9 @@ protected:    //members
   QCursor interaction_disabled_cursor_;         ///< A cursor for indicating mouse interaction is disabled.
   
   ros::Subscriber trajectory_subscriber_;
-  ros::Subscriber movement_subscriber_;
   ros::Publisher placement_publisher_;
 
-  uint8_t interpolation_acceleration_;
-
   ros::Publisher transition_poses_publisher_;
-
 };
 
 }  // namespace rviz_animated_view_controller
