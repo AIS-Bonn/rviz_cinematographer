@@ -87,7 +87,7 @@ static inline void vectorOgreToMsg(const Ogre::Vector3 &o, geometry_msgs::Vector
 
 
 AnimatedViewController::AnimatedViewController()
-  : nh_(""), animate_(false), dragging_( false ), interpolation_speed_(3u)
+  : nh_(""), animate_(false), dragging_( false ), interpolation_acceleration_(3u)
 {
   interaction_disabled_cursor_ = makeIconCursor( "package://rviz/icons/forbidden.svg" );
 
@@ -499,14 +499,18 @@ void AnimatedViewController::transitionFrom( ViewController* previous_view )
     focus_point_property_->setVector(fvc->focus_point_property_->getVector());
     up_vector_property_->setVector(fvc->up_vector_property_->getVector());
 
-    beginNewTransition(new_eye, new_focus, new_up, ros::Duration(default_transition_time_property_->getFloat()));
+    beginNewTransition(new_eye,
+                       new_focus,
+                       new_up,
+                       ros::Duration(default_transition_time_property_->getFloat()));
   }
 }
 
 void AnimatedViewController::beginNewTransition(const Ogre::Vector3 &eye,
                                                 const Ogre::Vector3 &focus,
                                                 const Ogre::Vector3 &up,
-                                                const ros::Duration &transition_time)
+                                                const ros::Duration &transition_time,
+                                                uint8_t interpolation_acceleration)
 {
   if(ros::Duration(transition_time).isZero())
   {
@@ -529,7 +533,10 @@ void AnimatedViewController::beginNewTransition(const Ogre::Vector3 &eye,
   goal_up_ =  up;
 
   current_transition_duration_ = ros::Duration(transition_time);
+  //TODO: if buffer emtpy set to now else nothing
   transition_start_time_ = ros::Time::now();
+
+  interpolation_acceleration_ = interpolation_acceleration;
 
   animate_ = true;
 }
@@ -570,9 +577,7 @@ void AnimatedViewController::cameraMovementCallback(const CameraMovementConstPtr
     Ogre::Vector3 focus = vectorFromMsg(cp.focus.point);
     Ogre::Vector3 up = vectorFromMsg(cp.up.vector);
 
-    interpolation_speed_ = cp.interpolation_speed;
-
-    beginNewTransition(eye, focus, up, cp.time_from_start);
+    beginNewTransition(eye, focus, up, cp.time_from_start, cp.interpolation_speed);
   }
 }
 
@@ -609,9 +614,7 @@ void AnimatedViewController::cameraTrajectoryCallback(const CameraTrajectoryCons
     Ogre::Vector3 focus = vectorFromMsg(cam_movement.focus.point);
     Ogre::Vector3 up = vectorFromMsg(cam_movement.up.vector);
 
-    beginNewTransition(eye, focus, up, cam_movement.time_from_start);
-
-    //ros::Duration(cam_movement.time_from_start).sleep();
+    beginNewTransition(eye, focus, up, cam_movement.time_from_start, cam_movement.interpolation_speed);
   }
 }
 
@@ -650,7 +653,8 @@ void AnimatedViewController::lookAt( const Ogre::Vector3& point )
 
   Ogre::Vector3 new_point = fixedFrameToAttachedLocal(point);
 
-  beginNewTransition(eye_point_property_->getVector(), new_point,
+  beginNewTransition(eye_point_property_->getVector(),
+                     new_point,
                      up_vector_property_->getVector(),
                      ros::Duration(default_transition_time_property_->getFloat()));
 
@@ -661,14 +665,16 @@ void AnimatedViewController::lookAt( const Ogre::Vector3& point )
 
 void AnimatedViewController::orbitCameraTo( const Ogre::Vector3& point)
 {
-  beginNewTransition(point, focus_point_property_->getVector(),
+  beginNewTransition(point,
+                     focus_point_property_->getVector(),
                      up_vector_property_->getVector(),
                      ros::Duration(default_transition_time_property_->getFloat()));
 }
 
 void AnimatedViewController::moveEyeWithFocusTo( const Ogre::Vector3& point)
 {
-  beginNewTransition(point, focus_point_property_->getVector() + (point - eye_point_property_->getVector()),
+  beginNewTransition(point,
+                     focus_point_property_->getVector() + (point - eye_point_property_->getVector()),
                      up_vector_property_->getVector(),
                      ros::Duration(default_transition_time_property_->getFloat()));
 }
@@ -680,17 +686,25 @@ void AnimatedViewController::update(float dt, float ros_dt)
 
   if(animate_)
   {
+    // TODO: get current element of buffer and proceed as usual
+
+    // TODO delete interpolation mode from msg######!!
+    // struct interpolation_acc + time_from_start (maybe rename to trnasition time) + eye + focus + up
+
     ros::Duration time_from_start = ros::Time::now() - transition_start_time_;
     double fraction = time_from_start.toSec()/current_transition_duration_.toSec();
     // make sure we get all the way there before turning off
     if(fraction > 1.0)
     {
       fraction = 1.0;
+      // TODO: delete current element in buffer
+      // TODO: reset transition start time to now.
+      // TODO: set animate to false if buffer is empty
       animate_ = false;
     }
 
     float progress = 0.0f;
-    switch(interpolation_speed_)
+    switch(interpolation_acceleration_)
     {
       case rviz_animated_view_controller::CameraMovement::RISING:
         progress = 1.f - static_cast<float>(cos(fraction * M_PI_2));

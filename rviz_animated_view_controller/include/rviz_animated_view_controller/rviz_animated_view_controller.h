@@ -45,6 +45,8 @@
 #include <OGRE/OgreVector3.h>
 #include <OGRE/OgreQuaternion.h>
 
+#include <boost/circular_buffer.hpp>
+
 namespace rviz {
   class SceneNode;
   class Shape;
@@ -65,6 +67,13 @@ class AnimatedViewController : public rviz::ViewController
 {
 Q_OBJECT
 public:
+
+  struct CameraMovementParams
+  {
+    double bla; //TODO
+  };
+
+  typedef boost::circular_buffer<CameraMovementParams> BufferCamMovement;
 
   enum { TRANSITION_LINEAR = 0,
          TRANSITION_SPHERICAL};
@@ -180,8 +189,11 @@ protected:  //methods
   void setPropertiesFromCamera( Ogre::Camera* source_camera );
 
   /** @brief Begins a camera movement animation to the given goal points. */
-  void beginNewTransition(const Ogre::Vector3 &eye, const Ogre::Vector3 &focus, const Ogre::Vector3 &up,
-                          const ros::Duration &transition_time);
+  void beginNewTransition(const Ogre::Vector3 &eye,
+                          const Ogre::Vector3 &focus,
+                          const Ogre::Vector3 &up,
+                          const ros::Duration &transition_time,
+                          uint8_t interpolation_acceleration=rviz_animated_view_controller::CameraMovement::WAVE);
 
   /** @brief Cancels any currently active camera movement. */
   void cancelTransition();
@@ -244,7 +256,7 @@ protected:    //members
   ros::Subscriber movement_subscriber_;
   ros::Publisher placement_publisher_;
 
-  uint8_t interpolation_speed_;
+  uint8_t interpolation_acceleration_;
 
   ros::Publisher transition_poses_publisher_;
 
