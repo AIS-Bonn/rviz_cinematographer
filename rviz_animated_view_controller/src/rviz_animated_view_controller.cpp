@@ -91,8 +91,6 @@ AnimatedViewController::AnimatedViewController()
     , animate_(false)
     , dragging_( false )
 {
-  ROS_DEBUG("AnimatedViewController");
-
   interaction_disabled_cursor_ = makeIconCursor( "package://rviz/icons/forbidden.svg" );
 
   mouse_enabled_property_ = new BoolProperty("Mouse Enabled", true,
@@ -132,8 +130,6 @@ AnimatedViewController::AnimatedViewController()
 
 AnimatedViewController::~AnimatedViewController()
 {
-  ROS_DEBUG("~AnimatedViewController");
-
   delete focal_shape_;
   context_->getSceneManager()->destroySceneNode( attached_scene_node_ );
   transition_poses_publisher_.shutdown();
@@ -141,8 +137,6 @@ AnimatedViewController::~AnimatedViewController()
 
 void AnimatedViewController::updateTopics()
 {
-  ROS_DEBUG("updateTopics");
-
   trajectory_subscriber_ = nh_.subscribe<CameraTrajectory>
                               (camera_trajectory_topic_property_->getStdString(), 1,
                               boost::bind(&AnimatedViewController::cameraTrajectoryCallback, this, _1));
@@ -155,8 +149,6 @@ void AnimatedViewController::updateTopics()
 
 void AnimatedViewController::onInitialize()
 {
-  ROS_DEBUG("onInitialize");
-
   attached_frame_property_->setFrameManager( context_->getFrameManager() );
   attached_scene_node_ = context_->getSceneManager()->getRootSceneNode()->createChildSceneNode();
   camera_->detachFromParent();
@@ -175,8 +167,6 @@ void AnimatedViewController::onInitialize()
 
 void AnimatedViewController::onActivate()
 {
-  ROS_DEBUG("onActivate");
-
   updateAttachedSceneNode();
 
   // Before activation, changes to target frame property should have
@@ -196,8 +186,6 @@ void AnimatedViewController::onActivate()
 
 void AnimatedViewController::connectPositionProperties()
 {
-  ROS_DEBUG("connectPositionProperties");
-
   connect( distance_property_,    SIGNAL( changed() ), this, SLOT( onDistancePropertyChanged() ), Qt::UniqueConnection);
   connect( eye_point_property_,   SIGNAL( changed() ), this, SLOT( onEyePropertyChanged() ),      Qt::UniqueConnection);
   connect( focus_point_property_, SIGNAL( changed() ), this, SLOT( onFocusPropertyChanged() ),    Qt::UniqueConnection);
@@ -206,8 +194,6 @@ void AnimatedViewController::connectPositionProperties()
 
 void AnimatedViewController::disconnectPositionProperties()
 {
-  ROS_DEBUG("disconnectPositionProperties");
-
   disconnect( distance_property_,    SIGNAL( changed() ), this, SLOT( onDistancePropertyChanged() ));
   disconnect( eye_point_property_,   SIGNAL( changed() ), this, SLOT( onEyePropertyChanged() ));
   disconnect( focus_point_property_, SIGNAL( changed() ), this, SLOT( onFocusPropertyChanged() ));
@@ -216,22 +202,16 @@ void AnimatedViewController::disconnectPositionProperties()
 
 void AnimatedViewController::onEyePropertyChanged()
 {
-  ROS_DEBUG("onEyePropertyChanged");
-
   distance_property_->setFloat(getDistanceFromCameraToFocalPoint());
 }
 
 void AnimatedViewController::onFocusPropertyChanged()
 {
-  ROS_DEBUG("onFocusPropertyChanged");
-
   distance_property_->setFloat(getDistanceFromCameraToFocalPoint());
 }
 
 void AnimatedViewController::onDistancePropertyChanged()
 {
-  ROS_DEBUG("onDistancePropertyChanged");
-
   disconnectPositionProperties();
   Ogre::Vector3 new_eye_position = focus_point_property_->getVector() + distance_property_->getFloat()* camera_->getOrientation().zAxis();
   eye_point_property_->setVector(new_eye_position);
@@ -240,8 +220,6 @@ void AnimatedViewController::onDistancePropertyChanged()
 
 void AnimatedViewController::onUpPropertyChanged()
 {
-  ROS_DEBUG("onUpPropertyChanged");
-
   disconnect( up_vector_property_,   SIGNAL( changed() ), this, SLOT( onUpPropertyChanged() ));
   if(fixed_up_property_->getBool()){
     up_vector_property_->setVector(Ogre::Vector3::UNIT_Z);
@@ -259,8 +237,6 @@ void AnimatedViewController::onUpPropertyChanged()
 
 void AnimatedViewController::updateAttachedFrame()
 {
-  ROS_DEBUG("onAttachedFrameChanged");
-
   Ogre::Vector3 old_position = attached_scene_node_->getPosition();
   Ogre::Quaternion old_orientation = attached_scene_node_->getOrientation();
 
@@ -290,8 +266,6 @@ void AnimatedViewController::updateAttachedSceneNode()
 
 void AnimatedViewController::onAttachedFrameChanged(const Ogre::Vector3& old_reference_position, const Ogre::Quaternion& old_reference_orientation)
 {
-  ROS_DEBUG("onAttachedFrameChanged");
-
   Ogre::Vector3 fixed_frame_focus_position = old_reference_orientation*focus_point_property_->getVector() + old_reference_position;
   Ogre::Vector3 fixed_frame_eye_position = old_reference_orientation*eye_point_property_->getVector() + old_reference_position;
   Ogre::Vector3 new_focus_position = fixedFrameToAttachedLocal(fixed_frame_focus_position);
@@ -317,8 +291,6 @@ float AnimatedViewController::getDistanceFromCameraToFocalPoint()
 
 void AnimatedViewController::reset()
 {
-  ROS_DEBUG("reset");
-
   eye_point_property_->setVector(Ogre::Vector3(5, 5, 10));
     focus_point_property_->setVector(Ogre::Vector3::ZERO);
     up_vector_property_->setVector(Ogre::Vector3::UNIT_Z);
@@ -338,7 +310,6 @@ void AnimatedViewController::reset()
 
 void AnimatedViewController::handleMouseEvent(ViewportMouseEvent& event)
 {
-  ROS_DEBUG("handleMouseEvent");
   if( !mouse_enabled_property_->getBool() )
   {
     setCursor( interaction_disabled_cursor_ );
@@ -474,8 +445,6 @@ void AnimatedViewController::handleMouseEvent(ViewportMouseEvent& event)
 
 void AnimatedViewController::setPropertiesFromCamera( Ogre::Camera* source_camera )
 {
-  ROS_DEBUG("setPropertiesFromCamera");
-
   disconnectPositionProperties();
   Ogre::Vector3 direction = source_camera->getOrientation() * Ogre::Vector3::NEGATIVE_UNIT_Z;
   eye_point_property_->setVector( source_camera->getPosition() );
@@ -491,8 +460,6 @@ void AnimatedViewController::setPropertiesFromCamera( Ogre::Camera* source_camer
 
 void AnimatedViewController::mimic( ViewController* source_view )
 {
-  ROS_DEBUG("mimic");
-
   QVariant target_frame = source_view->subProp( "Target Frame" )->getValue();
     if( target_frame.isValid() )
     {
@@ -521,8 +488,6 @@ void AnimatedViewController::mimic( ViewController* source_view )
 
 void AnimatedViewController::transitionFrom( ViewController* previous_view )
 {
-  ROS_DEBUG("transitionFrom");
-
   AnimatedViewController* fvc = dynamic_cast<AnimatedViewController*>(previous_view);
   if(fvc)
   {
@@ -547,20 +512,20 @@ void AnimatedViewController::beginNewTransition(const Ogre::Vector3 &eye,
                                                 ros::Duration transition_time,
                                                 uint8_t interpolation_speed)
 {
-  ROS_DEBUG("beginNewTransition");
-
   // if jump was requested, perform as usual but prevent division by zero
   if(ros::Duration(transition_time).isZero())
     transition_time = ros::Duration(0.001);
 
-  // if the buffer is empty we set necessary elements to the current constellation
-  // else the element in the buffer before the current is used
+  // if the buffer is empty we set the first element in it to the current camera pose
   if(cam_movements_buffer_.empty())
   {
     transition_start_time_ = ros::Time::now();
-    start_position_ = eye_point_property_->getVector();
-    start_focus_ = focus_point_property_->getVector();
-    start_up_ = up_vector_property_->getVector();
+
+    cam_movements_buffer_.push_back(std::move(OgreCameraMovement(eye_point_property_->getVector(),
+                                                                 focus_point_property_->getVector(),
+                                                                 up_vector_property_->getVector(),
+                                                                 ros::Duration(0.001),
+                                                                 interpolation_speed))); // interpolation_speed doesn't make a difference for very short times
   }
 
   if(cam_movements_buffer_.full())
@@ -573,49 +538,11 @@ void AnimatedViewController::beginNewTransition(const Ogre::Vector3 &eye,
 
 void AnimatedViewController::cancelTransition()
 {
-  ROS_DEBUG("cancelTransition");
-
   animate_ = false;
 }
 
-//void AnimatedViewController::cameraMovementCallback(const CameraMovementConstPtr &cp_ptr)
-//{
-//  CameraMovement cp = *cp_ptr;
-//
-//  // Handle control parameters
-//  mouse_enabled_property_->setBool( !cp.interaction_disabled );
-//  fixed_up_property_->setBool( !cp.allow_free_yaw_axis );
-//  if(cp.mouse_interaction_mode != cp.NO_CHANGE)
-//  {
-//    std::string name = "";
-//    if(cp.mouse_interaction_mode == cp.ORBIT) name = MODE_ORBIT;
-//    else if(cp.mouse_interaction_mode == cp.FPS) name = MODE_FPS;
-//    interaction_mode_property_->setStdString(name);
-//  }
-//
-//  if(cp.target_frame != "")
-//  {
-//    attached_frame_property_->setStdString(cp.target_frame);
-//    updateAttachedFrame();
-//  }
-//
-//  if(cp.transition_time.toSec() >= 0)
-//  {
-//    ROS_DEBUG_STREAM("Received a camera movement request! \n" << cp);
-//    transformCameraMovementToAttachedFrame(cp);
-//    ROS_DEBUG_STREAM("After transform, we have \n" << cp);
-//
-//    Ogre::Vector3 eye = vectorFromMsg(cp.eye.point);
-//    Ogre::Vector3 focus = vectorFromMsg(cp.focus.point);
-//    Ogre::Vector3 up = vectorFromMsg(cp.up.vector);
-//
-//    beginNewTransition(eye, focus, up, cp.transition_time, cp.interpolation_speed);
-//  }
-//}
-
 void AnimatedViewController::cameraTrajectoryCallback(const CameraTrajectoryConstPtr &ct_ptr)
 {
-  ROS_DEBUG("cam traj callback");
   CameraTrajectory ct = *ct_ptr;
 
   if(ct.trajectory.empty())
@@ -653,8 +580,6 @@ void AnimatedViewController::cameraTrajectoryCallback(const CameraTrajectoryCons
 
 void AnimatedViewController::transformCameraMovementToAttachedFrame(CameraMovement &cm)
 {
-  ROS_DEBUG("transformCameraMovementToAttachedFrame");
-
   Ogre::Vector3 position_fixed_eye, position_fixed_focus, position_fixed_up; // position_fixed_attached;
   Ogre::Quaternion rotation_fixed_eye, rotation_fixed_focus, rotation_fixed_up; // rotation_fixed_attached;
 
@@ -684,8 +609,6 @@ void AnimatedViewController::transformCameraMovementToAttachedFrame(CameraMoveme
 // We must assume that this point is in the Rviz Fixed frame since it came from Rviz...
 void AnimatedViewController::lookAt( const Ogre::Vector3& point )
 {
-  ROS_DEBUG("lookAt");
-
   if( !mouse_enabled_property_->getBool() ) return;
 
   Ogre::Vector3 new_point = fixedFrameToAttachedLocal(point);
@@ -702,8 +625,6 @@ void AnimatedViewController::lookAt( const Ogre::Vector3& point )
 
 void AnimatedViewController::orbitCameraTo( const Ogre::Vector3& point)
 {
-  ROS_DEBUG("orbitCameraTo");
-
   beginNewTransition(point,
                      focus_point_property_->getVector(),
                      up_vector_property_->getVector(),
@@ -712,8 +633,6 @@ void AnimatedViewController::orbitCameraTo( const Ogre::Vector3& point)
 
 void AnimatedViewController::moveEyeWithFocusTo( const Ogre::Vector3& point)
 {
-  ROS_DEBUG("moveEyeWithFocusTo");
-
   beginNewTransition(point,
                      focus_point_property_->getVector() + (point - eye_point_property_->getVector()),
                      up_vector_property_->getVector(),
@@ -725,42 +644,24 @@ void AnimatedViewController::update(float dt, float ros_dt)
 {
   updateAttachedSceneNode();
 
-  if(animate_ && !cam_movements_buffer_.empty())
+  // there has to be at least two positions in the buffer - start and goal
+  if(animate_ && cam_movements_buffer_.size() > 1)
   {
-    ROS_DEBUG("animating");
+    auto start = cam_movements_buffer_.begin();
+    auto goal = ++(cam_movements_buffer_.begin());
+
     ros::Duration time_from_start = ros::Time::now() - transition_start_time_;
-    double fraction = time_from_start.toSec()/cam_movements_buffer_.front().transition_time.toSec();
-
-    Ogre::Vector3 goal_position = cam_movements_buffer_.front().eye;
-    Ogre::Vector3 goal_focus = cam_movements_buffer_.front().focus;
-    Ogre::Vector3 goal_up = cam_movements_buffer_.front().up;
-
-    uint8_t interpolation_speed = cam_movements_buffer_.front().interpolation_speed;
+    double fraction = time_from_start.toSec()/goal->transition_time.toSec();
 
     // make sure we get all the way there before turning off
     if(fraction > 1.0)
     {
-      ROS_DEBUG("fraction > 1.0");
-
       fraction = 1.0;
-      // delete current element in buffer
-      cam_movements_buffer_.pop_front();
-      // reset transition start time to now and start pose to last pose.
-      if(!cam_movements_buffer_.empty())
-      {
-        transition_start_time_ = ros::Time::now();
-      }
-      else
-      {
-        ROS_DEBUG("animate_ = false");
-
-        // finish movements if buffer is empty
-        animate_ = false;
-      }
+      animate_ = false;
     }
 
     float progress = 0.0f;
-    switch(interpolation_speed)
+    switch(goal->interpolation_speed)
     {
       case rviz_animated_view_controller::CameraMovement::RISING:
         progress = 1.f - static_cast<float>(cos(fraction * M_PI_2));
@@ -777,9 +678,9 @@ void AnimatedViewController::update(float dt, float ros_dt)
         break;
     }
 
-    Ogre::Vector3 new_position = start_position_ + progress*(goal_position - start_position_);
-    Ogre::Vector3 new_focus = start_focus_ + progress*(goal_focus - start_focus_);
-    Ogre::Vector3 new_up = start_up_ + progress*(goal_up - start_up_);
+    Ogre::Vector3 new_position = start->eye + progress*(goal->eye - start->eye);
+    Ogre::Vector3 new_focus = start->focus + progress*(goal->focus - start->focus);
+    Ogre::Vector3 new_up = start->up + progress*(goal->up - start->up);
 
     disconnectPositionProperties();
     eye_point_property_->setVector(new_position);
@@ -797,9 +698,9 @@ void AnimatedViewController::update(float dt, float ros_dt)
     if(transition_poses_publisher_.getNumSubscribers() != 0)
     {
       geometry_msgs::Pose intermediate_pose;
-      intermediate_pose.position.x = start_position_.x + progress * (goal_position.x - start_position_.x);
-      intermediate_pose.position.y = start_position_.y + progress * (goal_position.y - start_position_.y);
-      intermediate_pose.position.z = start_position_.z + progress * (goal_position.z - start_position_.z);
+      intermediate_pose.position.x = new_position.x;
+      intermediate_pose.position.y = new_position.y;
+      intermediate_pose.position.z = new_position.z;
 
       intermediate_pose.orientation.w = 1.0;
       // TODO: regenerate quaternion from position, focus and up vectors
@@ -818,6 +719,26 @@ void AnimatedViewController::update(float dt, float ros_dt)
       transition_poses_publisher_.publish(pose_array);
     }
 
+    // if current movement is over
+    if(!animate_)
+    {
+      // delete current start element in buffer
+      cam_movements_buffer_.pop_front();
+
+      // if there are still movements to perform
+      if(cam_movements_buffer_.size() > 1)
+      {
+        // reset animate to perform the next movement
+        animate_ = true;
+        // update the transition start time with the time the transition should have taken
+        transition_start_time_ += ros::Duration(cam_movements_buffer_.front().transition_time);
+      }
+      else
+      {
+        // clean up
+        cam_movements_buffer_.clear();
+      }
+    }
   }
   updateCamera();
 }
@@ -846,8 +767,6 @@ void AnimatedViewController::publishCameraPose()
 
 void AnimatedViewController::yaw_pitch_roll( float yaw, float pitch, float roll )
 {
-  ROS_DEBUG("yaw_pitch_roll");
-
   Ogre::Quaternion old_camera_orientation = camera_->getOrientation();
   Ogre::Radian old_pitch = old_camera_orientation.getPitch(false);// - Ogre::Radian(Ogre::Math::HALF_PI);
 
@@ -895,8 +814,6 @@ Ogre::Quaternion AnimatedViewController::getOrientation()  // Do we need this?
 
 void AnimatedViewController::move_focus_and_eye( float x, float y, float z )
 {
-  ROS_DEBUG("move_focus_and_eye");
-
   Ogre::Vector3 translate( x, y, z );
   eye_point_property_->add( getOrientation() * translate );
   focus_point_property_->add( getOrientation() * translate );
@@ -904,8 +821,6 @@ void AnimatedViewController::move_focus_and_eye( float x, float y, float z )
 
 void AnimatedViewController::move_eye( float x, float y, float z )
 {
-  ROS_DEBUG("move_eye");
-
   Ogre::Vector3 translate( x, y, z );
   // Only update the camera position if it won't "pass through" the origin
   Ogre::Vector3 new_position = eye_point_property_->getVector() + getOrientation() * translate;
