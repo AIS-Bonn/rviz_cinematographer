@@ -25,7 +25,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   ros::NodeHandle ph("~");
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
-  camera_movement_pub_ = ph.advertise<rviz_animated_view_controller::CameraMovement>("/rviz/camera_placement", 1);
+  camera_movement_pub_ = ph.advertise<rviz_animated_view_controller::CameraMovement>("/rviz/camera_movement", 1);
   camera_trajectory_pub_ = ph.advertise<rviz_animated_view_controller::CameraTrajectory>("/rviz/camera_trajectory", 1);
   view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1);
 
@@ -744,7 +744,7 @@ void TrajectoryEditor::moveCamToFirst()
       break;
 
   // fill Camera Trajectory msg with markers and times
-  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());;
+  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());
   rviz_animated_view_controller::CameraMovement cam_movement;
   bool first = true;
   auto previous = it;
@@ -837,7 +837,7 @@ void TrajectoryEditor::moveCamToLast()
       break;
 
   // fill Camera Trajectory msg with markers and times
-  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory;
+  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());
   rviz_animated_view_controller::CameraMovement cam_movement;
   bool first = true;
   auto next = it;

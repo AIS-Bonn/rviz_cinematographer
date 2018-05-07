@@ -1,7 +1,7 @@
 <launch>
 
     <!-- Start RViz separately, because the rqt rviz plugin can't handle published trajectories. -->
-    <node name="rivz" pkg="rviz" type="rviz" />
+    <node name="rviz" pkg="rviz" type="rviz" output="screen" />
 
     <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" required="true" args="-s pose_interpolator/TrajectoryEditor">
         <param name="/trajectory_editor/frame_id" value="laser_map" />
