@@ -25,7 +25,6 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   ros::NodeHandle ph("~");
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
-  camera_movement_pub_ = ph.advertise<rviz_animated_view_controller::CameraMovement>("/rviz/camera_movement", 1);
   camera_trajectory_pub_ = ph.advertise<rviz_animated_view_controller::CameraTrajectory>("/rviz/camera_trajectory", 1);
   view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1);
 
@@ -108,7 +107,6 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 void TrajectoryEditor::shutdownPlugin()
 {
   camera_pose_sub_.shutdown();
-  camera_movement_pub_.shutdown();
   camera_trajectory_pub_.shutdown();
   view_poses_array_pub_.shutdown();
 }
@@ -645,22 +643,19 @@ void TrajectoryEditor::saveTrajectoryToFile()
 
 rviz_animated_view_controller::CameraMovement TrajectoryEditor::makeCameraMovement()
 {
-  rviz_animated_view_controller::CameraMovement cp;
-  cp.eye.header.stamp = ros::Time::now();
-  cp.eye.header.frame_id = ui_.frame_line_edit->text().toStdString();
-  cp.target_frame = ui_.frame_line_edit->text().toStdString();
-  cp.interpolation_mode = rviz_animated_view_controller::CameraMovement::SPHERICAL;
-  cp.mouse_interaction_mode = rviz_animated_view_controller::CameraMovement::NO_CHANGE;
-  cp.interpolation_speed = rviz_animated_view_controller::CameraMovement::WAVE;
-  cp.time_from_start = ros::Duration(0);
+  rviz_animated_view_controller::CameraMovement cm;
+  cm.eye.header.stamp = ros::Time::now();
+  cm.eye.header.frame_id = ui_.frame_line_edit->text().toStdString();
+  cm.interpolation_speed = rviz_animated_view_controller::CameraMovement::WAVE;
+  cm.transition_time = ros::Duration(0);
 
-  cp.up.header = cp.focus.header = cp.eye.header;
+  cm.up.header = cm.focus.header = cm.eye.header;
 
-  cp.up.vector.x = 0.0;
-  cp.up.vector.y = 0.0;
-  cp.up.vector.z = 1.0;
+  cm.up.vector.x = 0.0;
+  cm.up.vector.y = 0.0;
+  cm.up.vector.z = 1.0;
 
-  return cp;
+  return cm;
 }
 
 visualization_msgs::InteractiveMarker TrajectoryEditor::makeMarker(double x, double y, double z)
@@ -704,7 +699,7 @@ void TrajectoryEditor::convertMarkerToCamMovement(const TimedMarker& marker,
                                                   rviz_animated_view_controller::CameraMovement& cam_movement)
 {
   cam_movement = makeCameraMovement();
-  cam_movement.time_from_start = ros::Duration(marker.transition_time);
+  cam_movement.transition_time = ros::Duration(marker.transition_time);
 
   if(!ui_.use_up_of_world_check_box->isChecked())
   {
@@ -713,8 +708,6 @@ void TrajectoryEditor::convertMarkerToCamMovement(const TimedMarker& marker,
     cam_movement.up.vector.x = rotated_vector.x();
     cam_movement.up.vector.y = rotated_vector.y();
     cam_movement.up.vector.z = rotated_vector.z();
-
-    cam_movement.allow_free_yaw_axis = true;
   }
 
   // look from
@@ -745,6 +738,9 @@ void TrajectoryEditor::moveCamToFirst()
 
   // fill Camera Trajectory msg with markers and times
   rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());
+  cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
+  cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
+
   rviz_animated_view_controller::CameraMovement cam_movement;
   bool first = true;
   auto previous = it;
@@ -838,6 +834,9 @@ void TrajectoryEditor::moveCamToLast()
 
   // fill Camera Trajectory msg with markers and times
   rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());
+  cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
+  cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
+
   rviz_animated_view_controller::CameraMovement cam_movement;
   bool first = true;
   auto next = it;
@@ -868,8 +867,12 @@ void TrajectoryEditor::moveCamToLast()
 
 void TrajectoryEditor::moveCamToMarker(const TimedMarker& marker)
 {
+  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());
+  cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
+  cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
+
   rviz_animated_view_controller::CameraMovement cp = makeCameraMovement();
-  cp.time_from_start = ros::Duration(marker.transition_time);
+  cp.transition_time = ros::Duration(marker.transition_time);
   cp.interpolation_speed = rviz_animated_view_controller::CameraMovement::WAVE;
 
   if(!ui_.use_up_of_world_check_box->isChecked())
@@ -879,8 +882,6 @@ void TrajectoryEditor::moveCamToMarker(const TimedMarker& marker)
     cp.up.vector.x = rotated_vector.x();
     cp.up.vector.y = rotated_vector.y();
     cp.up.vector.z = rotated_vector.z();
-
-    cp.allow_free_yaw_axis = true;
   }
 
   // look from
@@ -892,7 +893,9 @@ void TrajectoryEditor::moveCamToMarker(const TimedMarker& marker)
   cp.focus.point.y = marker.marker.pose.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
   cp.focus.point.z = marker.marker.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 
-  camera_movement_pub_.publish(cp);
+  cam_trajectory->trajectory.push_back(cp);
+
+  camera_trajectory_pub_.publish(cam_trajectory);
 }
 
 void TrajectoryEditor::updatePoseInGUI(const geometry_msgs::Pose& pose,

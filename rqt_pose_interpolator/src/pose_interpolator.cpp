@@ -23,7 +23,7 @@ void PoseInterpolator::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   ros::NodeHandle ph("~");
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &PoseInterpolator::camPoseCallback, this);
-  camera_placement_pub_ = ph.advertise<rviz_animated_view_controller::CameraMovement>("/rviz/camera_placement", 1);
+  camera_placement_pub_ = ph.advertise<rviz_animated_view_controller::CameraTrajectory>("/rviz/camera_trajectory", 1);
 
   // access standalone command line arguments
   QStringList argv = context.argv();
@@ -154,9 +154,6 @@ rviz_animated_view_controller::CameraMovement PoseInterpolator::makeCameraMoveme
   rviz_animated_view_controller::CameraMovement cp;
   cp.eye.header.stamp = ros::Time::now();
   cp.eye.header.frame_id = ui_.frame_text_edit->toPlainText().toStdString();
-  cp.target_frame = ui_.frame_text_edit->toPlainText().toStdString();
-  cp.interpolation_mode = rviz_animated_view_controller::CameraMovement::FPS; // SPHERICAL
-  cp.time_from_start = ros::Duration(0);
 
   cp.up.header = cp.focus.header = cp.eye.header;
 
@@ -212,8 +209,13 @@ void PoseInterpolator::moveCamToStart()
 
 void PoseInterpolator::moveCamToStart(double transition_time)
 {
+  // fill Camera Trajectory msg with markers and times
+  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());
+  cam_trajectory->target_frame = ui_.frame_text_edit->toPlainText().toStdString();
+  cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_radio_button->isChecked();
+
   rviz_animated_view_controller::CameraMovement cp = makeCameraMovement();
-  cp.time_from_start = ros::Duration(transition_time);
+  cp.transition_time = ros::Duration(transition_time);
 
   if(!ui_.use_up_of_world_radio_button->isChecked())
   {
@@ -232,13 +234,19 @@ void PoseInterpolator::moveCamToStart(double transition_time)
 
   cp.focus.point = start_look_at_;
 
-  camera_placement_pub_.publish(cp);
+  cam_trajectory->trajectory.push_back(cp);
+  camera_placement_pub_.publish(cam_trajectory);
 }
 
 void PoseInterpolator::moveCamToEnd()
 {
+  // fill Camera Trajectory msg with markers and times
+  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());
+  cam_trajectory->target_frame = ui_.frame_text_edit->toPlainText().toStdString();
+  cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_radio_button->isChecked();
+
   rviz_animated_view_controller::CameraMovement cp = makeCameraMovement();
-  cp.time_from_start = ros::Duration(ui_.transition_time_spin_box->value());
+  cp.transition_time = ros::Duration(ui_.transition_time_spin_box->value());
 
   if(!ui_.use_up_of_world_radio_button->isChecked())
   {
@@ -257,7 +265,8 @@ void PoseInterpolator::moveCamToEnd()
 
   cp.focus.point = end_look_at_;
 
-  camera_placement_pub_.publish(cp);
+  cam_trajectory->trajectory.push_back(cp);
+  camera_placement_pub_.publish(cam_trajectory);
 }
 
 void PoseInterpolator::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)

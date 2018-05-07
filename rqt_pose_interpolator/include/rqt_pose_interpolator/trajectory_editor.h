@@ -307,8 +307,6 @@ private:
   /** @brief Widget. */
   QWidget* widget_;
 
-  /** @brief Publishes camera movement messages. */
-  ros::Publisher camera_movement_pub_;
   /** @brief Publishes camera trajectory messages. */
   ros::Publisher camera_trajectory_pub_;
   /** @brief Publishes the trajectory that is defined by the markers. */

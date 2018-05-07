@@ -15,6 +15,7 @@
 
 #include <geometry_msgs/Pose.h>
 #include <rviz_animated_view_controller/CameraMovement.h>
+#include <rviz_animated_view_controller/CameraTrajectory.h>
 
 #include <interactive_markers/interactive_marker_server.h>
 #include <interactive_markers/menu_handler.h>
