@@ -539,6 +539,7 @@ void AnimatedViewController::beginNewTransition(const Ogre::Vector3 &eye,
 void AnimatedViewController::cancelTransition()
 {
   animate_ = false;
+  cam_movements_buffer_.clear();
 }
 
 void AnimatedViewController::cameraTrajectoryCallback(const CameraTrajectoryConstPtr &ct_ptr)
