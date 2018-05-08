@@ -147,7 +147,8 @@ void TrajectoryEditor::updateTrajectory()
   if(ui_.splines_check_box->isChecked())
   {
     std::vector<geometry_msgs::Pose> spline_poses;
-    splinify(markers_, spline_poses, ui_.publish_rate_spin_box->value());
+    std::vector<double> _;
+    splinify(markers_, spline_poses, _, ui_.publish_rate_spin_box->value());
     for(auto& pose : spline_poses)
       trajectory.controls.front().markers.front().points.push_back(std::move(pose.position));
 
@@ -198,7 +199,8 @@ void TrajectoryEditor::publishTrajectory(const visualization_msgs::InteractiveMa
   if(ui_.splines_check_box->isChecked())
   {
     std::vector<geometry_msgs::Pose> spline_poses;
-    splinify(markers_, spline_poses, ui_.publish_rate_spin_box->value());
+    std::vector<double> _;
+    splinify(markers_, spline_poses, _, ui_.publish_rate_spin_box->value());
     for(auto& pose : spline_poses)
     {
       geometry_msgs::PoseStamped waypoint;
@@ -739,31 +741,80 @@ void TrajectoryEditor::moveCamToFirst()
   cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
 
-  rviz_animated_view_controller::CameraMovement cam_movement;
-  bool first = true;
-  auto previous = it;
-  do
+  if(ui_.splines_check_box->isChecked())
   {
-    previous--;
-    convertMarkerToCamMovement(*previous, cam_movement);
-
-    // set interpolation speed first rising, then full speed, then declining
-    cam_movement.interpolation_speed = (first) ? rviz_animated_view_controller::CameraMovement::RISING : rviz_animated_view_controller::CameraMovement::FULL;
-    if(previous == markers_.begin())
+    MarkerList markers;
+    auto current = it;
+    // TODO: increment current here but check if possible and else push to markers two times
+    do
     {
-      // if the whole trajectory is between the first two markers, use WAVE, else decline
-      if(first)
-        cam_movement.interpolation_speed = rviz_animated_view_controller::CameraMovement::WAVE;
-      else
-        cam_movement.interpolation_speed = rviz_animated_view_controller::CameraMovement::DECLINING;
+      markers.push_back(*current);
     }
+    while(current-- != markers_.begin());
 
-    cam_trajectory->trajectory.push_back(cam_movement);
-    first = false;
+    std::vector<geometry_msgs::Pose> spline_poses;
+    std::vector<double> spline_transition_times;
+    splinify(markers, spline_poses, spline_transition_times, ui_.publish_rate_spin_box->value(), false, true);
+    rviz_animated_view_controller::CameraMovement cam_movement;
+    bool first = true;
+    for(int i = 0; i < spline_poses.size(); i++)
+    {
+      cam_movement.eye.point = spline_poses[i].position;
+      if(!ui_.use_up_of_world_check_box->isChecked())
+      {
+        // in the cam frame up is the negative x direction
+        tf::Vector3 rotated_vector = rotateVector(tf::Vector3(-1, 0, 0), spline_poses[i].orientation);
+        cam_movement.up.vector.x = rotated_vector.x();
+        cam_movement.up.vector.y = rotated_vector.y();
+        cam_movement.up.vector.z = rotated_vector.z();
+      }
+      else
+      {
+        cam_movement.up.vector.z = 1.0;
+      }
+
+      tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), spline_poses[i].orientation);
+      cam_movement.focus.point.x = spline_poses[i].position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
+      cam_movement.focus.point.y = spline_poses[i].position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
+      cam_movement.focus.point.z = spline_poses[i].position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
+
+      cam_movement.interpolation_speed = (first) ? rviz_animated_view_controller::CameraMovement::RISING : rviz_animated_view_controller::CameraMovement::FULL;
+      first = false;
+
+      cam_movement.transition_time = ros::Duration(spline_transition_times[i]);
+
+      cam_trajectory->trajectory.push_back(cam_movement);
+    }
+    cam_trajectory->trajectory.back().interpolation_speed = rviz_animated_view_controller::CameraMovement::DECLINING;
   }
-  while(previous != markers_.begin());
+  else
+  {
+    rviz_animated_view_controller::CameraMovement cam_movement;
+    bool first = true;
+    auto previous = it;
+    do
+    {
+      previous--;
+      convertMarkerToCamMovement(*previous, cam_movement);
 
-  setCurrentFromTo(*it, *previous);
+      // set interpolation speed first rising, then full speed, then declining
+      cam_movement.interpolation_speed = (first) ? rviz_animated_view_controller::CameraMovement::RISING : rviz_animated_view_controller::CameraMovement::FULL;
+      if(previous == markers_.begin())
+      {
+        // if the whole trajectory is between the first two markers, use WAVE, else decline
+        if(first)
+          cam_movement.interpolation_speed = rviz_animated_view_controller::CameraMovement::WAVE;
+        else
+          cam_movement.interpolation_speed = rviz_animated_view_controller::CameraMovement::DECLINING;
+      }
+
+      cam_trajectory->trajectory.push_back(cam_movement);
+      first = false;
+    }
+    while(previous != markers_.begin());
+  }
+
+  setCurrentFromTo(*it, *(markers_.begin()));
 
   // publish cam trajectory
   camera_trajectory_pub_.publish(cam_trajectory);
@@ -989,11 +1040,16 @@ tf::Vector3 TrajectoryEditor::rotateVector(const tf::Vector3& vector,
   return tf::quatRotate(rotation, vector);
 }
 
+// TODO: split up funtion into prepareSpline and sampleSpline
 void TrajectoryEditor::splinify(const MarkerList& markers,
                                 std::vector<geometry_msgs::Pose>& spline_poses,
-                                double frequency)
+                                std::vector<double>& spline_transition_times,
+                                double frequency,
+                                bool duplicate_start,
+                                bool duplicate_end)
 {
   // put all markers positions into a vector. First and last double.
+  double total_transition_time = 0.0;
   std::vector<Vector3> spline_points;
   Vector3 position;
   bool first = true;
@@ -1004,36 +1060,46 @@ void TrajectoryEditor::splinify(const MarkerList& markers,
     position[2] = static_cast<float>(marker.marker.pose.position.z);
     spline_points.push_back(position);
 
+    // when moving from marker A to B we only consider the transition time of B
+    if(!first)
+      total_transition_time += marker.transition_time;
+
     if(first)
     {
-      spline_points.push_back(position);
       first = false;
+      if(duplicate_start)
+        spline_points.push_back(position);
     }
   }
-  spline_points.push_back(position);
+  if(duplicate_end)
+    spline_points.push_back(position);
 
+  // TODO split here
   UniformCRSpline<Vector3> spline(spline_points);
+  // TODO and here
 
   // rate to sample from spline and get points
   double rate = 1.0 / frequency;
   float max_t = spline.getMaxT();
   auto current_marker = markers.begin();
   auto next_marker = ++(markers.begin());
-  int last_marker_id = 0;
+  int current_marker_id = 0;
+  double total_length = spline.totalLength();
   for(double i = 0.f; i <= max_t; i += rate)
   {
     // get position of spline
-    Vector3 interpolated_position = spline.getPosition(i);
+    auto interpolated_position = spline.getPosition(i);
     geometry_msgs::Pose pose;
     pose.position.x = interpolated_position[0];
     pose.position.y = interpolated_position[1];
     pose.position.z = interpolated_position[2];
 
+
     // i from 0 to 1 corresponds to the spline between the first and the second marker
     // we have to maintain iterators for slerp
-    if(last_marker_id != (int)std::floor(i))
+    if(current_marker_id != (int)std::floor(i))
     {
-      last_marker_id++;
+      current_marker_id++;
       current_marker++;
       next_marker++;
     }
@@ -1045,6 +1111,10 @@ void TrajectoryEditor::splinify(const MarkerList& markers,
     tf::quaternionTFToMsg(intermediate_orientation, pose.orientation);
 
     spline_poses.push_back(pose);
+
+    double local_length = spline.arcLength(std::max(i - rate, 0.0), i);
+    double transition_time = total_transition_time * local_length / total_length;
+    spline_transition_times.push_back(transition_time);
   }
 }
 

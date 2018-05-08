@@ -298,7 +298,10 @@ private:
    */
   void splinify(const MarkerList& markers,
                 std::vector<geometry_msgs::Pose>& spline_poses,
-                double frequency);
+                std::vector<double>& spline_transition_times,
+                double frequency,
+                bool duplicate_start = true,
+                bool duplicate_end = true);
 
   /** @brief Ui object - connection to GUI. */
   Ui::trajectory_editor ui_;
