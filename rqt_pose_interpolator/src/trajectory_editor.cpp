@@ -51,8 +51,6 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 
   connect(ui_.transition_time_spin_box, SIGNAL(valueChanged(double)), this, SLOT(updateCurrentMarker()));
 
-  connect(ui_.publish_rate_spin_box, SIGNAL(valueChanged(double)), this, SLOT(updatePublishingRate()));
-
   connect(ui_.move_to_current_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToCurrent()));
   connect(ui_.move_to_prev_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToPrev()));
   connect(ui_.move_to_first_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToFirst()));
