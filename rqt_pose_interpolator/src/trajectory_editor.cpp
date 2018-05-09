@@ -760,6 +760,7 @@ void TrajectoryEditor::moveCamToFirst()
     for(int i = 0; i < spline_poses.size(); i++)
     {
       cam_movement.eye.point = spline_poses[i].position;
+
       if(!ui_.use_up_of_world_check_box->isChecked())
       {
         // in the cam frame up is the negative x direction
@@ -1085,7 +1086,8 @@ void TrajectoryEditor::splinify(const MarkerList& markers,
   auto next_marker = ++(markers.begin());
   int current_marker_id = 0;
   double total_length = spline.totalLength();
-  for(double i = 0.f; i <= max_t; i += rate)
+  bool last_run = false;
+  for(double i = 0.f; i <= max_t;)
   {
     // get position of spline
     auto interpolated_position = spline.getPosition(i);
@@ -1097,7 +1099,7 @@ void TrajectoryEditor::splinify(const MarkerList& markers,
 
     // i from 0 to 1 corresponds to the spline between the first and the second marker
     // we have to maintain iterators for slerp
-    if(current_marker_id != (int)std::floor(i))
+    if(current_marker_id != (int)std::floor(i) && !last_run)
     {
       current_marker_id++;
       current_marker++;
@@ -1107,7 +1109,10 @@ void TrajectoryEditor::splinify(const MarkerList& markers,
     tf::Quaternion start_orientation, end_orientation, intermediate_orientation;
     tf::quaternionMsgToTF(current_marker->marker.pose.orientation, start_orientation);
     tf::quaternionMsgToTF(next_marker->marker.pose.orientation, end_orientation);
-    intermediate_orientation = start_orientation.slerp(end_orientation, fmod(i, 1.0));
+    double slerp_factor = fmod(i, 1.0);
+    if(last_run)
+      slerp_factor = 1.0;
+    intermediate_orientation = start_orientation.slerp(end_orientation, slerp_factor);
     tf::quaternionTFToMsg(intermediate_orientation, pose.orientation);
 
     spline_poses.push_back(pose);
@@ -1115,6 +1120,20 @@ void TrajectoryEditor::splinify(const MarkerList& markers,
     double local_length = spline.arcLength(std::max(i - rate, 0.0), i);
     double transition_time = total_transition_time * local_length / total_length;
     spline_transition_times.push_back(transition_time);
+
+    ROS_INFO_STREAM("i " << i << " max_t " << max_t << " slerp_factor " << slerp_factor);
+
+    // TODO: orientation at the end doesnt fit to the last markers orientation 
+
+    if(last_run)
+      break;
+
+    i += rate;
+    if(i > max_t)
+    {
+      last_run = true;
+      i = max_t;
+    }
   }
 }
 
