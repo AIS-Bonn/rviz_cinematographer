@@ -640,7 +640,6 @@ void AnimatedViewController::moveEyeWithFocusTo( const Ogre::Vector3& point)
                      ros::Duration(default_transition_time_property_->getFloat()));
 }
 
-
 void AnimatedViewController::update(float dt, float ros_dt)
 {
   updateAttachedSceneNode();
@@ -703,15 +702,14 @@ void AnimatedViewController::update(float dt, float ros_dt)
       intermediate_pose.position.y = new_position.y;
       intermediate_pose.position.z = new_position.z;
 
-      intermediate_pose.orientation.w = 1.0;
-      // TODO: regenerate quaternion from position, focus and up vectors
-//      tf::Quaternion start_orientation, end_orientation, intermediate_orientation;
-//      tf::quaternionMsgToTF(start_pose_.orientation, start_orientation);
-//      tf::quaternionMsgToTF(end_pose_.orientation, end_orientation);
-//
-//      // Compute the slerp-ed rotation
-//      intermediate_orientation = start_orientation.slerp(end_orientation, progress);
-//      tf::quaternionTFToMsg(intermediate_orientation, intermediate_pose.orientation);
+      Ogre::Quaternion test = getOrientation();
+      Ogre::Quaternion rot_around_z_neg_90_deg(0.707, 0.0, 0.0, -0.707);
+
+      test = test * rot_around_z_neg_90_deg;
+      intermediate_pose.orientation.x = test.x;
+      intermediate_pose.orientation.y = test.y;
+      intermediate_pose.orientation.z = test.z;
+      intermediate_pose.orientation.w = test.w;
 
       geometry_msgs::PoseArray pose_array;
       pose_array.poses.push_back(intermediate_pose);
