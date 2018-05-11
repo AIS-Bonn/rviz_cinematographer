@@ -702,14 +702,13 @@ void AnimatedViewController::update(float dt, float ros_dt)
       intermediate_pose.position.y = new_position.y;
       intermediate_pose.position.z = new_position.z;
 
-      Ogre::Quaternion test = getOrientation();
-      Ogre::Quaternion rot_around_z_neg_90_deg(0.707, 0.0, 0.0, -0.707);
-
-      test = test * rot_around_z_neg_90_deg;
-      intermediate_pose.orientation.x = test.x;
-      intermediate_pose.orientation.y = test.y;
-      intermediate_pose.orientation.z = test.z;
-      intermediate_pose.orientation.w = test.w;
+      Ogre::Quaternion cam_orientation = getOrientation();
+      Ogre::Quaternion rot_around_z_neg_90_deg(0.707f, 0.0f, 0.0f, -0.707f);
+      cam_orientation = cam_orientation * rot_around_z_neg_90_deg;
+      intermediate_pose.orientation.x = cam_orientation.x;
+      intermediate_pose.orientation.y = cam_orientation.y;
+      intermediate_pose.orientation.z = cam_orientation.z;
+      intermediate_pose.orientation.w = cam_orientation.w;
 
       geometry_msgs::PoseArray pose_array;
       pose_array.poses.push_back(intermediate_pose);
