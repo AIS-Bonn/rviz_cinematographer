@@ -295,13 +295,23 @@ private:
    * @param[in]     markers         markers to be interpolated.
    * @param[out]    spline_poses    constructed spline.
    * @param[in]     frequency       resolution - number of spline points between each marker pair.
+   * @param[in]     duplicate_ends  flag if first and last marker should be duplicated for spline - some types of splines don't interpolate between the the end points and the ones next to them.
    */
-  void splinify(const MarkerList& markers,
-                std::vector<geometry_msgs::Pose>& spline_poses,
-                std::vector<double>& spline_transition_times,
-                double frequency,
-                bool duplicate_start = true,
-                bool duplicate_end = true);
+  void markersToSplinedPoses(const MarkerList& markers,
+                             std::vector<geometry_msgs::Pose>& spline_poses,
+                             double frequency,
+                             bool duplicate_ends = true);
+
+  /**
+   * @brief Interpolate markers using a spline and safe that as the points of a CameraTrajectory.
+   *
+   * @param[in]     markers         markers to be interpolated.
+   * @param[out]    trajectory      resulting trajectory.
+   * @param[in]     frequency       resolution - number of spline points between each marker pair.
+   */
+  void markersToSplinedCamTrajectory(const MarkerList& markers,
+                                     rviz_animated_view_controller::CameraTrajectoryPtr trajectory,
+                                     double frequency);
 
   /** @brief Ui object - connection to GUI. */
   Ui::trajectory_editor ui_;
@@ -328,8 +338,6 @@ private:
 
   /** @brief Currently maintained list of TimedMarkers. */
   MarkerList markers_;
-
-  uint8_t interpolation_speed_;
 };
 
 } // namespace
