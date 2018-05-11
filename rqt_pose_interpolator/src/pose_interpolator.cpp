@@ -47,11 +47,20 @@ void PoseInterpolator::initPlugin(qt_gui_cpp::PluginContext& context)
   start_marker_.description = "Start Marker";
   start_marker_.pose.orientation.w = 1.0;
   start_marker_.controls[0].markers[0].color.g = 1.f;
+  tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), start_marker_.pose.orientation);
+  start_look_at_.x = start_marker_.pose.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
+  start_look_at_.y = start_marker_.pose.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
+  start_look_at_.z = start_marker_.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
+
   end_marker_ = makeMarker(5.0, 0.0, 0.0);
   end_marker_.name = "end_marker";
   end_marker_.description = "End Marker";
   end_marker_.pose.orientation.w = 1.0;
   end_marker_.controls[0].markers[0].color.r = 1.f;
+  rotated_vector = rotateVector(tf::Vector3(0, 0, -1), end_marker_.pose.orientation);
+  end_look_at_.x = end_marker_.pose.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
+  end_look_at_.y = end_marker_.pose.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
+  end_look_at_.z = end_marker_.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 
   // connect markers to callback functions
   server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>("trajectory");
@@ -88,54 +97,42 @@ void PoseInterpolator::camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_
 
 void PoseInterpolator::setStartToCurrentCam()
 {
-  ui_.messages_label->setText(QString("Message: "));
-
-  if(ui_.start_x_spin_box->maximum() < cam_pose_.position.x ||
-     ui_.start_x_spin_box->minimum() > cam_pose_.position.x ||
-     ui_.start_y_spin_box->maximum() < cam_pose_.position.y ||
-     ui_.start_y_spin_box->minimum() > cam_pose_.position.y ||
-     ui_.start_z_spin_box->maximum() < cam_pose_.position.z ||
-     ui_.start_z_spin_box->minimum() > cam_pose_.position.z )
-  {
-    ui_.messages_label->setText(QString("Message: Current position is out of scope.\n\tTry moving closer to the center of the frame."));
-    return;
-  }
-  
-  ui_.start_x_spin_box->setValue(cam_pose_.position.x);
-  ui_.start_y_spin_box->setValue(cam_pose_.position.y);
-  ui_.start_z_spin_box->setValue(cam_pose_.position.z);
-
   // rviz camera looks into negative z direction
   tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), cam_pose_.orientation);
   start_look_at_.x = cam_pose_.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
   start_look_at_.y = cam_pose_.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
   start_look_at_.z = cam_pose_.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
+
+  start_marker_.pose = cam_pose_;
+
+  // rotate cam pose around z axis for -90 degrees
+  tf::Quaternion cam_orientation;
+  tf::quaternionMsgToTF(cam_pose_.orientation, cam_orientation);
+  tf::Quaternion rot_around_z_neg_90_deg(0.0, 0.0, -0.707, 0.707);
+  tf::quaternionTFToMsg(cam_orientation * rot_around_z_neg_90_deg, start_marker_.pose.orientation);
+
+  server_->setPose(start_marker_.name, start_marker_.pose, start_marker_.header);
+  server_->applyChanges();
 }
 
 void PoseInterpolator::setEndToCurrentCam()
 {
-  ui_.messages_label->setText(QString("Message: "));
-
-  if(ui_.end_x_spin_box->maximum() < cam_pose_.position.x ||
-     ui_.end_x_spin_box->minimum() > cam_pose_.position.x ||
-     ui_.end_y_spin_box->maximum() < cam_pose_.position.y ||
-     ui_.end_y_spin_box->minimum() > cam_pose_.position.y ||
-     ui_.end_z_spin_box->maximum() < cam_pose_.position.z ||
-     ui_.end_z_spin_box->minimum() > cam_pose_.position.z )
-  {
-    ui_.messages_label->setText(QString("Message: Current position is out of scope.\n\tTry moving closer to the center of the frame."));
-    return;
-  }
-
-  ui_.end_x_spin_box->setValue(cam_pose_.position.x);
-  ui_.end_y_spin_box->setValue(cam_pose_.position.y);
-  ui_.end_z_spin_box->setValue(cam_pose_.position.z);
-
   // rviz camera looks into negative z direction
   tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), cam_pose_.orientation);
   end_look_at_.x = cam_pose_.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
   end_look_at_.y = cam_pose_.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
   end_look_at_.z = cam_pose_.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
+
+  end_marker_.pose = cam_pose_;
+
+  // rotate cam pose around z axis for -90 degrees
+  tf::Quaternion cam_orientation;
+  tf::quaternionMsgToTF(cam_pose_.orientation, cam_orientation);
+  tf::Quaternion rot_around_z_neg_90_deg(0.0, 0.0, -0.707, 0.707);
+  tf::quaternionTFToMsg(cam_orientation * rot_around_z_neg_90_deg, end_marker_.pose.orientation);
+
+  server_->setPose(end_marker_.name, end_marker_.pose, end_marker_.header);
+  server_->applyChanges();
 }
 
 void PoseInterpolator::setMarkerFrames()
@@ -226,12 +223,7 @@ void PoseInterpolator::moveCamToStart(double transition_time)
     cp.up.vector.z = rotated_vector.z();
   }
 
-  geometry_msgs::Point look_from;
-  look_from.x = ui_.start_x_spin_box->value();
-  look_from.y = ui_.start_y_spin_box->value();
-  look_from.z = ui_.start_z_spin_box->value();
-  cp.eye.point = look_from;
-
+  cp.eye.point = start_marker_.pose.position;
   cp.focus.point = start_look_at_;
 
   cam_trajectory->trajectory.push_back(cp);
@@ -257,12 +249,7 @@ void PoseInterpolator::moveCamToEnd()
     cp.up.vector.z = rotated_vector.z();
   }
 
-  geometry_msgs::Point look_from;
-  look_from.x = ui_.end_x_spin_box->value();
-  look_from.y = ui_.end_y_spin_box->value();
-  look_from.z = ui_.end_z_spin_box->value();
-  cp.eye.point = look_from;
-
+  cp.eye.point = end_marker_.pose.position;
   cp.focus.point = end_look_at_;
 
   cam_trajectory->trajectory.push_back(cp);
@@ -275,10 +262,6 @@ void PoseInterpolator::processFeedback(const visualization_msgs::InteractiveMark
   {
     start_marker_.pose = feedback->pose;
 
-    ui_.start_x_spin_box->setValue(start_marker_.pose.position.x);
-    ui_.start_y_spin_box->setValue(start_marker_.pose.position.y);
-    ui_.start_z_spin_box->setValue(start_marker_.pose.position.z);
-
     tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), start_marker_.pose.orientation);
     start_look_at_.x = start_marker_.pose.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
     start_look_at_.y = start_marker_.pose.position.y + ui_.smoothness_spin_box->value() * rotated_vector.y();
@@ -287,10 +270,6 @@ void PoseInterpolator::processFeedback(const visualization_msgs::InteractiveMark
   else
   {
     end_marker_.pose = feedback->pose;
-
-    ui_.end_x_spin_box->setValue(end_marker_.pose.position.x);
-    ui_.end_y_spin_box->setValue(end_marker_.pose.position.y);
-    ui_.end_z_spin_box->setValue(end_marker_.pose.position.z);
 
     tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -1), end_marker_.pose.orientation);
     end_look_at_.x = end_marker_.pose.position.x + ui_.smoothness_spin_box->value() * rotated_vector.x();
