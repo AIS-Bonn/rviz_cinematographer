@@ -17,7 +17,8 @@ find_package(OpenGL REQUIRED)
 
 set(MSG_DEPS
   std_msgs
-  geometry_msgs)
+  geometry_msgs
+  nav_msgs)
 
 find_package(catkin REQUIRED COMPONENTS
   rviz

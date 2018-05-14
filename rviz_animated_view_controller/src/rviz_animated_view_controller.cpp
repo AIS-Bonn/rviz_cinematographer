@@ -133,6 +133,7 @@ AnimatedViewController::~AnimatedViewController()
   delete focal_shape_;
   context_->getSceneManager()->destroySceneNode( attached_scene_node_ );
   transition_poses_publisher_.shutdown();
+  odometry_pub_.shutdown();
 }
 
 void AnimatedViewController::updateTopics()
@@ -145,6 +146,7 @@ void AnimatedViewController::updateTopics()
 //                              boost::bind(&AnimatedViewController::cameraMovementCallback, this, _1));
   placement_publisher_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
   transition_poses_publisher_ = nh_.advertise<geometry_msgs::PoseArray>("/rviz/trajectory_steps", 1);
+  odometry_pub_ = nh_.advertise<nav_msgs::Odometry>("/rviz/trajectory_odometry", 1);
 }
 
 void AnimatedViewController::onInitialize()
@@ -640,6 +642,51 @@ void AnimatedViewController::moveEyeWithFocusTo( const Ogre::Vector3& point)
                      ros::Duration(default_transition_time_property_->getFloat()));
 }
 
+void AnimatedViewController::publishPose(const Ogre::Vector3& position)
+{
+  geometry_msgs::Pose intermediate_pose;
+  intermediate_pose.position.x = position.x;
+  intermediate_pose.position.y = position.y;
+  intermediate_pose.position.z = position.z;
+
+  Ogre::Quaternion cam_orientation = getOrientation();
+  Ogre::Quaternion rot_around_z_neg_90_deg(0.707f, 0.0f, 0.0f, -0.707f);
+  cam_orientation = cam_orientation * rot_around_z_neg_90_deg;
+  intermediate_pose.orientation.x = cam_orientation.x;
+  intermediate_pose.orientation.y = cam_orientation.y;
+  intermediate_pose.orientation.z = cam_orientation.z;
+  intermediate_pose.orientation.w = cam_orientation.w;
+
+  geometry_msgs::PoseArray pose_array;
+  pose_array.poses.push_back(intermediate_pose);
+  pose_array.header.frame_id = attached_frame_property_->getFrameStd();
+  pose_array.header.stamp = ros::Time::now();
+  transition_poses_publisher_.publish(pose_array);
+}
+
+void AnimatedViewController::publishOdometry(const Ogre::Vector3& position,
+                                             const Ogre::Vector3& velocity)
+{
+  nav_msgs::Odometry odometry;
+  odometry.header.frame_id = attached_frame_property_->getFrameStd();
+  odometry.header.stamp = ros::Time::now();
+  odometry.pose.pose.position.x = position.x;
+  odometry.pose.pose.position.y = position.y;
+  odometry.pose.pose.position.z = position.z;
+  odometry.twist.twist.linear.x = velocity.x; //This is allo velocity and therefore not ROS convention!
+  odometry.twist.twist.linear.y = velocity.y; //This is allo velocity and therefore not ROS convention!
+  odometry.twist.twist.linear.z = velocity.z; //This is allo velocity and therefore not ROS convention!
+
+  Ogre::Quaternion cam_orientation = getOrientation();
+  Ogre::Quaternion rot_around_y_pos_90_deg(0.707f, 0.0f, 0.707f, 0.0f);
+  cam_orientation = cam_orientation * rot_around_y_pos_90_deg;
+  odometry.pose.pose.orientation.x = cam_orientation.x;
+  odometry.pose.pose.orientation.y = cam_orientation.y;
+  odometry.pose.pose.orientation.z = cam_orientation.z;
+  odometry.pose.pose.orientation.w = cam_orientation.w;
+  odometry_pub_.publish(odometry);
+}
+
 void AnimatedViewController::update(float dt, float ros_dt)
 {
   updateAttachedSceneNode();
@@ -682,6 +729,9 @@ void AnimatedViewController::update(float dt, float ros_dt)
     Ogre::Vector3 new_focus = start->focus + progress*(goal->focus - start->focus);
     Ogre::Vector3 new_up = start->up + progress*(goal->up - start->up);
 
+    if(odometry_pub_.getNumSubscribers() != 0)
+      publishOdometry(new_position, (new_position - eye_point_property_->getVector()) * ros_dt);
+
     disconnectPositionProperties();
     eye_point_property_->setVector(new_position);
     focus_point_property_->setVector(new_focus);
@@ -695,27 +745,9 @@ void AnimatedViewController::update(float dt, float ros_dt)
 
     publishCameraPose();
 
+    // yes, does very similar to publishCameraPose, but was needed for a specific application - delete if you want
     if(transition_poses_publisher_.getNumSubscribers() != 0)
-    {
-      geometry_msgs::Pose intermediate_pose;
-      intermediate_pose.position.x = new_position.x;
-      intermediate_pose.position.y = new_position.y;
-      intermediate_pose.position.z = new_position.z;
-
-      Ogre::Quaternion cam_orientation = getOrientation();
-      Ogre::Quaternion rot_around_z_neg_90_deg(0.707f, 0.0f, 0.0f, -0.707f);
-      cam_orientation = cam_orientation * rot_around_z_neg_90_deg;
-      intermediate_pose.orientation.x = cam_orientation.x;
-      intermediate_pose.orientation.y = cam_orientation.y;
-      intermediate_pose.orientation.z = cam_orientation.z;
-      intermediate_pose.orientation.w = cam_orientation.w;
-
-      geometry_msgs::PoseArray pose_array;
-      pose_array.poses.push_back(intermediate_pose);
-      pose_array.header.frame_id = attached_frame_property_->getFrameStd();
-      pose_array.header.stamp = ros::Time::now();
-      transition_poses_publisher_.publish(pose_array);
-    }
+      publishPose(new_position);
 
     // if current movement is over
     if(!animate_)
