@@ -9,6 +9,8 @@
 #define RQT_POSE_INTERPOLATOR_TRAJECTORY_EDITOR_H
 
 #include <fstream>
+#include <sstream>
+#include <string>
 
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -35,6 +37,8 @@
 #include "ui_trajectory_editor.h"
 
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <yaml-cpp/yaml.h>
 
 #include <spline_library/splines/natural_spline.h>

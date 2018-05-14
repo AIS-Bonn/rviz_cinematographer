@@ -562,12 +562,16 @@ void TrajectoryEditor::loadTrajectoryFromFile()
 {
   std::string directory_path = ros::package::getPath("rqt_pose_interpolator")  + "/trajectories/";
 
-  QString file_name = QFileDialog::getOpenFileName(widget_, "Open Trajectory", QString(directory_path.c_str()), "All Files (*);;.yaml files (*.yaml)");
+  QString file_name = QFileDialog::getOpenFileName(widget_, "Open Trajectory", QString(directory_path.c_str()), "All Files (*);;.yaml files (*.yaml);;.txt files (*.txt)");
   if(file_name == "")
   {
     ROS_ERROR_STREAM("No file specified.");
+    return;
   }
-  else
+
+  std::string extension = boost::filesystem::extension(file_name.toStdString());
+
+  if(extension == ".yaml")
   {
     YAML::Node trajectory = YAML::LoadFile(file_name.toStdString());
     int count = 0;
@@ -592,27 +596,79 @@ void TrajectoryEditor::loadTrajectoryFromFile()
       markers_.emplace_back(TimedMarker(std::move(wp_marker), pose["transition_time"].as<double>()));
       count++;
     }
-
-    // green color for last marker
-    markers_.back().marker.controls[0].markers[0].color.r = 0.f;
-    markers_.back().marker.controls[0].markers[0].color.g = 1.f;
-
-    // connect markers to callback functions
-    for(const auto& marker : markers_)
-    {
-      server_->insert(marker.marker, boost::bind(&TrajectoryEditor::processFeedback, this, _1));
-      menu_handler_.apply(*server_, marker.marker.name);
-    }
-
-    // 'commit' changes and send to all clients
-    server_->applyChanges();
-
-    current_marker_ = markers_.back();
-
-    updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
-
-    updateTrajectory();
   }
+  else if(extension == ".txt")
+  {
+    int count = 0;
+    markers_.clear();
+    std::ifstream infile(file_name.toStdString());
+    std::string line;
+    double prev_pose_time = 0.0;
+    while(std::getline(infile, line))
+    {
+      if(boost::starts_with(line, "#"))
+        continue;
+
+      std::vector<std::string> pose_strings;
+      boost::split(pose_strings, line, boost::is_any_of(" "), boost::algorithm::token_compress_on);
+
+      if(pose_strings.size() != 8)
+      {
+        ROS_ERROR_STREAM("Line: " << line << " contains the wrong number of parameters. Format is: timestamp tx ty tz qx qy qz qw. Number of parameters are " << (int)pose_strings.size());
+        continue;
+      }
+
+      visualization_msgs::InteractiveMarker wp_marker = makeMarker();
+      wp_marker.controls[0].markers[0].color.r = 1.f;
+
+      double transition_time = 0.0;
+      if(count > 0)
+        transition_time = boost::lexical_cast<double>(pose_strings.at(0)) - prev_pose_time;
+
+      wp_marker.pose.position.x = boost::lexical_cast<double>(pose_strings.at(1));
+      wp_marker.pose.position.y = boost::lexical_cast<double>(pose_strings.at(2));
+      wp_marker.pose.position.z = boost::lexical_cast<double>(pose_strings.at(3));
+
+      wp_marker.pose.orientation.x = boost::lexical_cast<double>(pose_strings.at(4));
+      wp_marker.pose.orientation.y = boost::lexical_cast<double>(pose_strings.at(5));
+      wp_marker.pose.orientation.z = boost::lexical_cast<double>(pose_strings.at(6));
+      wp_marker.pose.orientation.w = boost::lexical_cast<double>(pose_strings.at(7));
+
+      wp_marker.name = std::string("wp") + std::to_string(count);
+      wp_marker.description = std::to_string(count);
+
+      markers_.emplace_back(TimedMarker(std::move(wp_marker), transition_time));
+
+      prev_pose_time = boost::lexical_cast<double>(pose_strings.at(0));
+      count++;
+    }
+  }
+  else
+  {
+    ROS_ERROR_STREAM("Specified file is neither .yaml nor .txt file.\n File name is: " << file_name.toStdString());
+    return;
+  }
+
+  // green color for last marker
+  markers_.back().marker.controls[0].markers[0].color.r = 0.f;
+  markers_.back().marker.controls[0].markers[0].color.g = 1.f;
+
+  server_->clear();
+  // connect markers to callback functions
+  for(const auto& marker : markers_)
+  {
+    server_->insert(marker.marker, boost::bind(&TrajectoryEditor::processFeedback, this, _1));
+    menu_handler_.apply(*server_, marker.marker.name);
+  }
+
+  // 'commit' changes and send to all clients
+  server_->applyChanges();
+
+  current_marker_ = markers_.back();
+
+  updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
+
+  updateTrajectory();
 }
 
 void TrajectoryEditor::saveTrajectoryToFile()
