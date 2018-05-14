@@ -79,8 +79,8 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   else
   {
     visualization_msgs::InteractiveMarker marker = makeMarker();
-    marker.name = "first_marker";
-    marker.description = "Marker";
+    marker.name = "wp0";
+    marker.description = "0";
     marker.controls[0].markers[0].color.r = 1.f;
     markers_.emplace_back(TimedMarker(std::move(marker), 0.5));
   }
@@ -569,7 +569,6 @@ void TrajectoryEditor::loadTrajectoryFromFile()
     for(const auto& pose : trajectory["poses"])
     {
       visualization_msgs::InteractiveMarker wp_marker = makeMarker();
-      wp_marker.pose.orientation.y = 0.0;
       wp_marker.controls[0].markers[0].color.r = 1.f;
 
       wp_marker.pose.orientation.w = pose["orientation"]["w"].as<double>();
@@ -657,14 +656,14 @@ visualization_msgs::InteractiveMarker TrajectoryEditor::makeMarker(double x, dou
   marker.pose.position.x = x;
   marker.pose.position.y = y;
   marker.pose.position.z = z;
-  marker.pose.orientation.w = 1.0;
-  marker.pose.orientation.y = 1.0;
+  marker.pose.orientation.w = M_SQRT1_2;
+  marker.pose.orientation.y = M_SQRT1_2;
 
   makeBoxControl(marker);
 
   visualization_msgs::InteractiveMarkerControl pose_control;
-  pose_control.orientation.w = 1;
-  pose_control.orientation.x = 1;
+  pose_control.orientation.w = M_SQRT1_2;
+  pose_control.orientation.x = M_SQRT1_2;
   pose_control.orientation.y = 0;
   pose_control.orientation.z = 0;
   pose_control.orientation_mode = visualization_msgs::InteractiveMarkerControl::FIXED;
@@ -672,13 +671,13 @@ visualization_msgs::InteractiveMarker TrajectoryEditor::makeMarker(double x, dou
   marker.controls.push_back(pose_control);
 
   pose_control.orientation.x = 0;
-  pose_control.orientation.y = 1;
+  pose_control.orientation.y = M_SQRT1_2;
   pose_control.orientation_mode = visualization_msgs::InteractiveMarkerControl::FIXED;
   pose_control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE;
   marker.controls.push_back(pose_control);
 
   pose_control.orientation.y = 0;
-  pose_control.orientation.z = 1;
+  pose_control.orientation.z = M_SQRT1_2;
   pose_control.interaction_mode = visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE;
   marker.controls.push_back(pose_control);
   return marker;

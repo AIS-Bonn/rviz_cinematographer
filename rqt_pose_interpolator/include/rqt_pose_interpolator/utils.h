@@ -27,8 +27,8 @@ inline visualization_msgs::Marker makeBox(float scale)
 {
   visualization_msgs::Marker marker;
   marker.type = visualization_msgs::Marker::CUBE;
-  marker.pose.orientation.w = 1.;
-  marker.pose.orientation.y = 1.;
+  marker.pose.orientation.w = M_SQRT1_2;
+  marker.pose.orientation.y = M_SQRT1_2;
   marker.scale.x = scale * 0.15;
   marker.scale.y = scale * 0.45;
   marker.scale.z = scale * 0.25;
@@ -49,8 +49,8 @@ inline visualization_msgs::Marker makeArrow(float scale)
 {
   visualization_msgs::Marker marker;
   marker.type = visualization_msgs::Marker::ARROW;
-  marker.pose.orientation.w = 1.;
-  marker.pose.orientation.y = 1.;
+  marker.pose.orientation.w = M_SQRT1_2;
+  marker.pose.orientation.y = M_SQRT1_2;
   marker.scale.x = scale * 0.7;
   marker.scale.y = scale * 0.1;
   marker.scale.z = scale * 0.1;
@@ -70,6 +70,7 @@ inline void makeBoxControl(visualization_msgs::InteractiveMarker& marker)
 {
   visualization_msgs::InteractiveMarkerControl control;
   control.always_visible = true;
+  control.orientation.w = 1.0;
   control.markers.push_back(makeBox(marker.scale));
   control.markers.push_back(makeArrow(marker.scale));
   marker.controls.push_back(control);
