@@ -143,21 +143,24 @@ void TrajectoryEditor::updateTrajectory()
   trajectory.scale = 1.0;
   trajectory.controls.push_back(std::move(control));
 
-  if(ui_.splines_check_box->isChecked())
+  if(markers_.size() > 1)
   {
-    std::vector<geometry_msgs::Pose> spline_poses;
-    markersToSplinedPoses(markers_, spline_poses, ui_.publish_rate_spin_box->value());
-    for(auto& pose : spline_poses)
-      trajectory.controls.front().markers.front().points.push_back(std::move(pose.position));
-
-  }
-  else
-  {
-    for(const auto& marker : markers_)
+    if(ui_.splines_check_box->isChecked())
     {
-      visualization_msgs::InteractiveMarker int_marker;
-      server_->get(marker.marker.name, int_marker);
-      trajectory.controls.front().markers.front().points.push_back(int_marker.pose.position);
+      std::vector<geometry_msgs::Pose> spline_poses;
+      markersToSplinedPoses(markers_, spline_poses, ui_.publish_rate_spin_box->value());
+      for(auto& pose : spline_poses)
+        trajectory.controls.front().markers.front().points.push_back(std::move(pose.position));
+
+    }
+    else
+    {
+      for(const auto& marker : markers_)
+      {
+        visualization_msgs::InteractiveMarker int_marker;
+        server_->get(marker.marker.name, int_marker);
+        trajectory.controls.front().markers.front().points.push_back(int_marker.pose.position);
+      }
     }
   }
 
@@ -191,6 +194,9 @@ void TrajectoryEditor::safeTrajectoryToFile(const std::string& file_path)
 
 void TrajectoryEditor::publishTrajectory(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
+  if(markers_.size() < 2)
+    return;
+
   nav_msgs::Path path;
   path.header = feedback->header;
 
@@ -358,7 +364,7 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
     {
       new_marker.pose.position.x -= 0.5;
     }
-    searched_element = markers_.insert(std::next(searched_element), TimedMarker(std::move(new_marker), std::next(searched_element)->transition_time));
+    searched_element = markers_.insert(std::next(searched_element), TimedMarker(std::move(new_marker), searched_element->transition_time));
   }
 
   // refill server with member markers
@@ -751,7 +757,8 @@ void TrajectoryEditor::moveCamToFirst()
 
     markersToSplinedCamTrajectory(markers,
                                   cam_trajectory,
-                                  ui_.publish_rate_spin_box->value());
+                                  ui_.publish_rate_spin_box->value(),
+                                  ui_.smooth_velocity_check_box->isChecked());
   }
   else
   {
@@ -856,7 +863,8 @@ void TrajectoryEditor::moveCamToLast()
 
     markersToSplinedCamTrajectory(markers,
                                   cam_trajectory,
-                                  ui_.publish_rate_spin_box->value());
+                                  ui_.publish_rate_spin_box->value(),
+                                  ui_.smooth_velocity_check_box->isChecked());
   }
   else
   {
@@ -1017,15 +1025,18 @@ tf::Vector3 TrajectoryEditor::rotateVector(const tf::Vector3& vector,
 
 void TrajectoryEditor::markersToSplinedCamTrajectory(const MarkerList& markers,
                                                      rviz_animated_view_controller::CameraTrajectoryPtr trajectory,
-                                                     double frequency)
+                                                     double frequency,
+                                                     bool smooth_velocity)
 {
   // put all markers positions into a vector. First and last double.
   double total_transition_time = 0.0;
   std::vector<Vector3> input_eye_positions;
   std::vector<Vector3> input_focus_positions;
   std::vector<Vector3> input_up_directions;
+  std::vector<double> transition_times;
   Vector3 position;
   bool first = true;
+  std::string prev_marker_name;
   for(const auto& marker : markers)
   {
     position[0] = static_cast<float>(marker.marker.pose.position.x);
@@ -1055,11 +1066,20 @@ void TrajectoryEditor::markersToSplinedCamTrajectory(const MarkerList& markers,
     }
     input_up_directions.push_back(position);
 
-    // when moving from marker A to B we only consider the transition time of B
-    if(!first)
-      total_transition_time += marker.transition_time;
+
+    // first because - when moving from marker A to B we only consider the transition time of B
+    // check for equal names because - UniformCRSpline needs to be fed with start marker two times (end as well)
+    // this case needs to be handled to prevent errors
+    if(!first && prev_marker_name != marker.marker.name)
+    {
+      if(smooth_velocity)
+        total_transition_time += marker.transition_time;
+      else
+        transition_times.push_back(marker.transition_time / frequency);
+    }
 
     first = false;
+    prev_marker_name = marker.marker.name;
   }
 
   UniformCRSpline<Vector3> eye_spline(input_eye_positions);
@@ -1097,8 +1117,15 @@ void TrajectoryEditor::markersToSplinedCamTrajectory(const MarkerList& markers,
 
     cam_movement.interpolation_speed = (first) ? rviz_animated_view_controller::CameraMovement::RISING : rviz_animated_view_controller::CameraMovement::FULL;
 
-    double local_length = eye_spline.arcLength(std::max(t - rate, 0.0), t);
-    double transition_time = total_transition_time * local_length / total_length;
+    double transition_time = 0.0;
+    if(smooth_velocity)
+    {
+      double local_length = eye_spline.arcLength(std::max(t - rate, 0.0), t);
+      transition_time = total_transition_time * local_length / total_length;
+    }
+    else
+      transition_time = transition_times[(int)std::floor(std::max(t - rate, 0.0))];
+
     cam_movement.transition_time = ros::Duration(transition_time);
 
     trajectory->trajectory.push_back(cam_movement);
@@ -1169,6 +1196,7 @@ void TrajectoryEditor::markersToSplinedPoses(const MarkerList& markers,
       current_marker++;
       next_marker++;
     }
+
     // get slerped orientation
     tf::Quaternion start_orientation, end_orientation, intermediate_orientation;
     tf::quaternionMsgToTF(current_marker->marker.pose.orientation, start_orientation);
@@ -1181,14 +1209,11 @@ void TrajectoryEditor::markersToSplinedPoses(const MarkerList& markers,
 
     spline_poses.push_back(pose);
 
-    // TODO: orientation at the end doesnt fit to the last markers orientation
-    ROS_DEBUG_STREAM("i " << i << " max_t " << max_t << " slerp_factor " << slerp_factor);
-
     if(last_run)
       break;
 
     i += rate;
-    if(i > max_t)
+    if(i >= max_t)
     {
       last_run = true;
       i = max_t;

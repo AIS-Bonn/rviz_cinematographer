@@ -311,7 +311,8 @@ private:
    */
   void markersToSplinedCamTrajectory(const MarkerList& markers,
                                      rviz_animated_view_controller::CameraTrajectoryPtr trajectory,
-                                     double frequency);
+                                     double frequency,
+                                     bool smooth_velocity = true);
 
   /** @brief Ui object - connection to GUI. */
   Ui::trajectory_editor ui_;

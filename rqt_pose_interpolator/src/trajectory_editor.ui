@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>338</width>
+    <width>360</width>
     <height>722</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Trajectory Editor</string>
   </property>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>8</x>
      <y>8</y>
-     <width>322</width>
-     <height>641</height>
+     <width>341</width>
+     <height>651</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -106,7 +106,7 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>150</width>
+            <width>160</width>
             <height>0</height>
            </size>
           </property>
@@ -191,7 +191,7 @@
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="toolTip">
-         <string>Edit the current pose and transition time</string>
+         <string/>
         </property>
         <property name="currentIndex">
          <number>0</number>
@@ -201,17 +201,20 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>318</width>
-           <height>422</height>
+           <width>337</width>
+           <height>432</height>
           </rect>
          </property>
          <attribute name="label">
           <string>Edit Pose</string>
          </attribute>
+         <attribute name="toolTip">
+          <string>Edit the pose and transition time of the marker.</string>
+         </attribute>
          <widget class="QWidget" name="verticalLayoutWidget_3">
           <property name="geometry">
            <rect>
-            <x>-1</x>
+            <x>9</x>
             <y>0</y>
             <width>321</width>
             <height>429</height>
@@ -245,7 +248,7 @@
                 </size>
                </property>
                <property name="toolTip">
-                <string>Set the start pose to the current camera pose.</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the current marker to the current camera pose.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
                 <string>Set to Cam Pose</string>
@@ -441,7 +444,7 @@
            <item>
             <widget class="QDoubleSpinBox" name="transition_time_spin_box">
              <property name="toolTip">
-              <string>Time the camera needs to move from start to end.</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Time the camera needs to move from the previous marker inthe trajectory to this one.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -471,25 +474,31 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>318</width>
-           <height>422</height>
+           <width>337</width>
+           <height>432</height>
           </rect>
          </property>
          <attribute name="label">
           <string>Parameters</string>
          </attribute>
+         <attribute name="toolTip">
+          <string>Edit the parameters of the trajectory and the camera transition.</string>
+         </attribute>
          <widget class="QWidget" name="verticalLayoutWidget_5">
           <property name="geometry">
            <rect>
-            <x>-1</x>
+            <x>9</x>
             <y>-1</y>
             <width>321</width>
-            <height>191</height>
+            <height>196</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_7">
            <item>
             <widget class="QCheckBox" name="use_up_of_world_check_box">
+             <property name="toolTip">
+              <string>If checked, camera can't roll. Uncheck for fancy movements. </string>
+             </property>
              <property name="layoutDirection">
               <enum>Qt::RightToLeft</enum>
              </property>
@@ -503,6 +512,9 @@
            </item>
            <item>
             <widget class="QCheckBox" name="splines_check_box">
+             <property name="toolTip">
+              <string>Interpolate marker poses using splines.</string>
+             </property>
              <property name="layoutDirection">
               <enum>Qt::RightToLeft</enum>
              </property>
@@ -515,9 +527,25 @@
             </widget>
            </item>
            <item>
+            <widget class="QCheckBox" name="smooth_velocity_check_box">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Only in combination with &amp;quot;Spline&amp;quot; check box. &lt;/p&gt;&lt;p&gt;If checked, the sum of the transition times is used to generate a smooth camera movement and speed for the whole trajectory. &lt;/p&gt;&lt;p&gt;If unchecked, camera uses the transition time of the next marker to determine its current velocity - resulting in different camera speeds in one trajectory. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>Smooth Cam Velocity</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QDoubleSpinBox" name="smoothness_spin_box">
              <property name="toolTip">
-              <string>Technically the distance between the eye point and the focus point of the camera. </string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The distance between the eye point and the focus point of the camera. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="layoutDirection">
               <enum>Qt::LeftToRight</enum>
@@ -526,7 +554,7 @@
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
              <property name="prefix">
-              <string>smoothness factor : </string>
+              <string>Distance to Focus Point : </string>
              </property>
              <property name="decimals">
               <number>0</number>
@@ -551,7 +579,7 @@
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
              <property name="prefix">
-              <string>publishing rate : </string>
+              <string>Publishing Rate : </string>
              </property>
              <property name="suffix">
               <string> Hz</string>
@@ -586,6 +614,9 @@
              </item>
              <item>
               <widget class="QLineEdit" name="frame_line_edit">
+               <property name="toolTip">
+                <string>Frame of the markers.</string>
+               </property>
                <property name="text">
                 <string>base_link</string>
                </property>
@@ -604,17 +635,26 @@
            </item>
           </layout>
          </widget>
-         <zorder>verticalLayoutWidget_5</zorder>
-         <zorder></zorder>
         </widget>
         <widget class="QWidget" name="page_3">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>337</width>
+           <height>432</height>
+          </rect>
+         </property>
          <attribute name="label">
           <string>Save/Open</string>
+         </attribute>
+         <attribute name="toolTip">
+          <string>Save trajectory to file or open existing trajectory from file. </string>
          </attribute>
          <widget class="QWidget" name="horizontalLayoutWidget">
           <property name="geometry">
            <rect>
-            <x>0</x>
+            <x>10</x>
             <y>20</y>
             <width>318</width>
             <height>36</height>
