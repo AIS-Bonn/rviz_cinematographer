@@ -19,7 +19,7 @@
      <x>8</x>
      <y>8</y>
      <width>341</width>
-     <height>651</height>
+     <height>661</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -194,7 +194,7 @@
          <string/>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="page">
          <property name="geometry">
@@ -202,7 +202,7 @@
            <x>0</x>
            <y>0</y>
            <width>337</width>
-           <height>432</height>
+           <height>442</height>
           </rect>
          </property>
          <attribute name="label">
@@ -647,8 +647,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>337</width>
-           <height>432</height>
+           <width>96</width>
+           <height>26</height>
           </rect>
          </property>
          <attribute name="label">
