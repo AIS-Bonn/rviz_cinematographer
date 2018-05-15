@@ -1,4 +1,4 @@
-# General
+# General      {#mainpage}               
 
 Small collection of rqt plugins to edit rviz camera trajectories. 
 
