@@ -730,7 +730,7 @@ void AnimatedViewController::update(float dt, float ros_dt)
     Ogre::Vector3 new_up = start->up + progress*(goal->up - start->up);
 
     if(odometry_pub_.getNumSubscribers() != 0)
-      publishOdometry(new_position, (new_position - eye_point_property_->getVector()) * ros_dt);
+      publishOdometry(new_position, (new_position - eye_point_property_->getVector()) / ros_dt);
 
     disconnectPositionProperties();
     eye_point_property_->setVector(new_position);
