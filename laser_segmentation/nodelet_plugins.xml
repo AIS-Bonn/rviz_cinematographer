@@ -1,7 +1,0 @@
-<library path="lib/liblaser_segmentation_nodelet">
-  <class name="laser_segmentation/laser_segmentation_nodelet" type="laser_segmentation::LaserSegmenterNodelet" base_class_type="nodelet::Nodelet">
-  <description>
-    Segment objects by width in laser range data
-  </description>
-  </class>
-</library>

@@ -1,8 +1,0 @@
-<library path="lib/libobject_detection_nodelet">
-  <class name="object_detection/object_detection_nodelet" type="object_detection::ObjectDetectionNodelet" base_class_type="nodelet::Nodelet">
-  <description>
-    Detect potential objects in point clouds
-  </description>
-  </class>
-</library>
-

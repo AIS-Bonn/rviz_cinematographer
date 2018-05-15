@@ -1,8 +1,0 @@
-<library path="lib/libdynamics_mapping_nodelet">
-  <class name="dynamics_mapping/dynamics_mapping_nodelet" type="dynamics_mapping::DynamicsMappingNodelet" base_class_type="nodelet::Nodelet">
-  <description>
-    Store and maintain a representation of the dynamics in the environment
-  </description>
-  </class>
-</library>
-
