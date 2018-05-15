@@ -1,6 +1,6 @@
 # General
 
-Small collection of rqt plugins to manipulate the camera in combination with the adapted [rviz_animated_view_controller](https://git.ais.uni-bonn.de/razlaw/thesis/tree/master/rviz_animated_view_controller) package.
+Small collection of rqt plugins to manipulate the camera in combination with the adapted [rviz_animated_view_controller](https://git.ais.uni-bonn.de/razlaw/trajectory_editor/tree/master/rviz_animated_view_controller) package.
 
 # Plugins
 
