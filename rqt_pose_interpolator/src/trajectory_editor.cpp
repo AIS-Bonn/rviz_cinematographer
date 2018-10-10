@@ -1046,6 +1046,10 @@ void TrajectoryEditor::processFeedback(const visualization_msgs::InteractiveMark
     server_->insert(marker);
     server_->applyChanges();
   }
+  
+  // TODO: update of trajectory crashes due to update in some underlying software. temporary workaround by not updating 
+  // doesn't crash when adding new marker or loading trajectory from file, just here 
+  return;
   updateTrajectory();
 }
 
