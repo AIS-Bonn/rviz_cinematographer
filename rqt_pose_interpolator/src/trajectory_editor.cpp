@@ -407,9 +407,9 @@ void TrajectoryEditor::setCurrentFromTo(TimedMarker& old_current,
 
 void TrajectoryEditor::removeMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
-  if(markers_.size() == 1)
+  if(markers_.size() < 3)
   {
-    ROS_ERROR("Cannot remove last marker");
+    ROS_ERROR("Cannot remove last two markers.");
     return;
   }
 
