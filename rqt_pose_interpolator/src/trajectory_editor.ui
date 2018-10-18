@@ -240,6 +240,22 @@
               </spacer>
              </item>
              <item>
+              <widget class="QPushButton" name="append_cam_pose">
+               <property name="minimumSize">
+                <size>
+                 <width>120</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Append a marker to the trajectory at the current pose of the rviz camera.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="text">
+                <string>Append at Cam Pose</string>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QPushButton" name="set_pose_to_cam_button">
                <property name="minimumSize">
                 <size>
@@ -248,7 +264,7 @@
                 </size>
                </property>
                <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the current marker to the current camera pose.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the selected marker's pose to the current pose of the rviz camera.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="text">
                 <string>Set to Cam Pose</string>
@@ -478,7 +494,7 @@
            <x>0</x>
            <y>0</y>
            <width>337</width>
-           <height>432</height>
+           <height>442</height>
           </rect>
          </property>
          <attribute name="label">
@@ -647,8 +663,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>96</width>
-           <height>26</height>
+           <width>337</width>
+           <height>442</height>
           </rect>
          </property>
          <attribute name="label">
@@ -722,6 +738,31 @@
    </layout>
   </widget>
  </widget>
+ <tabstops>
+  <tabstop>move_to_first_button</tabstop>
+  <tabstop>move_to_prev_button</tabstop>
+  <tabstop>move_to_current_button</tabstop>
+  <tabstop>move_to_next_button</tabstop>
+  <tabstop>move_to_last_button</tabstop>
+  <tabstop>append_cam_pose</tabstop>
+  <tabstop>set_pose_to_cam_button</tabstop>
+  <tabstop>translation_x_spin_box</tabstop>
+  <tabstop>translation_y_spin_box</tabstop>
+  <tabstop>translation_z_spin_box</tabstop>
+  <tabstop>rotation_x_spin_box</tabstop>
+  <tabstop>rotation_y_spin_box</tabstop>
+  <tabstop>rotation_z_spin_box</tabstop>
+  <tabstop>rotation_w_spin_box</tabstop>
+  <tabstop>transition_time_spin_box</tabstop>
+  <tabstop>use_up_of_world_check_box</tabstop>
+  <tabstop>splines_check_box</tabstop>
+  <tabstop>smooth_velocity_check_box</tabstop>
+  <tabstop>smoothness_spin_box</tabstop>
+  <tabstop>publish_rate_spin_box</tabstop>
+  <tabstop>frame_line_edit</tabstop>
+  <tabstop>save_file_push_button</tabstop>
+  <tabstop>open_file_push_button</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

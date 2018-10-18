@@ -55,6 +55,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   connect(ui_.move_to_first_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToFirst()));
   connect(ui_.move_to_next_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToNext()));
   connect(ui_.move_to_last_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToLast()));
+  connect(ui_.append_cam_pose, SIGNAL(clicked(bool)), this, SLOT(appendCamPoseToTrajectory()));
   connect(ui_.set_pose_to_cam_button, SIGNAL(clicked(bool)), this, SLOT(setCurrentPoseToCam()));
   connect(ui_.frame_line_edit, SIGNAL(editingFinished()), this, SLOT(setMarkerFrames()));
   connect(ui_.splines_check_box, SIGNAL(stateChanged(int)), this, SLOT(updateTrajectory()));
@@ -499,7 +500,7 @@ TrajectoryEditor::TimedMarker& TrajectoryEditor::getMarkerByName(const std::stri
   return tmp;
 }
 
-void TrajectoryEditor::setCurrentPoseToCam()
+bool TrajectoryEditor::isCamWithinBounds()
 {
   ui_.messages_label->setText(QString("Message: Right click on markers for options."));
 
@@ -511,16 +512,68 @@ void TrajectoryEditor::setCurrentPoseToCam()
      ui_.translation_z_spin_box->minimum() > cam_pose_.position.z )
   {
     ui_.messages_label->setText(QString("Message: Current position is out of scope.\n\tTry moving closer to the center of the frame."));
-    return;
+    return false;
   }
+  return true;
+}
 
+void TrajectoryEditor::rvizCamToMarkerOrientation(const geometry_msgs::Pose& rviz_cam_pose,
+                                                  geometry_msgs::Pose& marker_pose)
+{
   // rotate cam pose around z axis for -90 degrees
   tf::Quaternion cam_orientation;
   tf::quaternionMsgToTF(cam_pose_.orientation, cam_orientation);
   tf::Quaternion rot_around_z_neg_90_deg(0.0, 0.0, -0.707, 0.707);
+  tf::quaternionTFToMsg(cam_orientation * rot_around_z_neg_90_deg, marker_pose.orientation);
+  marker_pose.position = cam_pose_.position;
+}
+
+void TrajectoryEditor::appendCamPoseToTrajectory()
+{
+  if(!isCamWithinBounds())
+    return;
+
+  // rotate cam pose around z axis for -90 degrees
   geometry_msgs::Pose rotated_cam_pose;
-  tf::quaternionTFToMsg(cam_orientation * rot_around_z_neg_90_deg, rotated_cam_pose.orientation);
-  rotated_cam_pose.position = cam_pose_.position;
+  rvizCamToMarkerOrientation(cam_pose_, rotated_cam_pose);
+
+  // create new marker
+  visualization_msgs::InteractiveMarker new_marker = makeMarker();
+  new_marker.pose.orientation.y = 0.0;
+  new_marker.name = std::string("wp") + std::to_string((int)markers_.size());
+  new_marker.description = std::to_string((int)markers_.size());
+
+  // set cam pose as marker pose
+  new_marker.pose = rotated_cam_pose;
+
+  markers_.emplace_back(TimedMarker(std::move(new_marker), 0.5));
+
+  // change color of all markers back to red
+  for(auto& marker : markers_)
+  {
+    marker.marker.controls[0].markers[0].color.r = 1.f;
+    marker.marker.controls[0].markers[0].color.g = 0.f;
+  }
+
+  // set new marker as current marker
+  setCurrentTo(markers_.back());
+
+  updatePoseInGUI(rotated_cam_pose, current_marker_.transition_time);
+
+  // refill server with member markers
+  fillServer(markers_);
+
+  updateTrajectory();
+}
+
+void TrajectoryEditor::setCurrentPoseToCam()
+{
+  if(!isCamWithinBounds())
+    return;
+
+  // rotate cam pose around z axis for -90 degrees
+  geometry_msgs::Pose rotated_cam_pose;
+  rvizCamToMarkerOrientation(cam_pose_, rotated_cam_pose);
 
   current_marker_.marker.pose = rotated_cam_pose;
 
@@ -530,7 +583,7 @@ void TrajectoryEditor::setCurrentPoseToCam()
   getMarkerByName(current_marker_.marker.name).marker.pose = rotated_cam_pose;
 
   server_->setPose(current_marker_.marker.name, current_marker_.marker.pose, current_marker_.marker.header);
-  server_->applyChanges();
+
   updateTrajectory();
 }
 
