@@ -127,45 +127,40 @@ void TrajectoryEditor::camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_
 
 void TrajectoryEditor::updateTrajectory()
 {
-  visualization_msgs::Marker line_marker;
-  line_marker.type = visualization_msgs::Marker::LINE_STRIP;
-  line_marker.scale.x = 0.1;
-  line_marker.color.r = 1.f;
-  line_marker.color.a = 1.f;
+  if(markers_.size() < 2)
+    return;
 
-  visualization_msgs::InteractiveMarkerControl control;
-  control.always_visible = 1;
-  control.markers.push_back(std::move(line_marker));
+  nav_msgs::Path path;
+  path.header = current_marker_.marker.header;
 
-  visualization_msgs::InteractiveMarker trajectory;
-  trajectory.header.frame_id = ui_.frame_line_edit->text().toStdString();
-  trajectory.name = "trajectory";
-  trajectory.scale = 1.0;
-  trajectory.controls.push_back(std::move(control));
-
-  if(markers_.size() > 1)
+  if(ui_.splines_check_box->isChecked())
   {
-    if(ui_.splines_check_box->isChecked())
+    std::vector<geometry_msgs::Pose> spline_poses;
+    markersToSplinedPoses(markers_, spline_poses, ui_.publish_rate_spin_box->value());
+    for(auto& pose : spline_poses)
     {
-      std::vector<geometry_msgs::Pose> spline_poses;
-      markersToSplinedPoses(markers_, spline_poses, ui_.publish_rate_spin_box->value());
-      for(auto& pose : spline_poses)
-        trajectory.controls.front().markers.front().points.push_back(std::move(pose.position));
-
+      geometry_msgs::PoseStamped waypoint;
+      waypoint.pose = pose;
+      waypoint.header = path.header;
+      path.poses.push_back(waypoint);
     }
-    else
+  }
+  else
+  {
+    for(const auto& marker : markers_)
     {
-      for(const auto& marker : markers_)
-      {
-        visualization_msgs::InteractiveMarker int_marker;
-        server_->get(marker.marker.name, int_marker);
-        trajectory.controls.front().markers.front().points.push_back(int_marker.pose.position);
-      }
+      visualization_msgs::InteractiveMarker int_marker;
+      server_->get(marker.marker.name, int_marker);
+
+      geometry_msgs::PoseStamped waypoint;
+      waypoint.pose = int_marker.pose;
+      waypoint.header = path.header;
+      path.poses.push_back(waypoint);
     }
   }
 
-  server_->erase("trajectory");
-  server_->insert(trajectory);
+  view_poses_array_pub_.publish(path);
+
   server_->applyChanges();
 }
 
