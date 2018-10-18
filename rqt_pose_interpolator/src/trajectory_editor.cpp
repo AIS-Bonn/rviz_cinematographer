@@ -226,46 +226,45 @@ void TrajectoryEditor::publishTrajectory(const visualization_msgs::InteractiveMa
 
 void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
-  // save marker state
-  geometry_msgs::Pose pose_before, pose_behind;
+  geometry_msgs::Pose pose_before, clicked_pose;
   bool pose_before_initialized = false;
-  bool pose_behind_initialized = false;
+  bool clicked_pose_initialized = false;
 
-  // delete all markers from server and safe clicked marker and the one before
-  auto searched_element = markers_.end();
+  // delete all markers from server and safe iterator to clicked marker and the marker before that in the trajectory
+  auto clicked_element = markers_.end();
   for(auto it = markers_.begin(); it != markers_.end(); ++it)
   {
     server_->get(it->marker.name, it->marker);
     server_->erase(it->marker.name);
     if(it->marker.name == feedback->marker_name)
     {
-      searched_element = it;
-      pose_behind = it->marker.pose;
-      pose_behind_initialized = true;
+      clicked_element = it;
+      clicked_pose = it->marker.pose;
+      clicked_pose_initialized = true;
     }
-    else if(!pose_behind_initialized)
+    else if(!clicked_pose_initialized)
     {
       pose_before = it->marker.pose;
       pose_before_initialized = true;
     }
   }
 
-  // initialize new marker between saved - or right beside if first marker selected
-  if(searched_element != markers_.end())
+  // initialize new marker between clicked and previous - or right beside clicked if first marker selected
+  if(clicked_element != markers_.end())
   {
-    visualization_msgs::InteractiveMarker new_marker = searched_element->marker;
+    visualization_msgs::InteractiveMarker new_marker = clicked_element->marker;
     new_marker.controls[0].markers[0].color.r = 1.f;
     new_marker.controls[0].markers[0].color.g = 0.f;
-    if(pose_before_initialized && pose_behind_initialized)
+    if(pose_before_initialized && clicked_pose_initialized)
     {
-      new_marker.pose.position.x = (pose_before.position.x + pose_behind.position.x) / 2.;
-      new_marker.pose.position.y = (pose_before.position.y + pose_behind.position.y) / 2.;
-      new_marker.pose.position.z = (pose_before.position.z + pose_behind.position.z) / 2.;
+      new_marker.pose.position.x = (pose_before.position.x + clicked_pose.position.x) / 2.;
+      new_marker.pose.position.y = (pose_before.position.y + clicked_pose.position.y) / 2.;
+      new_marker.pose.position.z = (pose_before.position.z + clicked_pose.position.z) / 2.;
 
       // Compute the slerp-ed rotation
       tf::Quaternion start_orientation, end_orientation, intermediate_orientation;
       tf::quaternionMsgToTF(pose_before.orientation, start_orientation);
-      tf::quaternionMsgToTF(pose_behind.orientation, end_orientation);
+      tf::quaternionMsgToTF(clicked_pose.orientation, end_orientation);
       intermediate_orientation = start_orientation.slerp(end_orientation, 0.5);
       tf::quaternionTFToMsg(intermediate_orientation, new_marker.pose.orientation);
     }
@@ -273,7 +272,7 @@ void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMark
     {
       new_marker.pose.position.x -= 0.5;
     }
-    searched_element = markers_.insert(searched_element, TimedMarker(std::move(new_marker), searched_element->transition_time));
+    clicked_element = markers_.insert(clicked_element, TimedMarker(std::move(new_marker), clicked_element->transition_time));
   }
 
   // refill server with member markers
@@ -285,23 +284,23 @@ void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMark
 void TrajectoryEditor::addMarkerHere(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   // delete all markers from server and safe clicked marker
-  auto searched_element = markers_.end();
+  auto clicked_element = markers_.end();
   for(auto it = markers_.begin(); it != markers_.end(); ++it)
   {
     server_->get(it->marker.name, it->marker);
     server_->erase(it->marker.name);
     if(it->marker.name == feedback->marker_name)
-      searched_element = it;
+      clicked_element = it;
   }
 
-  // initialize new marker
-  if(searched_element != markers_.end())
+  // initialize new marker at the position of the clicked marker
+  if(clicked_element != markers_.end())
   {
-    visualization_msgs::InteractiveMarker new_marker = searched_element->marker;
+    visualization_msgs::InteractiveMarker new_marker = clicked_element->marker;
     new_marker.controls[0].markers[0].color.r = 1.f;
     new_marker.controls[0].markers[0].color.g = 0.f;
 
-    markers_.insert(searched_element, TimedMarker(std::move(new_marker), searched_element->transition_time));
+    markers_.insert(clicked_element, TimedMarker(std::move(new_marker), clicked_element->transition_time));
   }
 
   // refill server with member markers
@@ -312,45 +311,44 @@ void TrajectoryEditor::addMarkerHere(const visualization_msgs::InteractiveMarker
 
 void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
-  // save marker state
-  geometry_msgs::Pose pose_before, pose_behind;
-  bool pose_before_initialized = false;
+  geometry_msgs::Pose clicked_pose, pose_behind;
+  bool clicked_pose_initialized = false;
   bool pose_behind_initialized = false;
 
-  // delete all markers from server and safe clicked marker and the one after
-  auto searched_element = markers_.end();
+  // delete all markers from server and safe iterator to clicked marker and the one after in trajectory
+  auto clicked_element = markers_.end();
   for(auto it = markers_.begin(); it != markers_.end(); ++it)
   {
     server_->get(it->marker.name, it->marker);
     server_->erase(it->marker.name);
     if(it->marker.name == feedback->marker_name)
     {
-      searched_element = it;
-      pose_before = it->marker.pose;
-      pose_before_initialized = true;
+      clicked_element = it;
+      clicked_pose = it->marker.pose;
+      clicked_pose_initialized = true;
     }
-    else if(pose_before_initialized && !pose_behind_initialized)
+    else if(clicked_pose_initialized && !pose_behind_initialized)
     {
       pose_behind = it->marker.pose;
       pose_behind_initialized = true;
     }
   }
 
-  // initialize new marker between saved - or right beside if last marker selected
-  if(searched_element != markers_.end())
+  // initialize new marker between clicked and next marker - or right beside the clicked if last marker selected
+  if(clicked_element != markers_.end())
   {
-    visualization_msgs::InteractiveMarker new_marker = searched_element->marker;
+    visualization_msgs::InteractiveMarker new_marker = clicked_element->marker;
     new_marker.controls[0].markers[0].color.r = 1.f;
     new_marker.controls[0].markers[0].color.g = 0.f;
-    if(pose_before_initialized && pose_behind_initialized)
+    if(clicked_pose_initialized && pose_behind_initialized)
     {
-      new_marker.pose.position.x = (pose_before.position.x + pose_behind.position.x) / 2.;
-      new_marker.pose.position.y = (pose_before.position.y + pose_behind.position.y) / 2.;
-      new_marker.pose.position.z = (pose_before.position.z + pose_behind.position.z) / 2.;
+      new_marker.pose.position.x = (clicked_pose.position.x + pose_behind.position.x) / 2.;
+      new_marker.pose.position.y = (clicked_pose.position.y + pose_behind.position.y) / 2.;
+      new_marker.pose.position.z = (clicked_pose.position.z + pose_behind.position.z) / 2.;
 
       // Compute the slerp-ed rotation
       tf::Quaternion start_orientation, end_orientation, intermediate_orientation;
-      tf::quaternionMsgToTF(pose_before.orientation, start_orientation);
+      tf::quaternionMsgToTF(clicked_pose.orientation, start_orientation);
       tf::quaternionMsgToTF(pose_behind.orientation, end_orientation);
       intermediate_orientation = start_orientation.slerp(end_orientation, 0.5);
       tf::quaternionTFToMsg(intermediate_orientation, new_marker.pose.orientation);
@@ -359,7 +357,7 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
     {
       new_marker.pose.position.x -= 0.5;
     }
-    searched_element = markers_.insert(std::next(searched_element), TimedMarker(std::move(new_marker), searched_element->transition_time));
+    clicked_element = markers_.insert(std::next(clicked_element), TimedMarker(std::move(new_marker), clicked_element->transition_time));
   }
 
   // refill server with member markers
@@ -391,18 +389,16 @@ void TrajectoryEditor::setCurrentFromTo(TimedMarker& old_current,
   server_->get(new_current.marker.name, int_marker);
   int_marker.controls[0].markers[0].color.r = 0.f;
   int_marker.controls[0].markers[0].color.g = 1.f;
-  server_->erase(new_current.marker.name);
   server_->insert(int_marker);
 
   server_->get(old_current.marker.name, int_marker);
   int_marker.controls[0].markers[0].color.r = 1.f;
   int_marker.controls[0].markers[0].color.g = 0.f;
-  server_->erase(old_current.marker.name);
   server_->insert(int_marker);
 
   server_->applyChanges();
 
-  // update current marker to prev marker
+  // update current marker
   current_marker_ = new_current;
 
   updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
@@ -545,7 +541,6 @@ void TrajectoryEditor::setMarkerFrames()
   for(auto& marker : markers_)
   {
     marker.marker.header.frame_id = ui_.frame_line_edit->text().toStdString();
-    server_->erase(marker.marker.name);
     server_->insert(marker.marker);
   }
   server_->applyChanges();
@@ -1020,10 +1015,6 @@ void TrajectoryEditor::processFeedback(const visualization_msgs::InteractiveMark
     marker.pose = feedback->pose;
     getMarkerByName(feedback->marker_name).marker.pose = feedback->pose;
 
-    // change color of current marker to green
-    marker.controls[0].markers[0].color.r = 0.f;
-    marker.controls[0].markers[0].color.g = 1.f;
-
     // change color of all markers back to red
     for(const auto& marker : markers_)
     {
@@ -1031,20 +1022,17 @@ void TrajectoryEditor::processFeedback(const visualization_msgs::InteractiveMark
       server_->get(marker.marker.name, int_marker);
       int_marker.controls[0].markers[0].color.r = 1.f;
       int_marker.controls[0].markers[0].color.g = 0.f;
-      server_->erase(marker.marker.name);
       server_->insert(int_marker);
-      server_->applyChanges();
     }
 
-    // update server
-    server_->erase(feedback->marker_name);
+    // change color of current marker to green
+    marker.controls[0].markers[0].color.r = 0.f;
+    marker.controls[0].markers[0].color.g = 1.f;
+
+    // insert currently updated marker to server
     server_->insert(marker);
-    server_->applyChanges();
   }
-  
-  // TODO: update of trajectory crashes due to update in some underlying software. temporary workaround by not updating 
-  // doesn't crash when adding new marker or loading trajectory from file, just here 
-  return;
+
   updateTrajectory();
 }
 

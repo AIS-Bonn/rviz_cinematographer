@@ -4,7 +4,7 @@
     <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find rqt_pose_interpolator)/launch/pose_interpolator.rviz"/>
 
     <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" required="true" args="-s pose_interpolator/TrajectoryEditor">
-        <param name="/trajectory_editor/frame_id" value="laser_map" />
+        <param name="/trajectory_editor/frame_id" value="base_link" />
         <rosparam command="load" file="$(find rqt_pose_interpolator)/trajectories/example_trajectory.yaml"/>
     </node>
 

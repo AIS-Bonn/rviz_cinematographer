@@ -106,7 +106,7 @@ public:
                                const qt_gui_cpp::Settings& instance_settings);
 
   /**
-   * @brief Saves the current camera pose in #cam_pose_.
+   * @brief Saves the current camera pose to #cam_pose_.
    *
    * @param[in] cam_pose    pointer to current camera pose.
    */
@@ -118,17 +118,17 @@ Q_SIGNALS:
 public slots:
   /** @brief Moves rviz camera to currently selected pose.*/
   void moveCamToCurrent();
-  /** @brief Moves rviz camera to pose before currently selected one.*/
+  /** @brief Moves rviz camera to the pose before the selected one.*/
   void moveCamToPrev();
   /** @brief Moves rviz camera subsequently to the first pose in the trajectory.*/
   void moveCamToFirst();
-  /** @brief Moves rviz camera to pose after currently selected one.*/
+  /** @brief Moves rviz camera to the pose after the selected one.*/
   void moveCamToNext();
   /** @brief Moves rviz camera subsequently to the last pose in the trajectory.*/
   void moveCamToLast();
-  /** @brief Update marker with values from GUI.*/
+  /** @brief Update selected marker with values from GUI.*/
   void updateCurrentMarker();
-  /** @brief Sets currently selected pose to the current pose of the rviz camera.*/
+  /** @brief Sets selected pose to the current pose of the rviz camera.*/
   void setCurrentPoseToCam();
   /** @brief Reconstructs trajectory from current markers. */
   void updateTrajectory();
@@ -168,14 +168,15 @@ private:
                                   rviz_animated_view_controller::CameraMovement& cam_movement);
 
   /**
-   * @brief Moves rviz camera to marker pose by publishing a CameraDisplacement message.
+   * @brief Moves rviz camera to marker pose by publishing a CameraTrajectory message.
    *
    * @param[in] marker   provides the pose and transition time.
    */
   void moveCamToMarker(const TimedMarker& marker);
 
   /**
-   * @brief Sets members to pose of currently moved interactive marker.
+   * @brief Updates members using pose of currently moved interactive marker.
+   *
    * @param[in] feedback    feedback the interaction with the interactive marker generates.
    */
   void processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
@@ -205,21 +206,21 @@ private:
   void publishTrajectory(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
 
   /**
-   * @brief Adds a marker between the selected marker and the one before.
+   * @brief Adds a marker between the selected marker and the one before in the trajectory.
    *
    * @param[in] feedback    feedback from selected marker.
    */
   void addMarkerBefore(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
 
   /**
-   * @brief Adds a marker at the pose of the selected marker - useful for sharp edges in splines.
+   * @brief Adds a marker at the pose of the selected marker - useful to define pauses.
    *
    * @param[in] feedback    feedback from selected marker.
    */
   void addMarkerHere(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
 
   /**
-   * @brief Adds a marker between the selected marker and the one after.
+   * @brief Adds a marker between the selected marker and the next one in the trajectory.
    *
    * @param[in] feedback    feedback from selected marker.
    */
@@ -257,9 +258,9 @@ private:
   InteractiveMarkerWithTime& getMarkerByName(const std::string& marker_name);
 
   /**
-   * @brief Sets the input as the #current_marker_.
+   * @brief Sets the #current_marker_ to the provided input.
    *
-   * Additionally updates the GUI elements and sets the color of the input marker from to green.
+   * Additionally updates the GUI elements and sets the color of the input marker to green.
    *
    * @param[in] marker  input marker.
    */
@@ -277,7 +278,7 @@ private:
                         TimedMarker& new_current);
 
   /**
-   * @brief Sets the Pose in the GUI to the provided input values.
+   * @brief Sets the pose in the GUI to the provided input values.
    *
    * @param[in] pose            pose
    * @param[in] transition_time transition time
@@ -294,7 +295,7 @@ private:
   void setValueQuietly(QDoubleSpinBox* spin_box, double value);
 
   /**
-   * @brief Interpolate markers using a spline and safe that in spline_poses.
+   * @brief Interpolate markers using a spline and safe that spline in spline_poses.
    *
    * @param[in]     markers         markers to be interpolated.
    * @param[out]    spline_poses    constructed spline.
@@ -307,11 +308,12 @@ private:
                              bool duplicate_ends = true);
 
   /**
-   * @brief Interpolate markers using a spline and safe that as the points of a CameraTrajectory.
+   * @brief Interpolate markers using a spline and safe that spline as the points of a CameraTrajectory.
    *
    * @param[in]     markers         markers to be interpolated.
    * @param[out]    trajectory      resulting trajectory.
    * @param[in]     frequency       resolution - number of spline points between each marker pair.
+   * @param[in]     smooth_velocity smoothes to velocity of the camera movement.
    */
   void markersToSplinedCamTrajectory(const MarkerList& markers,
                                      rviz_animated_view_controller::CameraTrajectoryPtr trajectory,
@@ -327,6 +329,8 @@ private:
   ros::Publisher camera_trajectory_pub_;
   /** @brief Publishes the trajectory that is defined by the markers. */
   ros::Publisher view_poses_array_pub_;
+  /** @brief TODO: Delete . */
+  ros::Publisher mesh_pub_;
   /** @brief Subscribes to the camera pose. */
   ros::Subscriber camera_pose_sub_;
 
