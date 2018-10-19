@@ -128,6 +128,8 @@ public slots:
   void moveCamToLast();
   /** @brief Update selected marker with values from GUI.*/
   void updateCurrentMarker();
+  /** @brief Appends the current pose of the rviz camera to the trajectory.*/
+  void appendCamPoseToTrajectory();
   /** @brief Sets selected pose to the current pose of the rviz camera.*/
   void setCurrentPoseToCam();
   /** @brief Reconstructs trajectory from current markers. */
@@ -157,6 +159,22 @@ private:
   visualization_msgs::InteractiveMarker makeMarker(double x=0.0,
                                                    double y=0.0,
                                                    double z=0.0);
+
+  /**
+   * @brief Checks if current position of rviz camera is within bounds of spin boxes.
+   *
+   * @return true, if camera is within bounds.
+   */
+  bool isCamWithinBounds();
+
+  /**
+   * @brief Rotates rviz_cam_pose around z-axis for -90 degrees.
+   *
+   * @param[in]     rviz_cam_pose   camera orientation as defined by rviz.
+   * @param[out]    marker_pose     camera orientation as defined by markers.
+   */
+  void rvizCamToMarkerOrientation(const geometry_msgs::Pose& rviz_cam_pose,
+                                  geometry_msgs::Pose& marker_pose);
 
   /**
    * @brief Fills a CameraMovement message with the values of a TimedMarker.
