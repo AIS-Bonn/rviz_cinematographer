@@ -3,8 +3,7 @@
     <!-- Start RViz separately, because the rqt rviz plugin can't handle published trajectories. -->
     <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find rqt_pose_interpolator)/launch/pose_interpolator.rviz"/>
 
-    <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" required="true" args="-s pose_interpolator/TrajectoryEditor">
-        <param name="/trajectory_editor/frame_id" value="base_link" />
+    <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" args="-s pose_interpolator/TrajectoryEditor">
         <rosparam command="load" file="$(find rqt_pose_interpolator)/trajectories/example_trajectory.yaml"/>
     </node>
 
