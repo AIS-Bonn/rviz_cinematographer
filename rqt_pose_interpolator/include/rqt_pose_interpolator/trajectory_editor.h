@@ -217,13 +217,6 @@ private:
   void safeTrajectoryToFile(const std::string& file_path);
 
   /**
-   * @brief Publishes the trajectory that is defined by the markers.
-   *
-   * @param[in] feedback    feedback from selected marker.
-   */
-  void publishTrajectory(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
-
-  /**
    * @brief Adds a marker between the selected marker and the one before in the trajectory.
    *
    * @param[in] feedback    feedback from selected marker.
@@ -347,8 +340,7 @@ private:
   ros::Publisher camera_trajectory_pub_;
   /** @brief Publishes the trajectory that is defined by the markers. */
   ros::Publisher view_poses_array_pub_;
-  /** @brief TODO: Delete . */
-  ros::Publisher mesh_pub_;
+
   /** @brief Subscribes to the camera pose. */
   ros::Subscriber camera_pose_sub_;
 

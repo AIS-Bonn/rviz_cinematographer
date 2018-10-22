@@ -27,11 +27,6 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   camera_trajectory_pub_ = ph.advertise<rviz_animated_view_controller::CameraTrajectory>("/rviz/camera_trajectory", 1);
   view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1);
 
-  //TODO: remove?
-  std::string frame_id_param_name = "frame_id";
-  std::string test;
-  getParam<std::string>(ph, frame_id_param_name, test, "local_map");
-
   // access standalone command line arguments
   QStringList argv = context.argv();
   // create QWidget
@@ -69,7 +64,6 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   menu_handler_.insert("Add marker after", boost::bind(&TrajectoryEditor::addMarkerBehind, this, _1));
   menu_handler_.insert("Add marker here", boost::bind(&TrajectoryEditor::addMarkerHere, this, _1));
   menu_handler_.insert("Add marker before", boost::bind(&TrajectoryEditor::addMarkerBefore, this, _1));
-  menu_handler_.insert("Publish trajectory", boost::bind(&TrajectoryEditor::publishTrajectory, this, _1));
 
   // set up markers
   std::string poses_param_name = "poses";
@@ -186,43 +180,6 @@ void TrajectoryEditor::safeTrajectoryToFile(const std::string& file_path)
     file << "    transition_time: " << marker.transition_time << "\n";
   }
   file.close();
-}
-
-void TrajectoryEditor::publishTrajectory(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
-{
-  if(markers_.size() < 2)
-    return;
-
-  nav_msgs::Path path;
-  path.header = feedback->header;
-
-  if(ui_.splines_check_box->isChecked())
-  {
-    std::vector<geometry_msgs::Pose> spline_poses;
-    markersToSplinedPoses(markers_, spline_poses, ui_.publish_rate_spin_box->value());
-    for(auto& pose : spline_poses)
-    {
-      geometry_msgs::PoseStamped waypoint;
-      waypoint.pose = pose;
-      waypoint.header = path.header;
-      path.poses.push_back(waypoint);
-    }
-  }
-  else
-  {
-    for(const auto& marker : markers_)
-    {
-      visualization_msgs::InteractiveMarker int_marker;
-      server_->get(marker.marker.name, int_marker);
-
-      geometry_msgs::PoseStamped waypoint;
-      waypoint.pose = int_marker.pose;
-      waypoint.header = path.header;
-      path.poses.push_back(waypoint);
-    }
-  }
-
-  view_poses_array_pub_.publish(path);
 }
 
 void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
