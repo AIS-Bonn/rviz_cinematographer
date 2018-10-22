@@ -59,7 +59,7 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
-      Color: 25; 255; 0
+      Color: 0; 0; 0
       Enabled: true
       Head Diameter: 0.300000012
       Head Length: 0.200000003
@@ -121,20 +121,20 @@ Visualization Manager:
     Current:
       Class: rviz_animated_view_controller/Animated
       Control Mode: Orbit
-      Distance: 129.521866
+      Distance: 129.648972
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Eye:
-        X: -62.8495903
-        Y: -58.6560364
-        Z: 107.080322
+        X: -45.8250504
+        Y: -48.2734566
+        Z: 122.405106
       Focus:
-        X: -2.33246994
-        Y: -1.0864296
-        Z: 8.08874512
+        X: 12.6717377
+        Y: 4.16562271
+        Z: 19.2686615
       Invert Z Axis: false
       Maintain Vertical Axis: true
       Mouse Enabled: true
@@ -165,5 +165,5 @@ Window Geometry:
   Tool Properties:
     collapsed: false
   Width: 2162
-  X: 350
+  X: 346
   Y: 0
