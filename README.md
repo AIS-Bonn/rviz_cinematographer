@@ -6,6 +6,8 @@ An example trajectory generated in about 3 minutes:
 
 ![Example](readme/output.gif)
 
-For further informations see README files:
+Visualized [Model Data](https://grabcad.com/library/office-building-9).
+
+Further informations:
 - [Instructions](rqt_pose_interpolator)
-- [Details RViz View](rqt_pose_interpolator)
+- [Details - RViz View](rqt_pose_interpolator)
