@@ -1,5 +1,11 @@
-# General      {#mainpage}               
+# Rviz Cinematographer
 
-Small collection of rqt plugins to edit rviz camera trajectories. 
+Small collection of rqt plugins to easily create and edit **rviz camera trajectories**.
 
-For more informations see packages README files. 
+An example trajectory generated in about 3 minutes:
+
+![Example](readme/output.gif)
+
+For further informations see README files:
+- [Instructions](rqt_pose_interpolator)
+- [Details RViz View](rqt_pose_interpolator)
