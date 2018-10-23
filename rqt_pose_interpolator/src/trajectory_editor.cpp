@@ -54,6 +54,9 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   connect(ui_.set_pose_to_cam_button, SIGNAL(clicked(bool)), this, SLOT(setCurrentPoseToCam()));
   connect(ui_.frame_line_edit, SIGNAL(editingFinished()), this, SLOT(setMarkerFrames()));
   connect(ui_.splines_check_box, SIGNAL(stateChanged(int)), this, SLOT(updateTrajectory()));
+  connect(ui_.marker_size_increase, SIGNAL(clicked(bool)), this, SLOT(increaseMarkerScale()));
+  connect(ui_.marker_size_decrease, SIGNAL(clicked(bool)), this, SLOT(decreaseMarkerScale()));
+
   connect(ui_.open_file_push_button, SIGNAL(clicked(bool)), this, SLOT(loadTrajectoryFromFile()));
   connect(ui_.save_file_push_button, SIGNAL(clicked(bool)), this, SLOT(saveTrajectoryToFile()));
 
@@ -550,6 +553,37 @@ void TrajectoryEditor::setMarkerFrames()
   updateTrajectory();
 }
 
+void TrajectoryEditor::increaseMarkerScale()
+{
+  updateMarkerScales(1.1f);
+}
+
+void TrajectoryEditor::decreaseMarkerScale()
+{
+  updateMarkerScales(0.9f);
+}
+
+void TrajectoryEditor::updateMarkerScale(TimedMarker& marker, float scale_factor)
+{
+  marker.marker.scale *= scale_factor;
+  marker.marker.controls[0].markers[0].scale.x *= scale_factor;
+  marker.marker.controls[0].markers[0].scale.y *= scale_factor;
+  marker.marker.controls[0].markers[0].scale.z *= scale_factor;
+  marker.marker.controls[0].markers[1].scale.x *= scale_factor;
+  marker.marker.controls[0].markers[1].scale.y *= scale_factor;
+  marker.marker.controls[0].markers[1].scale.z *= scale_factor;
+}
+
+void TrajectoryEditor::updateMarkerScales(float scale_factor)
+{
+  updateMarkerScale(current_marker_, scale_factor);
+
+  for(auto& marker : markers_)
+    updateMarkerScale(marker, scale_factor);
+
+  updateServer(markers_);
+}
+
 void TrajectoryEditor::loadTrajectoryFromFile()
 {
   std::string directory_path = ros::package::getPath("rqt_pose_interpolator")  + "/trajectories/";
@@ -695,7 +729,7 @@ visualization_msgs::InteractiveMarker TrajectoryEditor::makeMarker(double x, dou
   marker.header.frame_id = ui_.frame_line_edit->text().toStdString();
   marker.name = "marker";
   marker.description = "Marker";
-  marker.scale = 2.22;
+  marker.scale = 2.22f;
   marker.pose.position.x = x;
   marker.pose.position.y = y;
   marker.pose.position.z = z;

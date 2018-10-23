@@ -136,6 +136,10 @@ public slots:
   void updateTrajectory();
   /** @brief Sets the frame_id of the markers.*/
   void setMarkerFrames();
+  /** @brief Increase the scale of the markers.*/
+  void increaseMarkerScale();
+  /** @brief Decrease the scale of the markers.*/
+  void decreaseMarkerScale();
   /** @brief Loads a series of markers from a file.*/
   void loadTrajectoryFromFile();
   /** @brief Saves poses and transition times of interactive markers to a file.*/
@@ -159,6 +163,19 @@ private:
   visualization_msgs::InteractiveMarker makeMarker(double x=0.0,
                                                    double y=0.0,
                                                    double z=0.0);
+
+  /** @brief Updates the scale of the provided marker.
+   *
+   * @param[in, out]    marker          marker that is updated
+   * @param[in]         scale_factor    factor used to update the marker scale
+   */
+  void updateMarkerScale(TimedMarker& marker, float scale_factor);
+
+  /** @brief Updates the scales of the markers.
+   *
+   * @param[in]     scale_factor   factor used to update the markers' scales
+   */
+  void updateMarkerScales(float scale_factor);
 
   /**
    * @brief Checks if current position of rviz camera is within bounds of spin boxes.
