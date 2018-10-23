@@ -164,6 +164,11 @@ private:
                                                    double y=0.0,
                                                    double z=0.0);
 
+  /**
+   * @brief Colorize all markers in red.
+   */
+  void colorizeMarkersRed();
+
   /** @brief Updates the scale of the provided marker.
    *
    * @param[in, out]    marker          marker that is updated
@@ -205,9 +210,9 @@ private:
   /**
    * @brief Moves rviz camera to marker pose by publishing a CameraTrajectory message.
    *
-   * @param[in] marker   provides the pose and transition time.
+   * @param[in] marker_name     name of marker.
    */
-  void moveCamToMarker(const TimedMarker& marker);
+  void moveCamToMarker(const std::string& marker_name);
 
   /**
    * @brief Updates members using pose of currently moved interactive marker.
@@ -266,7 +271,7 @@ private:
    *
    * @param[in] markers     markers.
    */
-  void updateServer(MarkerList &markers);
+  void updateServer(MarkerList& markers);
 
   /**
    * @brief Load marker poses from a file.
@@ -369,8 +374,8 @@ private:
   /** @brief Current camera pose. */
   geometry_msgs::Pose cam_pose_;
 
-  /** @brief Currently selected marker. */
-  TimedMarker current_marker_;
+  /** @brief Name of currently selected marker. */
+  std::string current_marker_name_;
 
   /** @brief Currently maintained list of TimedMarkers. */
   MarkerList markers_;

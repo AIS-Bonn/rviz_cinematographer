@@ -12,7 +12,7 @@ namespace pose_interpolator {
 TrajectoryEditor::TrajectoryEditor()
 : rqt_gui_cpp::Plugin()
   , widget_(0)
-  , current_marker_(visualization_msgs::InteractiveMarker(), 0.5)
+  , current_marker_name_("")
 {
   cam_pose_.orientation.w = 1.0;
 
@@ -77,19 +77,17 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   else
   {
     visualization_msgs::InteractiveMarker marker = makeMarker();
-    marker.name = "wp0";
+    marker.name = "0";
     marker.description = "0";
     marker.controls[0].markers[0].color.r = 1.f;
     markers_.emplace_back(TimedMarker(std::move(marker), 0.5));
   }
 
+  setCurrentTo(markers_.front());
+
   // connect markers to callback functions
   server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>("trajectory");
   updateServer(markers_);
-
-  current_marker_ = markers_.back();
-  current_marker_.marker.controls[0].markers[0].color.r = 0.f;
-  current_marker_.marker.controls[0].markers[0].color.g = 1.f;
 }
 
 void TrajectoryEditor::shutdownPlugin()
@@ -122,7 +120,7 @@ void TrajectoryEditor::updateTrajectory()
     return;
 
   nav_msgs::Path path;
-  path.header = current_marker_.marker.header;
+  path.header = markers_.front().marker.header;
 
   if(ui_.splines_check_box->isChecked())
   {
@@ -188,8 +186,6 @@ void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMark
   auto clicked_element = markers_.end();
   for(auto it = markers_.begin(); it != markers_.end(); ++it)
   {
-    server_->get(it->marker.name, it->marker);
-    server_->erase(it->marker.name);
     if(it->marker.name == feedback->marker_name)
     {
       clicked_element = it;
@@ -203,12 +199,14 @@ void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMark
     }
   }
 
+  colorizeMarkersRed();
+
   // initialize new marker between clicked and previous - or right beside clicked if first marker selected
   if(clicked_element != markers_.end())
   {
     visualization_msgs::InteractiveMarker new_marker = clicked_element->marker;
-    new_marker.controls[0].markers[0].color.r = 1.f;
-    new_marker.controls[0].markers[0].color.g = 0.f;
+    new_marker.controls[0].markers[0].color.r = 0.f;
+    new_marker.controls[0].markers[0].color.g = 1.f;
     if(pose_before_initialized && clicked_pose_initialized)
     {
       new_marker.pose.position.x = (pose_before.position.x + clicked_pose.position.x) / 2.;
@@ -229,7 +227,10 @@ void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMark
     clicked_element = markers_.insert(clicked_element, TimedMarker(std::move(new_marker), clicked_element->transition_time));
   }
 
-  // refill server with member markers
+  current_marker_name_ = feedback->marker_name;
+
+  // update server with updated member markers
+  server_->clear();
   updateServer(markers_);
 
   updateTrajectory();
@@ -240,24 +241,25 @@ void TrajectoryEditor::addMarkerHere(const visualization_msgs::InteractiveMarker
   // delete all markers from server and safe clicked marker
   auto clicked_element = markers_.end();
   for(auto it = markers_.begin(); it != markers_.end(); ++it)
-  {
-    server_->get(it->marker.name, it->marker);
-    server_->erase(it->marker.name);
     if(it->marker.name == feedback->marker_name)
       clicked_element = it;
-  }
+
+  colorizeMarkersRed();
 
   // initialize new marker at the position of the clicked marker
   if(clicked_element != markers_.end())
   {
     visualization_msgs::InteractiveMarker new_marker = clicked_element->marker;
-    new_marker.controls[0].markers[0].color.r = 1.f;
-    new_marker.controls[0].markers[0].color.g = 0.f;
+    new_marker.controls[0].markers[0].color.r = 0.f;
+    new_marker.controls[0].markers[0].color.g = 1.f;
 
     markers_.insert(clicked_element, TimedMarker(std::move(new_marker), clicked_element->transition_time));
   }
 
-  // refill server with member markers
+  current_marker_name_ = feedback->marker_name;
+
+  // update server with updated member markers
+  server_->clear();
   updateServer(markers_);
 
   updateTrajectory();
@@ -273,8 +275,6 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
   auto clicked_element = markers_.end();
   for(auto it = markers_.begin(); it != markers_.end(); ++it)
   {
-    server_->get(it->marker.name, it->marker);
-    server_->erase(it->marker.name);
     if(it->marker.name == feedback->marker_name)
     {
       clicked_element = it;
@@ -288,12 +288,14 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
     }
   }
 
+  colorizeMarkersRed();
+
   // initialize new marker between clicked and next marker - or right beside the clicked if last marker selected
   if(clicked_element != markers_.end())
   {
     visualization_msgs::InteractiveMarker new_marker = clicked_element->marker;
-    new_marker.controls[0].markers[0].color.r = 1.f;
-    new_marker.controls[0].markers[0].color.g = 0.f;
+    new_marker.controls[0].markers[0].color.r = 0.f;
+    new_marker.controls[0].markers[0].color.g = 1.f;
     if(clicked_pose_initialized && pose_behind_initialized)
     {
       new_marker.pose.position.x = (clicked_pose.position.x + pose_behind.position.x) / 2.;
@@ -314,7 +316,11 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
     clicked_element = markers_.insert(std::next(clicked_element), TimedMarker(std::move(new_marker), clicked_element->transition_time));
   }
 
-  // refill server with member markers
+  // name of the new marker will be the one of the clicked marker incremented by 1
+  current_marker_name_ = std::to_string(std::stoi(feedback->marker_name) + 1);
+
+  // update server with updated member markers
+  server_->clear();
   updateServer(markers_);
 
   updateTrajectory();
@@ -324,7 +330,7 @@ void TrajectoryEditor::setCurrentTo(TimedMarker& marker)
 {
   marker.marker.controls[0].markers[0].color.r = 0.f;
   marker.marker.controls[0].markers[0].color.g = 1.f;
-  current_marker_ = marker;
+  current_marker_name_ = marker.marker.name;
 
   updatePoseInGUI(marker.marker.pose, marker.transition_time);
 }
@@ -332,30 +338,19 @@ void TrajectoryEditor::setCurrentTo(TimedMarker& marker)
 void TrajectoryEditor::setCurrentFromTo(TimedMarker& old_current,
                                         TimedMarker& new_current)
 {
+  // update current marker
+  current_marker_name_ = new_current.marker.name;
+
+  updatePoseInGUI(new_current.marker.pose, new_current.transition_time);
+
   // update member list
   new_current.marker.controls[0].markers[0].color.r = 0.f;
   new_current.marker.controls[0].markers[0].color.g = 1.f;
   old_current.marker.controls[0].markers[0].color.r = 1.f;
   old_current.marker.controls[0].markers[0].color.g = 0.f;
 
-  // update server
-  visualization_msgs::InteractiveMarker int_marker;
-  server_->get(new_current.marker.name, int_marker);
-  int_marker.controls[0].markers[0].color.r = 0.f;
-  int_marker.controls[0].markers[0].color.g = 1.f;
-  server_->insert(int_marker);
-
-  server_->get(old_current.marker.name, int_marker);
-  int_marker.controls[0].markers[0].color.r = 1.f;
-  int_marker.controls[0].markers[0].color.g = 0.f;
-  server_->insert(int_marker);
-
-  server_->applyChanges();
-
-  // update current marker
-  current_marker_ = new_current;
-
-  updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
+  server_->clear();
+  updateServer(markers_);
 }
 
 void TrajectoryEditor::removeMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
@@ -369,19 +364,21 @@ void TrajectoryEditor::removeMarker(const visualization_msgs::InteractiveMarkerF
   // delete all markers from server and safe clicked marker
   auto searched_element = markers_.end();
   for(auto it = markers_.begin(); it != markers_.end(); ++it)
-  {
-    server_->get(it->marker.name, it->marker);
-    server_->erase(it->marker.name);
     if(it->marker.name == feedback->marker_name)
       searched_element = it;
-  }
+
+  colorizeMarkersRed();
 
   // set previous marker as current
   if(searched_element != markers_.end())
   {
     // if first marker is removed, replace current by second marker
     if(searched_element == markers_.begin())
+    {
       setCurrentTo(*(std::next(searched_element)));
+      // second element becomes first and gets first's name - all following numbered continuously
+      current_marker_name_ = markers_.front().marker.name;
+    }
     else
       setCurrentTo(*(std::prev(searched_element)));
   }
@@ -390,21 +387,21 @@ void TrajectoryEditor::removeMarker(const visualization_msgs::InteractiveMarkerF
   if(searched_element != markers_.end())
     markers_.erase(searched_element);
 
-  // refill server with member markers
+  server_->clear();
   updateServer(markers_);
 
   updateTrajectory();
 }
 
-void TrajectoryEditor::updateServer(MarkerList &markers)
+void TrajectoryEditor::updateServer(MarkerList& markers)
 {
   size_t count = 0;
   for(auto& marker : markers)
   {
-    marker.marker.name = std::string("wp") + std::to_string(count);
+    marker.marker.name = std::to_string(count);
     marker.marker.description = std::to_string(count);
     count++;
-    server_->insert(marker.marker, boost::bind( &TrajectoryEditor::processFeedback, this, _1));
+    server_->insert(marker.marker, boost::bind(&TrajectoryEditor::processFeedback, this, _1));
     menu_handler_.apply(*server_, marker.marker.name);
   }
 
@@ -436,7 +433,7 @@ void TrajectoryEditor::loadParams(const ros::NodeHandle& nh,
     wp_marker.pose.position.y = v["position"]["y"];
     wp_marker.pose.position.z = v["position"]["z"];
 
-    wp_marker.name = std::string("wp") + std::to_string(i);
+    wp_marker.name = std::to_string(i);
     wp_marker.description = std::to_string(i);
 
     markers_.emplace_back(TimedMarker(std::move(wp_marker), v["transition_time"]));
@@ -495,7 +492,7 @@ void TrajectoryEditor::appendCamPoseToTrajectory()
   // create new marker
   visualization_msgs::InteractiveMarker new_marker = makeMarker();
   new_marker.pose.orientation.y = 0.0;
-  new_marker.name = std::string("wp") + std::to_string((int)markers_.size());
+  new_marker.name = std::to_string((int)markers_.size());
   new_marker.description = std::to_string((int)markers_.size());
 
   // set cam pose as marker pose
@@ -503,21 +500,12 @@ void TrajectoryEditor::appendCamPoseToTrajectory()
 
   markers_.emplace_back(TimedMarker(std::move(new_marker), 0.5));
 
-  // change color of all markers back to red
-  for(auto& marker : markers_)
-  {
-    marker.marker.controls[0].markers[0].color.r = 1.f;
-    marker.marker.controls[0].markers[0].color.g = 0.f;
-  }
+  colorizeMarkersRed();
 
   // set new marker as current marker
   setCurrentTo(markers_.back());
 
-  updatePoseInGUI(rotated_cam_pose, current_marker_.transition_time);
-
-  // refill server with member markers
   updateServer(markers_);
-
   updateTrajectory();
 }
 
@@ -530,22 +518,16 @@ void TrajectoryEditor::setCurrentPoseToCam()
   geometry_msgs::Pose rotated_cam_pose;
   rvizCamToMarkerOrientation(cam_pose_, rotated_cam_pose);
 
-  current_marker_.marker.pose = rotated_cam_pose;
-
-  updatePoseInGUI(rotated_cam_pose, current_marker_.transition_time);
-
   // update marker pose
-  getMarkerByName(current_marker_.marker.name).marker.pose = rotated_cam_pose;
-
-  server_->setPose(current_marker_.marker.name, current_marker_.marker.pose, current_marker_.marker.header);
+  getMarkerByName(current_marker_name_).marker.pose = rotated_cam_pose;
+  server_->setPose(current_marker_name_, rotated_cam_pose, markers_.front().marker.header);
+  updatePoseInGUI(rotated_cam_pose, getMarkerByName(current_marker_name_).transition_time);
 
   updateTrajectory();
 }
 
 void TrajectoryEditor::setMarkerFrames()
 {
-  current_marker_.marker.header.frame_id = ui_.frame_line_edit->text().toStdString();
-
   for(auto& marker : markers_)
     marker.marker.header.frame_id = ui_.frame_line_edit->text().toStdString();
 
@@ -576,8 +558,6 @@ void TrajectoryEditor::updateMarkerScale(TimedMarker& marker, float scale_factor
 
 void TrajectoryEditor::updateMarkerScales(float scale_factor)
 {
-  updateMarkerScale(current_marker_, scale_factor);
-
   for(auto& marker : markers_)
     updateMarkerScale(marker, scale_factor);
 
@@ -616,7 +596,7 @@ void TrajectoryEditor::loadTrajectoryFromFile()
       wp_marker.pose.position.y = pose["position"]["y"].as<double>();
       wp_marker.pose.position.z = pose["position"]["z"].as<double>();
 
-      wp_marker.name = std::string("wp") + std::to_string(count);
+      wp_marker.name = std::to_string(count);
       wp_marker.description = std::to_string(count);
 
       markers_.emplace_back(TimedMarker(std::move(wp_marker), pose["transition_time"].as<double>()));
@@ -660,7 +640,7 @@ void TrajectoryEditor::loadTrajectoryFromFile()
       wp_marker.pose.orientation.z = boost::lexical_cast<double>(pose_strings.at(6));
       wp_marker.pose.orientation.w = boost::lexical_cast<double>(pose_strings.at(7));
 
-      wp_marker.name = std::string("wp") + std::to_string(count);
+      wp_marker.name = std::to_string(count);
       wp_marker.description = std::to_string(count);
 
       markers_.emplace_back(TimedMarker(std::move(wp_marker), transition_time));
@@ -675,14 +655,14 @@ void TrajectoryEditor::loadTrajectoryFromFile()
     return;
   }
 
-  // green color for last marker
-  markers_.back().marker.controls[0].markers[0].color.r = 0.f;
-  markers_.back().marker.controls[0].markers[0].color.g = 1.f;
-  current_marker_ = markers_.back();
+  // first marker is current marker
+  markers_.front().marker.controls[0].markers[0].color.r = 0.f;
+  markers_.front().marker.controls[0].markers[0].color.g = 1.f;
+  current_marker_name_ = markers_.front().marker.name;
 
   server_->clear();
   updateServer(markers_);
-  updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
+  updatePoseInGUI(markers_.front().marker.pose, markers_.front().transition_time);
   updateTrajectory();
 }
 
@@ -760,6 +740,15 @@ visualization_msgs::InteractiveMarker TrajectoryEditor::makeMarker(double x, dou
   return marker;
 }
 
+void TrajectoryEditor::colorizeMarkersRed()
+{
+  for(auto& marker : markers_)
+  {
+    marker.marker.controls[0].markers[0].color.r = 1.f;
+    marker.marker.controls[0].markers[0].color.g = 0.f;
+  }
+}
+
 void TrajectoryEditor::convertMarkerToCamMovement(const TimedMarker& marker,
                                                   rviz_animated_view_controller::CameraMovement& cam_movement)
 {
@@ -787,18 +776,19 @@ void TrajectoryEditor::convertMarkerToCamMovement(const TimedMarker& marker,
 
 void TrajectoryEditor::moveCamToCurrent()
 {
-  moveCamToMarker(current_marker_);
+  moveCamToMarker(current_marker_name_);
 }
 
 void TrajectoryEditor::moveCamToFirst()
 {
-  if(markers_.begin()->marker.name == current_marker_.marker.name)
+  // do nothing if current is already the first marker
+  if(markers_.begin()->marker.name == current_marker_name_)
     return;
 
   // find current marker
   auto it = std::next(markers_.begin());
   for(; it != markers_.end(); ++it)
-    if(it->marker.name == current_marker_.marker.name)
+    if(it->marker.name == current_marker_name_)
       break;
 
   // fill Camera Trajectory msg with markers and times
@@ -866,47 +856,48 @@ void TrajectoryEditor::moveCamToFirst()
 
 void TrajectoryEditor::moveCamToPrev()
 {
-  if(markers_.begin()->marker.name == current_marker_.marker.name)
+  // do nothing if current is already the first marker
+  if(markers_.begin()->marker.name == current_marker_name_)
     return;
 
   // find current marker
   auto it = std::next(markers_.begin()), prev_marker = markers_.begin();
   for(; it != markers_.end(); ++it, ++prev_marker)
-    if(it->marker.name == current_marker_.marker.name)
+    if(it->marker.name == current_marker_name_)
       break;
 
   setCurrentFromTo(*it, *prev_marker);
 
-  moveCamToMarker(current_marker_);
+  moveCamToMarker(current_marker_name_);
 }
 
 void TrajectoryEditor::moveCamToNext()
 {
   // do nothing if current is already the last marker
-  if(std::prev(markers_.end())->marker.name == current_marker_.marker.name)
+  if(std::prev(markers_.end())->marker.name == current_marker_name_)
     return;
 
   // find iterator to current marker
   auto it = markers_.begin(), next_marker = std::next(markers_.begin());
   for(; it != markers_.end(); ++it, ++next_marker)
-    if(it->marker.name == current_marker_.marker.name)
+    if(it->marker.name == current_marker_name_)
       break;
 
   setCurrentFromTo(*it, *next_marker);
 
-  moveCamToMarker(current_marker_);
+  moveCamToMarker(current_marker_name_);
 }
 
 void TrajectoryEditor::moveCamToLast()
 {
   // do nothing if current is already the last marker
-  if(std::prev(markers_.end())->marker.name == current_marker_.marker.name)
+  if(std::prev(markers_.end())->marker.name == current_marker_name_)
     return;
 
   // find current marker
   auto it = markers_.begin();
   for(; it != markers_.end(); ++it)
-    if(it->marker.name == current_marker_.marker.name)
+    if(it->marker.name == current_marker_name_)
       break;
 
   // fill Camera Trajectory msg with markers and times
@@ -968,8 +959,10 @@ void TrajectoryEditor::moveCamToLast()
   camera_trajectory_pub_.publish(cam_trajectory);
 }
 
-void TrajectoryEditor::moveCamToMarker(const TimedMarker& marker)
+void TrajectoryEditor::moveCamToMarker(const std::string& marker_name)
 {
+  TrajectoryEditor::TimedMarker marker = getMarkerByName(marker_name);
+
   rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());
   cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
@@ -1030,9 +1023,7 @@ void TrajectoryEditor::processFeedback(const visualization_msgs::InteractiveMark
   if(feedback->event_type == visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP
      && server_->get(feedback->marker_name, marker))
   {
-    current_marker_.marker.name = feedback->marker_name;
-    current_marker_.marker.pose = feedback->pose;
-    current_marker_.transition_time = getMarkerByName(feedback->marker_name).transition_time;
+    current_marker_name_ = feedback->marker_name;
 
     updatePoseInGUI(feedback->pose, getMarkerByName(feedback->marker_name).transition_time);
 
@@ -1040,44 +1031,34 @@ void TrajectoryEditor::processFeedback(const visualization_msgs::InteractiveMark
     marker.pose = feedback->pose;
     getMarkerByName(feedback->marker_name).marker.pose = feedback->pose;
 
-    // change color of all markers back to red
-    for(const auto& marker : markers_)
-    {
-      visualization_msgs::InteractiveMarker int_marker;
-      server_->get(marker.marker.name, int_marker);
-      int_marker.controls[0].markers[0].color.r = 1.f;
-      int_marker.controls[0].markers[0].color.g = 0.f;
-      server_->insert(int_marker);
-    }
-
+    colorizeMarkersRed();
     // change color of current marker to green
-    marker.controls[0].markers[0].color.r = 0.f;
-    marker.controls[0].markers[0].color.g = 1.f;
+    getMarkerByName(feedback->marker_name).marker.controls[0].markers[0].color.r = 0.f;
+    getMarkerByName(feedback->marker_name).marker.controls[0].markers[0].color.g = 1.f;
 
-    // insert currently updated marker to server
-    server_->insert(marker);
+    server_->clear();
+    updateServer(markers_);
+
+    updateTrajectory();
   }
-
-  updateTrajectory();
 }
 
 void TrajectoryEditor::updateCurrentMarker()
 {
-  current_marker_.marker.pose.position.x = ui_.translation_x_spin_box->value();
-  current_marker_.marker.pose.position.y = ui_.translation_y_spin_box->value();
-  current_marker_.marker.pose.position.z = ui_.translation_z_spin_box->value();
+  geometry_msgs::Pose pose;
+  pose.position.x = ui_.translation_x_spin_box->value();
+  pose.position.y = ui_.translation_y_spin_box->value();
+  pose.position.z = ui_.translation_z_spin_box->value();
 
-  current_marker_.marker.pose.orientation.x = ui_.rotation_x_spin_box->value();
-  current_marker_.marker.pose.orientation.y = ui_.rotation_y_spin_box->value();
-  current_marker_.marker.pose.orientation.z = ui_.rotation_z_spin_box->value();
-  current_marker_.marker.pose.orientation.w = ui_.rotation_w_spin_box->value();
+  pose.orientation.x = ui_.rotation_x_spin_box->value();
+  pose.orientation.y = ui_.rotation_y_spin_box->value();
+  pose.orientation.z = ui_.rotation_z_spin_box->value();
+  pose.orientation.w = ui_.rotation_w_spin_box->value();
 
-  current_marker_.transition_time = ui_.transition_time_spin_box->value();
+  getMarkerByName(current_marker_name_).marker.pose = pose;
+  getMarkerByName(current_marker_name_).transition_time = ui_.transition_time_spin_box->value();
 
-  getMarkerByName(current_marker_.marker.name).marker.pose = current_marker_.marker.pose;
-  getMarkerByName(current_marker_.marker.name).transition_time = current_marker_.transition_time;
-
-  server_->setPose(current_marker_.marker.name, current_marker_.marker.pose, current_marker_.marker.header);
+  server_->setPose(current_marker_name_, pose, markers_.front().marker.header);
   server_->applyChanges();
 
   updateTrajectory();
