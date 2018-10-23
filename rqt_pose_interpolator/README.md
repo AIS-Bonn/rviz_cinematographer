@@ -112,6 +112,7 @@ Additionally you can append a marker at the end of the trajectory at the current
 | Spline | If enabled, interpolates poses using a spline |
 | Smooth Cam Velocity | Combine with spline to use total transition time to create smooth velocity for whole trajectory - use ⏮ and ⏭ | 
 | Publishing Rate | Smoothness of spline |
+| Marker Size | In- or decrease the markers' size |
 
 Thanks to https://github.com/ejmahler/SplineLibrary for providing an easy to use spline library.
 
