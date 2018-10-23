@@ -82,18 +82,11 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 
   // connect markers to callback functions
   server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>("trajectory");
-  for(const auto& marker : markers_)
-  {
-    server_->insert(marker.marker, boost::bind(&TrajectoryEditor::processFeedback, this, _1));
-    menu_handler_.apply(*server_, marker.marker.name);
-  }
+  updateServer(markers_);
 
   current_marker_ = markers_.back();
   current_marker_.marker.controls[0].markers[0].color.r = 0.f;
   current_marker_.marker.controls[0].markers[0].color.g = 1.f;
-
-  // 'commit' changes and send to all clients
-  server_->applyChanges();
 }
 
 void TrajectoryEditor::shutdownPlugin()
@@ -234,7 +227,7 @@ void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMark
   }
 
   // refill server with member markers
-  fillServer(markers_);
+  updateServer(markers_);
 
   updateTrajectory();
 }
@@ -262,7 +255,7 @@ void TrajectoryEditor::addMarkerHere(const visualization_msgs::InteractiveMarker
   }
 
   // refill server with member markers
-  fillServer(markers_);
+  updateServer(markers_);
 
   updateTrajectory();
 }
@@ -319,7 +312,7 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
   }
 
   // refill server with member markers
-  fillServer(markers_);
+  updateServer(markers_);
 
   updateTrajectory();
 }
@@ -395,12 +388,12 @@ void TrajectoryEditor::removeMarker(const visualization_msgs::InteractiveMarkerF
     markers_.erase(searched_element);
 
   // refill server with member markers
-  fillServer(markers_);
+  updateServer(markers_);
 
   updateTrajectory();
 }
 
-void TrajectoryEditor::fillServer(MarkerList& markers)
+void TrajectoryEditor::updateServer(MarkerList &markers)
 {
   size_t count = 0;
   for(auto& marker : markers)
@@ -411,6 +404,8 @@ void TrajectoryEditor::fillServer(MarkerList& markers)
     server_->insert(marker.marker, boost::bind( &TrajectoryEditor::processFeedback, this, _1));
     menu_handler_.apply(*server_, marker.marker.name);
   }
+
+  server_->applyChanges();
 }
 
 void TrajectoryEditor::loadParams(const ros::NodeHandle& nh,
@@ -518,7 +513,7 @@ void TrajectoryEditor::appendCamPoseToTrajectory()
   updatePoseInGUI(rotated_cam_pose, current_marker_.transition_time);
 
   // refill server with member markers
-  fillServer(markers_);
+  updateServer(markers_);
 
   updateTrajectory();
 }
@@ -549,12 +544,9 @@ void TrajectoryEditor::setMarkerFrames()
   current_marker_.marker.header.frame_id = ui_.frame_line_edit->text().toStdString();
 
   for(auto& marker : markers_)
-  {
     marker.marker.header.frame_id = ui_.frame_line_edit->text().toStdString();
-    server_->insert(marker.marker);
-  }
-  server_->applyChanges();
 
+  updateServer(markers_);
   updateTrajectory();
 }
 
@@ -652,22 +644,11 @@ void TrajectoryEditor::loadTrajectoryFromFile()
   // green color for last marker
   markers_.back().marker.controls[0].markers[0].color.r = 0.f;
   markers_.back().marker.controls[0].markers[0].color.g = 1.f;
-
-  server_->clear();
-  // connect markers to callback functions
-  for(const auto& marker : markers_)
-  {
-    server_->insert(marker.marker, boost::bind(&TrajectoryEditor::processFeedback, this, _1));
-    menu_handler_.apply(*server_, marker.marker.name);
-  }
-
-  // 'commit' changes and send to all clients
-  server_->applyChanges();
-
   current_marker_ = markers_.back();
 
+  server_->clear();
+  updateServer(markers_);
   updatePoseInGUI(current_marker_.marker.pose, current_marker_.transition_time);
-
   updateTrajectory();
 }
 

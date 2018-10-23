@@ -249,7 +249,7 @@ private:
    *
    * @param[in] markers     markers.
    */
-  void fillServer(MarkerList& markers);
+  void updateServer(MarkerList &markers);
 
   /**
    * @brief Load marker poses from a file.
