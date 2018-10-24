@@ -76,11 +76,16 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   }
   else
   {
-    visualization_msgs::InteractiveMarker marker = makeMarker();
-    marker.name = "0";
-    marker.description = "0";
-    marker.controls[0].markers[0].color.r = 1.f;
-    markers_.emplace_back(TimedMarker(std::move(marker), 0.5));
+    visualization_msgs::InteractiveMarker marker_0 = makeMarker();
+    marker_0.name = "0";
+    marker_0.description = "0";
+    marker_0.controls[0].markers[0].color.g = 1.f;
+    markers_.emplace_back(TimedMarker(std::move(marker_0), 2.5));
+    visualization_msgs::InteractiveMarker marker_1 = makeMarker(2.0, 0.0, 1.0);
+    marker_1.name = "1";
+    marker_1.description = "1";
+    marker_1.controls[0].markers[0].color.r = 1.f;
+    markers_.emplace_back(TimedMarker(std::move(marker_1), 2.5));
   }
 
   setCurrentTo(markers_.front());
