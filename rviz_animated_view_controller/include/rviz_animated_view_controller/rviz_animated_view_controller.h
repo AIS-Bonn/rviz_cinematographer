@@ -267,7 +267,7 @@ protected:    //members
   Ogre::Vector3 start_position_;
   Ogre::Vector3 start_focus_;
   Ogre::Vector3 start_up_;
-  ros::Time transition_start_time_;
+  ros::WallTime transition_start_time_;
   BufferCamMovements cam_movements_buffer_;
 
   rviz::Shape* focal_shape_;    ///< A small ellipsoid to show the focus point.

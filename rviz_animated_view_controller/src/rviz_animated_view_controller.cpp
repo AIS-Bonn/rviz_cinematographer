@@ -521,7 +521,7 @@ void AnimatedViewController::beginNewTransition(const Ogre::Vector3 &eye,
   // if the buffer is empty we set the first element in it to the current camera pose
   if(cam_movements_buffer_.empty())
   {
-    transition_start_time_ = ros::Time::now();
+    transition_start_time_ = ros::WallTime::now();
 
     cam_movements_buffer_.push_back(std::move(OgreCameraMovement(eye_point_property_->getVector(),
                                                                  focus_point_property_->getVector(),
@@ -697,7 +697,7 @@ void AnimatedViewController::update(float dt, float ros_dt)
     auto start = cam_movements_buffer_.begin();
     auto goal = ++(cam_movements_buffer_.begin());
 
-    ros::Duration time_from_start = ros::Time::now() - transition_start_time_;
+    ros::WallDuration time_from_start = ros::WallTime::now() - transition_start_time_;
     double fraction = time_from_start.toSec()/goal->transition_time.toSec();
 
     // make sure we get all the way there before turning off
@@ -761,7 +761,7 @@ void AnimatedViewController::update(float dt, float ros_dt)
         // reset animate to perform the next movement
         animate_ = true;
         // update the transition start time with the time the transition should have taken
-        transition_start_time_ += ros::Duration(cam_movements_buffer_.front().transition_time);
+        transition_start_time_ += ros::WallDuration(cam_movements_buffer_.front().transition_time.toSec());
       }
       else
       {
