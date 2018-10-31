@@ -14,7 +14,7 @@ TrajectoryEditor::TrajectoryEditor()
   , widget_(0)
   , current_marker_name_("")
 {
-  cam_pose_.orientation.w = 1.0;
+  //cam_pose_.orientation.w = 1.0;
 
   // give QObjects reasonable names
   setObjectName("TrajectoryEditor");
@@ -23,9 +23,8 @@ TrajectoryEditor::TrajectoryEditor()
 void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   ros::NodeHandle ph("~");
-  camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
   camera_trajectory_pub_ = ph.advertise<rviz_animated_view_controller::CameraTrajectory>("/rviz/camera_trajectory", 1);
-  view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1);
+  view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1, true);
 
   // access standalone command line arguments
   QStringList argv = context.argv();
@@ -93,22 +92,37 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   // connect markers to callback functions
   server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>("trajectory");
   updateServer(markers_);
+  updateTrajectory();
+
+  camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
 }
 
 void TrajectoryEditor::shutdownPlugin()
 {
+  // create empty path to "erase" previous path on shutdown
+  nav_msgs::Path path;
+  path.header = markers_.front().marker.header;
+
+  markers_.clear();
+  server_->clear();
+
   camera_pose_sub_.shutdown();
   camera_trajectory_pub_.shutdown();
+
+  view_poses_array_pub_.publish(path);
+  usleep(1000); // sleep for a millisecond to give the publisher some time
   view_poses_array_pub_.shutdown();
 }
 
-void TrajectoryEditor::saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const
+void TrajectoryEditor::saveSettings(qt_gui_cpp::Settings& plugin_settings,
+                                    qt_gui_cpp::Settings& instance_settings) const
 {
   // TODO save intrinsic configuration, usually using:
-  // instance_settings.setValue(k, v)
+  //instance_settings.setValue(k, v)
 }
 
-void TrajectoryEditor::restoreSettings(const qt_gui_cpp::Settings& plugin_settings, const qt_gui_cpp::Settings& instance_settings)
+void TrajectoryEditor::restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
+                                       const qt_gui_cpp::Settings& instance_settings)
 {
   // TODO restore intrinsic configuration, usually using:
   // v = instance_settings.value(k)
@@ -117,6 +131,7 @@ void TrajectoryEditor::restoreSettings(const qt_gui_cpp::Settings& plugin_settin
 void TrajectoryEditor::camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_pose)
 {
   cam_pose_ = geometry_msgs::Pose(*cam_pose);
+  server_->applyChanges();
 }
 
 void TrajectoryEditor::updateTrajectory()
