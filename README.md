@@ -11,3 +11,9 @@ Visualized [Model Data](https://grabcad.com/library/office-building-9).
 Further informations:
 - [Instructions](rqt_pose_interpolator)
 - [Details - RViz View](rqt_pose_interpolator)
+ 
+# License
+
+Rviz Cinematographer is licensed under BSD-3.  
+This repository includes the [rviz_animated_view_controller](https://github.com/UTNuclearRoboticsPublic/rviz_animated_view_controller) package which is a modification of the official ros [rviz_animated_view_controller](https://github.com/ros-visualization/rviz_animated_view_controller) package for ros kinetic.  
+Both of the ladder are licensed under BSD-2.
