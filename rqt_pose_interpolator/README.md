@@ -42,7 +42,7 @@ I recommend to launch the provided launch file to get a feeling for this tool wi
 The tutorial below introduces most features. 
 
 Alternatively you can start the provided plugins inside rqt at any time to create camera trajectories within already running rviz visualizations.  
-Some [remarks](https://git.ais.uni-bonn.de/razlaw/trajectory_editor/edit/master/rqt_pose_interpolator/README.md#remarks) for this use case are added after the tutorial section. 
+Some [remarks](https://git.ais.uni-bonn.de/razlaw/trajectory_editor/tree/master/rqt_pose_interpolator/README.md#remarks) for this use case are added after the tutorial section. 
 
 # Tutorial
 
