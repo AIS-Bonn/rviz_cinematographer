@@ -10,7 +10,7 @@ Visualized [Model Data](https://grabcad.com/library/office-building-9).
 
 Further informations:
 - [Instructions](rqt_pose_interpolator)
-- [Details - RViz View](rqt_pose_interpolator)
+- [Details - RViz View](rviz_animated_view_controller)
  
 # License
 
