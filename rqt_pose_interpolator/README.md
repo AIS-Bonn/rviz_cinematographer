@@ -36,8 +36,13 @@ Hover with your mouse over a button in the tool to get more informations.
 Clone or download this repository into your ros catkin workspace.  
 Make/Build this package - induces build of rviz_animated_view_controller package. 
 
+# Getting Started
+
 I recommend to launch the provided launch file to get a feeling for this tool without any distractions.  
 The tutorial below introduces most features. 
+
+Alternatively you can start the provided plugins inside rqt at any time to create camera trajectories within already running rviz visualizations.  
+Some [remarks](https://git.ais.uni-bonn.de/razlaw/trajectory_editor/edit/master/rqt_pose_interpolator/README.md#remarks) for this use case are added after the tutorial section. 
 
 # Tutorial
 
@@ -122,3 +127,25 @@ Thanks to https://github.com/ejmahler/SplineLibrary for providing an easy to use
 
 Save your trajectory using the *Save As..* button and load existing ones using the *Open* button.  
 Additionally one trajectory can be specified in the launch file to be loaded on initialization.
+
+# Remarks
+
+You have the option to create a camera trajectory within an already running rviz instance.   
+For this, just run your application and visualization in rviz as usual and additionally start rqt by 
+
+```
+$ rqt
+```
+
+Click on "Plugins -> Visualization -> Trajectory Editor".
+
+**Caveat:** Be aware, that rviz should **not** be started as an rqt plugin, because this experimental version of rviz crashes every time a *Path* message is received.
+
+Now you have to add the *InteractiveMarkers* and the *Path* displays.  
+Make sure the frame specified in the Trajectory Editor plugin is present in your tf tree, otherwise you will not be able to see the markers. 
+
+Additionally you have to select the rviz_animated_view_controller in the Rviz *Views* in order to be able to move the camera using the plugin.
+
+![rviz_views](readme/rviz_view.png)
+
+I would recommend to use the *Fixed Frame* as the Target Frame for the view. 
