@@ -132,7 +132,6 @@ AnimatedViewController::~AnimatedViewController()
 {
   delete focal_shape_;
   context_->getSceneManager()->destroySceneNode( attached_scene_node_ );
-  transition_poses_publisher_.shutdown();
   odometry_pub_.shutdown();
 }
 
@@ -145,7 +144,6 @@ void AnimatedViewController::updateTopics()
 //                              (camera_movement_topic_property_->getStdString(), 1,
 //                              boost::bind(&AnimatedViewController::cameraMovementCallback, this, _1));
   placement_publisher_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
-  transition_poses_publisher_ = nh_.advertise<geometry_msgs::PoseArray>("/rviz/trajectory_steps", 1);
   odometry_pub_ = nh_.advertise<nav_msgs::Odometry>("/rviz/trajectory_odometry", 1);
 }
 
@@ -642,28 +640,6 @@ void AnimatedViewController::moveEyeWithFocusTo( const Ogre::Vector3& point)
                      ros::Duration(default_transition_time_property_->getFloat()));
 }
 
-void AnimatedViewController::publishPose(const Ogre::Vector3& position)
-{
-  geometry_msgs::Pose intermediate_pose;
-  intermediate_pose.position.x = position.x;
-  intermediate_pose.position.y = position.y;
-  intermediate_pose.position.z = position.z;
-
-  Ogre::Quaternion cam_orientation = getOrientation();
-  Ogre::Quaternion rot_around_z_neg_90_deg(0.707f, 0.0f, 0.0f, -0.707f);
-  cam_orientation = cam_orientation * rot_around_z_neg_90_deg;
-  intermediate_pose.orientation.x = cam_orientation.x;
-  intermediate_pose.orientation.y = cam_orientation.y;
-  intermediate_pose.orientation.z = cam_orientation.z;
-  intermediate_pose.orientation.w = cam_orientation.w;
-
-  geometry_msgs::PoseArray pose_array;
-  pose_array.poses.push_back(intermediate_pose);
-  pose_array.header.frame_id = attached_frame_property_->getFrameStd();
-  pose_array.header.stamp = ros::Time::now();
-  transition_poses_publisher_.publish(pose_array);
-}
-
 void AnimatedViewController::publishOdometry(const Ogre::Vector3& position,
                                              const Ogre::Vector3& velocity)
 {
@@ -744,10 +720,6 @@ void AnimatedViewController::update(float dt, float ros_dt)
     camera_->setDirection(reference_orientation_ * (focus_point_property_->getVector() - eye_point_property_->getVector()));
 
     publishCameraPose();
-
-    // yes, does very similar to publishCameraPose, but was needed for a specific application - delete if you want
-    if(transition_poses_publisher_.getNumSubscribers() != 0)
-      publishPose(new_position);
 
     // if current movement is over
     if(!animate_)

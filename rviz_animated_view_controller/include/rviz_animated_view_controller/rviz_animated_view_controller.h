@@ -138,9 +138,6 @@ public:
   /** @brief Calls beginNewTransition() to move the eye to the point given, keeping the direction fixed.*/
   void moveEyeWithFocusTo( const Ogre::Vector3& point);
 
-  /** @brief Publishes the current camera pose as a PoseArray msg.*/
-  void publishPose(const Ogre::Vector3& position);
-
   /** @brief Publishes the current camera pose as an Odometry msg.*/
   void publishOdometry(const Ogre::Vector3& position,
                        const Ogre::Vector3& velocity);
@@ -278,7 +275,6 @@ protected:    //members
   ros::Subscriber trajectory_subscriber_;
   ros::Publisher placement_publisher_;
 
-  ros::Publisher transition_poses_publisher_;
   ros::Publisher odometry_pub_;
 };
 
