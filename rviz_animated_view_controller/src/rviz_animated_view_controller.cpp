@@ -741,7 +741,42 @@ void AnimatedViewController::update(float dt, float ros_dt)
         cam_movements_buffer_.clear();
       }
     }
+
+    unsigned int height = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight();
+    unsigned int width = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth();
+
+    cv::Size img_size((int)width, (int)height);
+
+    Ogre::PixelFormat format = Ogre::PF_BYTE_BGR;
+    auto outBytesPerPixel = Ogre::PixelUtil::getNumElemBytes(format);
+
+    auto data = new unsigned char [width * height * outBytesPerPixel];
+
+    Ogre::Box extents(0, 0, width, height);
+    Ogre::PixelBox pb(extents, format, data);
+
+    cv::Mat image_rgb(height, width, CV_8UC3, data);
+
+    context_->getViewManager()->getRenderPanel()->getRenderWindow()->copyContentsToMemory(pb, Ogre::RenderTarget::FB_AUTO);
+    
+    if(!writer_opened_)
+    {
+      output_video_.open("/tmp/raw_video.mkv", cv::VideoWriter::fourcc('F', 'F', 'V', '1'), 20, img_size, true);
+    }
+
+    if(!output_video_.isOpened())
+    {
+      std::cout  << "Could not open the output video for write: " << std::endl;
+    }
+    else
+    {
+      output_video_.write(image_rgb);
+      writer_opened_ = true;
+    }
+
+    //cv::imwrite("/tmp/Gray_Image" + std::to_string(counter_++) + ".jpg", image_rgb);
   }
+
   updateCamera();
 }
 

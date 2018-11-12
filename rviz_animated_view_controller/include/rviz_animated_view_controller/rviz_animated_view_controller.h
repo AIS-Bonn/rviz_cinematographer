@@ -33,6 +33,8 @@
 #define RVIZ_ANIMATED_VIEW_CONTROLLER_H
 
 #include "rviz/view_controller.h"
+#include "rviz/view_manager.h"
+#include "rviz/render_panel.h"
 
 #include <ros/subscriber.h>
 #include <ros/ros.h>
@@ -46,7 +48,14 @@
 #include <OGRE/OgreVector3.h>
 #include <OGRE/OgreQuaternion.h>
 
+#include <OGRE/OgreHardwarePixelBuffer.h>
+#include <OGRE/OgreRenderWindow.h>
+
 #include <boost/circular_buffer.hpp>
+
+#include <cv_bridge/cv_bridge.h>
+
+#include <cv.hpp>
 
 namespace rviz {
   class SceneNode;
@@ -276,6 +285,11 @@ protected:    //members
   ros::Publisher placement_publisher_;
 
   ros::Publisher odometry_pub_;
+
+  int counter_ = 0;
+
+  cv::VideoWriter output_video_;
+  bool writer_opened_ = false;
 };
 
 }  // namespace rviz_animated_view_controller

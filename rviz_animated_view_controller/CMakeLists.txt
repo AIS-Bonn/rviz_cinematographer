@@ -4,6 +4,9 @@ project(rviz_animated_view_controller)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
+
 find_package(cmake_modules REQUIRED)
 find_package(Eigen REQUIRED)
 find_package(Boost REQUIRED system filesystem)
@@ -24,6 +27,9 @@ find_package(catkin REQUIRED COMPONENTS
   rviz
   pluginlib
   message_generation
+        cv_bridge
+        image_geometry
+        image_transport
   ${MSG_DEPS}
 )
 
