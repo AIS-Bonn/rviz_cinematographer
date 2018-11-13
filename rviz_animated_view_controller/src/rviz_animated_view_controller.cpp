@@ -90,6 +90,9 @@ AnimatedViewController::AnimatedViewController()
   : nh_("")
     , animate_(false)
     , dragging_( false )
+    , do_record_(false)
+    , target_fps_(60)
+    , recorded_frames_counter_(0)
 {
   interaction_disabled_cursor_ = makeIconCursor( "package://rviz/icons/forbidden.svg" );
 
@@ -133,6 +136,7 @@ AnimatedViewController::~AnimatedViewController()
   delete focal_shape_;
   context_->getSceneManager()->destroySceneNode( attached_scene_node_ );
   odometry_pub_.shutdown();
+  image_pub_.shutdown();
 }
 
 void AnimatedViewController::updateTopics()
@@ -145,6 +149,9 @@ void AnimatedViewController::updateTopics()
 //                              boost::bind(&AnimatedViewController::cameraMovementCallback, this, _1));
   placement_publisher_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
   odometry_pub_ = nh_.advertise<nav_msgs::Odometry>("/rviz/trajectory_odometry", 1);
+
+  image_transport::ImageTransport it(nh_);
+  image_pub_ = it.advertise("view_controller/image", 1);
 }
 
 void AnimatedViewController::onInitialize()
@@ -673,11 +680,20 @@ void AnimatedViewController::update(float dt, float ros_dt)
     auto start = cam_movements_buffer_.begin();
     auto goal = ++(cam_movements_buffer_.begin());
 
-    ros::WallDuration time_from_start = ros::WallTime::now() - transition_start_time_;
-    double fraction = time_from_start.toSec()/goal->transition_time.toSec();
+    double fraction = 0.0;
+    if(do_record_)
+    {
+      fraction = counter_ / (target_fps_ * goal->transition_time.toSec());
+      counter_++;
+    }
+    else
+    {
+      ros::WallDuration time_from_start = ros::WallTime::now() - transition_start_time_;
+      fraction = time_from_start.toSec()/goal->transition_time.toSec();
+    }
 
     // make sure we get all the way there before turning off
-    if(fraction > 1.0)
+    if(fraction >= 1.0)
     {
       fraction = 1.0;
       animate_ = false;
@@ -721,6 +737,46 @@ void AnimatedViewController::update(float dt, float ros_dt)
 
     publishCameraPose();
 
+    unsigned int height = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight();
+    unsigned int width = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth();
+    cv::Size img_size((int)width, (int)height);
+
+    Ogre::PixelFormat format = Ogre::PF_BYTE_BGR;
+    auto outBytesPerPixel = Ogre::PixelUtil::getNumElemBytes(format);
+    auto data = new unsigned char [width * height * outBytesPerPixel];
+    Ogre::Box extents(0, 0, width, height);
+    Ogre::PixelBox pb(extents, format, data);
+
+    cv::Mat image_rgb(height, width, CV_8UC3, data);
+
+    // TODO: replace with sensor msgs
+//    sensor_msgs::ImagePtr ros_image = sensor_msgs::ImagePtr(new sensor_msgs::Image());;
+//    ros_image->header.frame_id = attached_frame_property_->getStdString();
+//    ros_image->header.stamp = ros::Time::now();
+//    ros_image->height = height;
+//    ros_image->width = width;
+//    ros_image->encoding = sensor_msgs::image_encodings::BGR8;
+//    ros_image->is_bigendian = false;
+//    ros_image->step = static_cast<unsigned int>(width * outBytesPerPixel);
+//    size_t size = width * outBytesPerPixel * height;
+//    ros_image->data.resize(size);
+
+    context_->getViewManager()->getRenderPanel()->getRenderWindow()->copyContentsToMemory(pb, Ogre::RenderTarget::FB_AUTO);
+//    memcpy((char*)(&ros_image->data[0]), data, size);
+
+//    image_pub_.publish(ros_image);
+
+    if(do_record_ && !output_video_.isOpened())
+      output_video_.open("/tmp/raw_video.avi", cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), target_fps_, img_size, true);
+
+    if(!output_video_.isOpened())
+      ROS_ERROR("Could not open the output video for write.");
+    else
+      output_video_.write(image_rgb);
+
+    //cv::imwrite("/tmp/Gray_Image" + std::to_string(counter_++) + ".jpg", image_rgb);
+
+
     // if current movement is over
     if(!animate_)
     {
@@ -732,6 +788,7 @@ void AnimatedViewController::update(float dt, float ros_dt)
       {
         // reset animate to perform the next movement
         animate_ = true;
+        counter_ = 0;
         // update the transition start time with the time the transition should have taken
         transition_start_time_ += ros::WallDuration(cam_movements_buffer_.front().transition_time.toSec());
       }
@@ -739,42 +796,11 @@ void AnimatedViewController::update(float dt, float ros_dt)
       {
         // clean up
         cam_movements_buffer_.clear();
+
+        if(output_video_.isOpened())
+          output_video_.release();
       }
     }
-
-    unsigned int height = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight();
-    unsigned int width = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth();
-
-    cv::Size img_size((int)width, (int)height);
-
-    Ogre::PixelFormat format = Ogre::PF_BYTE_BGR;
-    auto outBytesPerPixel = Ogre::PixelUtil::getNumElemBytes(format);
-
-    auto data = new unsigned char [width * height * outBytesPerPixel];
-
-    Ogre::Box extents(0, 0, width, height);
-    Ogre::PixelBox pb(extents, format, data);
-
-    cv::Mat image_rgb(height, width, CV_8UC3, data);
-
-    context_->getViewManager()->getRenderPanel()->getRenderWindow()->copyContentsToMemory(pb, Ogre::RenderTarget::FB_AUTO);
-    
-    if(!writer_opened_)
-    {
-      output_video_.open("/tmp/raw_video.mkv", cv::VideoWriter::fourcc('F', 'F', 'V', '1'), 20, img_size, true);
-    }
-
-    if(!output_video_.isOpened())
-    {
-      std::cout  << "Could not open the output video for write: " << std::endl;
-    }
-    else
-    {
-      output_video_.write(image_rgb);
-      writer_opened_ = true;
-    }
-
-    //cv::imwrite("/tmp/Gray_Image" + std::to_string(counter_++) + ".jpg", image_rgb);
   }
 
   updateCamera();

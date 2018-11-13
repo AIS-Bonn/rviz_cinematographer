@@ -42,20 +42,22 @@
 #include "rviz_animated_view_controller/CameraMovement.h"
 #include "rviz_animated_view_controller/CameraTrajectory.h"
 
-#include <geometry_msgs/PoseArray.h>
 #include <nav_msgs/Odometry.h>
 
 #include <OGRE/OgreVector3.h>
 #include <OGRE/OgreQuaternion.h>
 
-#include <OGRE/OgreHardwarePixelBuffer.h>
+// TODO: check which are needed
+//#include <OGRE/OgreHardwarePixelBuffer.h>
 #include <OGRE/OgreRenderWindow.h>
 
 #include <boost/circular_buffer.hpp>
 
-#include <cv_bridge/cv_bridge.h>
-
+// TODO: delete?
 #include <cv.hpp>
+
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
 
 namespace rviz {
   class SceneNode;
@@ -289,7 +291,12 @@ protected:    //members
   int counter_ = 0;
 
   cv::VideoWriter output_video_;
-  bool writer_opened_ = false;
+
+  image_transport::Publisher image_pub_;
+
+  bool do_record_;
+  int target_fps_;
+  int recorded_frames_counter_;
 };
 
 }  // namespace rviz_animated_view_controller
