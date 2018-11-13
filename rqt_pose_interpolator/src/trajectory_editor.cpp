@@ -23,7 +23,7 @@ TrajectoryEditor::TrajectoryEditor()
 void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   ros::NodeHandle ph("~");
-  camera_trajectory_pub_ = ph.advertise<rviz_animated_view_controller::CameraTrajectory>("/rviz/camera_trajectory", 1);
+  camera_trajectory_pub_ = ph.advertise<rviz_cinematographer_msgs::CameraTrajectory>("/rviz/camera_trajectory", 1);
   view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1, true);
 
   // access standalone command line arguments
@@ -706,12 +706,12 @@ void TrajectoryEditor::saveTrajectoryToFile()
   }
 }
 
-rviz_animated_view_controller::CameraMovement TrajectoryEditor::makeCameraMovement()
+rviz_cinematographer_msgs::CameraMovement TrajectoryEditor::makeCameraMovement()
 {
-  rviz_animated_view_controller::CameraMovement cm;
+  rviz_cinematographer_msgs::CameraMovement cm;
   cm.eye.header.stamp = ros::Time::now();
   cm.eye.header.frame_id = ui_.frame_line_edit->text().toStdString();
-  cm.interpolation_speed = rviz_animated_view_controller::CameraMovement::WAVE;
+  cm.interpolation_speed = rviz_cinematographer_msgs::CameraMovement::WAVE;
   cm.transition_time = ros::Duration(0);
 
   cm.up.header = cm.focus.header = cm.eye.header;
@@ -770,7 +770,7 @@ void TrajectoryEditor::colorizeMarkersRed()
 }
 
 void TrajectoryEditor::convertMarkerToCamMovement(const TimedMarker& marker,
-                                                  rviz_animated_view_controller::CameraMovement& cam_movement)
+                                                  rviz_cinematographer_msgs::CameraMovement& cam_movement)
 {
   cam_movement = makeCameraMovement();
   cam_movement.transition_time = ros::Duration(marker.transition_time);
@@ -812,7 +812,7 @@ void TrajectoryEditor::moveCamToFirst()
       break;
 
   // fill Camera Trajectory msg with markers and times
-  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());
+  rviz_cinematographer_msgs::CameraTrajectoryPtr cam_trajectory(new rviz_cinematographer_msgs::CameraTrajectory());
   cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
 
@@ -843,7 +843,7 @@ void TrajectoryEditor::moveCamToFirst()
   }
   else
   {
-    rviz_animated_view_controller::CameraMovement cam_movement;
+    rviz_cinematographer_msgs::CameraMovement cam_movement;
     bool first = true;
     auto previous = it;
     do
@@ -852,14 +852,14 @@ void TrajectoryEditor::moveCamToFirst()
       convertMarkerToCamMovement(*previous, cam_movement);
 
       // set interpolation speed first rising, then full speed, then declining
-      cam_movement.interpolation_speed = (first) ? rviz_animated_view_controller::CameraMovement::RISING : rviz_animated_view_controller::CameraMovement::FULL;
+      cam_movement.interpolation_speed = (first) ? rviz_cinematographer_msgs::CameraMovement::RISING : rviz_cinematographer_msgs::CameraMovement::FULL;
       if(previous == markers_.begin())
       {
         // if the whole trajectory is between the first two markers, use WAVE, else decline
         if(first)
-          cam_movement.interpolation_speed = rviz_animated_view_controller::CameraMovement::WAVE;
+          cam_movement.interpolation_speed = rviz_cinematographer_msgs::CameraMovement::WAVE;
         else
-          cam_movement.interpolation_speed = rviz_animated_view_controller::CameraMovement::DECLINING;
+          cam_movement.interpolation_speed = rviz_cinematographer_msgs::CameraMovement::DECLINING;
       }
 
       cam_trajectory->trajectory.push_back(cam_movement);
@@ -921,7 +921,7 @@ void TrajectoryEditor::moveCamToLast()
       break;
 
   // fill Camera Trajectory msg with markers and times
-  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());
+  rviz_cinematographer_msgs::CameraTrajectoryPtr cam_trajectory(new rviz_cinematographer_msgs::CameraTrajectory());
   cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
 
@@ -950,7 +950,7 @@ void TrajectoryEditor::moveCamToLast()
   }
   else
   {
-    rviz_animated_view_controller::CameraMovement cam_movement;
+    rviz_cinematographer_msgs::CameraMovement cam_movement;
     bool first = true;
     auto next = it;
     for(++next; next != markers_.end(); next++)
@@ -958,14 +958,14 @@ void TrajectoryEditor::moveCamToLast()
       convertMarkerToCamMovement(*next, cam_movement);
 
       // set interpolation speed first rising, then full speed, then declining
-      cam_movement.interpolation_speed = (first) ? rviz_animated_view_controller::CameraMovement::RISING : rviz_animated_view_controller::CameraMovement::FULL;
+      cam_movement.interpolation_speed = (first) ? rviz_cinematographer_msgs::CameraMovement::RISING : rviz_cinematographer_msgs::CameraMovement::FULL;
       if(next == std::prev(markers_.end()))
       {
         // if the whole trajectory is between the last two markers, use WAVE, else decline
         if(first)
-          cam_movement.interpolation_speed = rviz_animated_view_controller::CameraMovement::WAVE;
+          cam_movement.interpolation_speed = rviz_cinematographer_msgs::CameraMovement::WAVE;
         else
-          cam_movement.interpolation_speed = rviz_animated_view_controller::CameraMovement::DECLINING;
+          cam_movement.interpolation_speed = rviz_cinematographer_msgs::CameraMovement::DECLINING;
       }
 
       cam_trajectory->trajectory.push_back(cam_movement);
@@ -983,13 +983,13 @@ void TrajectoryEditor::moveCamToMarker(const std::string& marker_name)
 {
   TrajectoryEditor::TimedMarker marker = getMarkerByName(marker_name);
 
-  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());
+  rviz_cinematographer_msgs::CameraTrajectoryPtr cam_trajectory(new rviz_cinematographer_msgs::CameraTrajectory());
   cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
 
-  rviz_animated_view_controller::CameraMovement cp = makeCameraMovement();
+  rviz_cinematographer_msgs::CameraMovement cp = makeCameraMovement();
   cp.transition_time = ros::Duration(marker.transition_time);
-  cp.interpolation_speed = rviz_animated_view_controller::CameraMovement::WAVE;
+  cp.interpolation_speed = rviz_cinematographer_msgs::CameraMovement::WAVE;
 
   if(!ui_.use_up_of_world_check_box->isChecked())
   {
@@ -1093,7 +1093,7 @@ tf::Vector3 TrajectoryEditor::rotateVector(const tf::Vector3& vector,
 }
 
 void TrajectoryEditor::markersToSplinedCamTrajectory(const MarkerList& markers,
-                                                     rviz_animated_view_controller::CameraTrajectoryPtr trajectory,
+                                                     rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory,
                                                      double frequency,
                                                      bool smooth_velocity)
 {
@@ -1156,7 +1156,7 @@ void TrajectoryEditor::markersToSplinedCamTrajectory(const MarkerList& markers,
   UniformCRSpline<Vector3> up_spline(input_up_directions);
 
   // rate to sample from spline and get points
-  rviz_animated_view_controller::CameraMovement cam_movement = makeCameraMovement();
+  rviz_cinematographer_msgs::CameraMovement cam_movement = makeCameraMovement();
   double rate = 1.0 / frequency;
   float max_t = eye_spline.getMaxT();
   double total_length = eye_spline.totalLength();
@@ -1184,7 +1184,7 @@ void TrajectoryEditor::markersToSplinedCamTrajectory(const MarkerList& markers,
     }
     // else is not necessary - up is already set to default in makeCameraMovement
 
-    cam_movement.interpolation_speed = (first) ? rviz_animated_view_controller::CameraMovement::RISING : rviz_animated_view_controller::CameraMovement::FULL;
+    cam_movement.interpolation_speed = (first) ? rviz_cinematographer_msgs::CameraMovement::RISING : rviz_cinematographer_msgs::CameraMovement::FULL;
 
     double transition_time = 0.0;
     if(smooth_velocity)

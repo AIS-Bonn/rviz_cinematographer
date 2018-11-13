@@ -1,5 +1,5 @@
-<?xml version="1.0"?>
 <package format="2">
+
   <name>rqt_pose_interpolator</name>
   <version>0.0.0</version>
   <description>The rqt_pose_interpolator package</description>
@@ -7,31 +7,15 @@
   <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>eigen</build_depend>
-  <build_depend>interactive_markers</build_depend>
-  <build_depend>nav_msgs</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>rqt_gui</build_depend>
-  <build_depend>rqt_gui_cpp</build_depend>
-  <build_depend>tf</build_depend>
-  <build_depend>rviz_animated_view_controller</build_depend>
-  <build_export_depend>eigen</build_export_depend>
-  <build_export_depend>interactive_markers</build_export_depend>
-  <build_export_depend>nav_msgs</build_export_depend>
-  <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>rqt_gui</build_export_depend>
-  <build_export_depend>rqt_gui_cpp</build_export_depend>
-  <build_export_depend>tf</build_export_depend>
-  <build_export_depend>rviz_animated_view_controller</build_export_depend>
-  <exec_depend>eigen</exec_depend>
-  <exec_depend>interactive_markers</exec_depend>
-  <exec_depend>nav_msgs</exec_depend>
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>rqt_gui</exec_depend>
-  <exec_depend>rqt_gui_cpp</exec_depend>
-  <exec_depend>tf</exec_depend>
-  <exec_depend>rviz_animated_view_controller</exec_depend>
-
+  <depend>eigen</depend>
+  <depend>interactive_markers</depend>
+  <depend>nav_msgs</depend>
+  <depend>roscpp</depend>
+  <depend>rqt_gui</depend>
+  <depend>rqt_gui_cpp</depend>
+  <depend>tf</depend>
+  <depend>rviz_cinematographer_msgs</depend>
+  <depend>rviz_animated_view_controller</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

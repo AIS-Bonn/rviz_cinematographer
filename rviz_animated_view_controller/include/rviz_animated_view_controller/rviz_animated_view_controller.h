@@ -39,21 +39,17 @@
 #include <ros/subscriber.h>
 #include <ros/ros.h>
 
-#include "rviz_animated_view_controller/CameraMovement.h"
-#include "rviz_animated_view_controller/CameraTrajectory.h"
+#include <rviz_cinematographer_msgs/CameraMovement.h>
+#include <rviz_cinematographer_msgs/CameraTrajectory.h>
 
 #include <nav_msgs/Odometry.h>
 
 #include <OGRE/OgreVector3.h>
 #include <OGRE/OgreQuaternion.h>
-
-// TODO: check which are needed
-//#include <OGRE/OgreHardwarePixelBuffer.h>
 #include <OGRE/OgreRenderWindow.h>
 
 #include <boost/circular_buffer.hpp>
 
-// TODO: delete?
 #include <cv.hpp>
 
 #include <image_transport/image_transport.h>
@@ -214,8 +210,8 @@ protected:  //methods
    * frame specified in the Attached Frame property. */
   void updateAttachedSceneNode();
 
-  void cameraTrajectoryCallback(const CameraTrajectoryConstPtr &ct_ptr);
-  void transformCameraMovementToAttachedFrame(CameraMovement &cm);
+  void cameraTrajectoryCallback(const rviz_cinematographer_msgs::CameraTrajectoryConstPtr &ct_ptr);
+  void transformCameraMovementToAttachedFrame(rviz_cinematographer_msgs::CameraMovement &cm);
 
   //void setUpVectorPropertyModeDependent( const Ogre::Vector3 &vector );
 
@@ -226,7 +222,7 @@ protected:  //methods
                           const Ogre::Vector3 &focus,
                           const Ogre::Vector3 &up,
                           ros::Duration transition_time,
-                          uint8_t interpolation_speed=rviz_animated_view_controller::CameraMovement::WAVE);
+                          uint8_t interpolation_speed=rviz_cinematographer_msgs::CameraMovement::WAVE);
 
   /** @brief Cancels any currently active camera movement. */
   void cancelTransition();

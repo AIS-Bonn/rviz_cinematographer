@@ -18,19 +18,14 @@ add_definitions(-DQT_NO_KEYWORDS)
 
 find_package(OpenGL REQUIRED)
 
-set(MSG_DEPS
-  std_msgs
-  geometry_msgs
-  nav_msgs)
-
 find_package(catkin REQUIRED COMPONENTS
   rviz
   pluginlib
-  message_generation
-        cv_bridge
-        image_geometry
-        image_transport
-  ${MSG_DEPS}
+  nav_msgs
+  rviz_cinematographer_msgs
+   cv_bridge
+   image_geometry
+   image_transport
 )
 
 # Qt Stuff
@@ -41,14 +36,10 @@ set(QT_INCLUDE_DIRS
   ${Qt5Widgets_INCLUDE_DIRS}
 )
 
-add_message_files(DIRECTORY msg FILES CameraMovement.msg CameraTrajectory.msg)
-
-generate_messages(DEPENDENCIES ${MSG_DEPS})
-
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS message_runtime ${MSG_DEPS})
+  CATKIN_DEPENDS rviz_cinematographer_msgs)
 
 qt5_wrap_cpp(MOC_FILES
   include/${PROJECT_NAME}/rviz_animated_view_controller.h
@@ -77,7 +68,6 @@ target_link_libraries(
 
 add_dependencies(
   ${PROJECT_NAME}
-  ${PROJECT_NAME}_generate_messages_cpp
   ${catkin_EXPORTED_TARGETS}
 )
 

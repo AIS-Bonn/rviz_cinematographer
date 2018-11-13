@@ -14,8 +14,8 @@
 #include <tf/transform_datatypes.h>
 
 #include <geometry_msgs/Pose.h>
-#include <rviz_animated_view_controller/CameraMovement.h>
-#include <rviz_animated_view_controller/CameraTrajectory.h>
+#include <rviz_cinematographer_msgs/CameraMovement.h>
+#include <rviz_cinematographer_msgs/CameraTrajectory.h>
 
 #include <interactive_markers/interactive_marker_server.h>
 #include <interactive_markers/menu_handler.h>
@@ -102,7 +102,7 @@ private:
    * @brief Creates a CameraMovement hull.
    * @return CameraMovement.
    */
-  rviz_animated_view_controller::CameraMovement makeCameraMovement();
+  rviz_cinematographer_msgs::CameraMovement makeCameraMovement();
 
   /**
    * @brief Creates an InteractiveMarker hull.

@@ -9,13 +9,14 @@ add_compile_options(-std=c++11)
 find_package(Eigen3 REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
-  interactive_markers
-  nav_msgs
-  roscpp
-  rqt_gui
-  rqt_gui_cpp
-  tf
-  rviz_animated_view_controller
+    interactive_markers
+    nav_msgs
+    roscpp
+    rqt_gui
+    rqt_gui_cpp
+    tf
+    rviz_cinematographer_msgs
+    rviz_animated_view_controller
 )
 
 # Decide on a Qt version
@@ -41,8 +42,8 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 ###################################
 
 catkin_package(
-  INCLUDE_DIRS include
-  CATKIN_DEPENDS interactive_markers nav_msgs roscpp rqt_gui rqt_gui_cpp tf rviz_animated_view_controller
+    INCLUDE_DIRS include
+    CATKIN_DEPENDS interactive_markers nav_msgs roscpp rqt_gui rqt_gui_cpp tf rviz_cinematographer_msgs rviz_animated_view_controller
 )
 
 ###########
@@ -96,9 +97,9 @@ add_dependencies(pose_interpolator_plugins
 #############
 
 install(TARGETS pose_interpolator_plugins
-        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(FILES plugin.xml
@@ -110,6 +111,7 @@ install(FILES plugin.xml
 
 # Dummy target for IDE's
 FILE(GLOB_RECURSE all_headers_for_ides
-        ${CMAKE_SOURCE_DIR}/**/*.hpp
-        ${CMAKE_SOURCE_DIR}/**/*.h)
+    ${CMAKE_SOURCE_DIR}/**/*.hpp
+    ${CMAKE_SOURCE_DIR}/**/*.h
+)
 ADD_CUSTOM_TARGET(ide_includes_${PROJECT_NAME} SOURCES ${all_headers_for_ides})

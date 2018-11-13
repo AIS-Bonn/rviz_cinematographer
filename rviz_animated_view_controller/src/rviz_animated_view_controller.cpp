@@ -127,7 +127,7 @@ AnimatedViewController::AnimatedViewController()
                                                          "The default time to use for camera transitions.",
                                                          this );
   camera_trajectory_topic_property_ = new RosTopicProperty("Trajectory Topic", "/rviz/camera_trajectory",
-                                                          QString::fromStdString(ros::message_traits::datatype<CameraTrajectory>() ),
+                                                          QString::fromStdString(ros::message_traits::datatype<rviz_cinematographer_msgs::CameraTrajectory>() ),
                                                           "Topic for CameraTrajectory messages", this, SLOT(updateTopics()));
 }
 
@@ -141,10 +141,10 @@ AnimatedViewController::~AnimatedViewController()
 
 void AnimatedViewController::updateTopics()
 {
-  trajectory_subscriber_ = nh_.subscribe<CameraTrajectory>
+  trajectory_subscriber_ = nh_.subscribe<rviz_cinematographer_msgs::CameraTrajectory>
                               (camera_trajectory_topic_property_->getStdString(), 1,
                               boost::bind(&AnimatedViewController::cameraTrajectoryCallback, this, _1));
-//  movement_subscriber_  = nh_.subscribe<CameraMovement>
+//  movement_subscriber_  = nh_.subscribe<rviz_cinematographer_msgs::CameraMovement>
 //                              (camera_movement_topic_property_->getStdString(), 1,
 //                              boost::bind(&AnimatedViewController::cameraMovementCallback, this, _1));
   placement_publisher_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
@@ -549,9 +549,9 @@ void AnimatedViewController::cancelTransition()
   cam_movements_buffer_.clear();
 }
 
-void AnimatedViewController::cameraTrajectoryCallback(const CameraTrajectoryConstPtr &ct_ptr)
+void AnimatedViewController::cameraTrajectoryCallback(const rviz_cinematographer_msgs::CameraTrajectoryConstPtr &ct_ptr)
 {
-  CameraTrajectory ct = *ct_ptr;
+  rviz_cinematographer_msgs::CameraTrajectory ct = *ct_ptr;
 
   if(ct.trajectory.empty())
     return;
@@ -559,12 +559,12 @@ void AnimatedViewController::cameraTrajectoryCallback(const CameraTrajectoryCons
   // Handle control parameters
   mouse_enabled_property_->setBool(!ct.interaction_disabled);
   fixed_up_property_->setBool(!ct.allow_free_yaw_axis);
-  if(ct.mouse_interaction_mode != CameraTrajectory::NO_CHANGE)
+  if(ct.mouse_interaction_mode != rviz_cinematographer_msgs::CameraTrajectory::NO_CHANGE)
   {
     std::string name = "";
-    if(ct.mouse_interaction_mode == CameraTrajectory::ORBIT)
+    if(ct.mouse_interaction_mode == rviz_cinematographer_msgs::CameraTrajectory::ORBIT)
       name = MODE_ORBIT;
-    else if(ct.mouse_interaction_mode == CameraTrajectory::FPS)
+    else if(ct.mouse_interaction_mode == rviz_cinematographer_msgs::CameraTrajectory::FPS)
       name = MODE_FPS;
     interaction_mode_property_->setStdString(name);
   }
@@ -586,7 +586,7 @@ void AnimatedViewController::cameraTrajectoryCallback(const CameraTrajectoryCons
   }
 }
 
-void AnimatedViewController::transformCameraMovementToAttachedFrame(CameraMovement &cm)
+void AnimatedViewController::transformCameraMovementToAttachedFrame(rviz_cinematographer_msgs::CameraMovement &cm)
 {
   Ogre::Vector3 position_fixed_eye, position_fixed_focus, position_fixed_up; // position_fixed_attached;
   Ogre::Quaternion rotation_fixed_eye, rotation_fixed_focus, rotation_fixed_up; // rotation_fixed_attached;
@@ -702,16 +702,16 @@ void AnimatedViewController::update(float dt, float ros_dt)
     float progress = 0.0f;
     switch(goal->interpolation_speed)
     {
-      case rviz_animated_view_controller::CameraMovement::RISING:
+      case rviz_cinematographer_msgs::CameraMovement::RISING:
         progress = 1.f - static_cast<float>(cos(fraction * M_PI_2));
         break;
-      case rviz_animated_view_controller::CameraMovement::DECLINING:
+      case rviz_cinematographer_msgs::CameraMovement::DECLINING:
         progress = static_cast<float>(-cos(fraction * M_PI_2 + M_PI_2));
         break;
-      case rviz_animated_view_controller::CameraMovement::FULL:
+      case rviz_cinematographer_msgs::CameraMovement::FULL:
         progress = static_cast<float>(fraction);
         break;
-      case rviz_animated_view_controller::CameraMovement::WAVE:
+      case rviz_cinematographer_msgs::CameraMovement::WAVE:
       default:
         progress = 0.5f * ( 1.f - static_cast<float>(cos(fraction * M_PI)));
         break;

@@ -21,8 +21,9 @@
 
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseArray.h>
-#include <rviz_animated_view_controller/CameraMovement.h>
-#include <rviz_animated_view_controller/CameraTrajectory.h>
+
+#include <rviz_cinematographer_msgs/CameraMovement.h>
+#include <rviz_cinematographer_msgs/CameraTrajectory.h>
 
 #include <nav_msgs/Path.h>
 
@@ -151,7 +152,7 @@ private:
    * @brief Creates a CameraMovement hull.
    * @return CameraMovement.
    */
-  rviz_animated_view_controller::CameraMovement makeCameraMovement();
+  rviz_cinematographer_msgs::CameraMovement makeCameraMovement();
 
   /**
    * @brief Creates an InteractiveMarker hull.
@@ -206,7 +207,7 @@ private:
    * @param[out]    cam_movement    message.
    */
   void convertMarkerToCamMovement(const TimedMarker& marker,
-                                  rviz_animated_view_controller::CameraMovement& cam_movement);
+                                  rviz_cinematographer_msgs::CameraMovement& cam_movement);
 
   /**
    * @brief Moves rviz camera to marker pose by publishing a CameraTrajectory message.
@@ -350,7 +351,7 @@ private:
    * @param[in]     smooth_velocity smoothes to velocity of the camera movement.
    */
   void markersToSplinedCamTrajectory(const MarkerList& markers,
-                                     rviz_animated_view_controller::CameraTrajectoryPtr trajectory,
+                                     rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory,
                                      double frequency,
                                      bool smooth_velocity = true);
 

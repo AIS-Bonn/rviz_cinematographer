@@ -23,7 +23,7 @@ void PoseInterpolator::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   ros::NodeHandle ph("~");
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &PoseInterpolator::camPoseCallback, this);
-  camera_placement_pub_ = ph.advertise<rviz_animated_view_controller::CameraTrajectory>("/rviz/camera_trajectory", 1);
+  camera_placement_pub_ = ph.advertise<rviz_cinematographer_msgs::CameraTrajectory>("/rviz/camera_trajectory", 1);
 
   // access standalone command line arguments
   QStringList argv = context.argv();
@@ -146,9 +146,9 @@ void PoseInterpolator::setMarkerFrames()
   server_->applyChanges();
 }
 
-rviz_animated_view_controller::CameraMovement PoseInterpolator::makeCameraMovement()
+rviz_cinematographer_msgs::CameraMovement PoseInterpolator::makeCameraMovement()
 {
-  rviz_animated_view_controller::CameraMovement cp;
+  rviz_cinematographer_msgs::CameraMovement cp;
   cp.eye.header.stamp = ros::Time::now();
   cp.eye.header.frame_id = ui_.frame_text_edit->toPlainText().toStdString();
 
@@ -207,11 +207,11 @@ void PoseInterpolator::moveCamToStart()
 void PoseInterpolator::moveCamToStart(double transition_time)
 {
   // fill Camera Trajectory msg with markers and times
-  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());
+  rviz_cinematographer_msgs::CameraTrajectoryPtr cam_trajectory(new rviz_cinematographer_msgs::CameraTrajectory());
   cam_trajectory->target_frame = ui_.frame_text_edit->toPlainText().toStdString();
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_radio_button->isChecked();
 
-  rviz_animated_view_controller::CameraMovement cp = makeCameraMovement();
+  rviz_cinematographer_msgs::CameraMovement cp = makeCameraMovement();
   cp.transition_time = ros::Duration(transition_time);
 
   if(!ui_.use_up_of_world_radio_button->isChecked())
@@ -233,11 +233,11 @@ void PoseInterpolator::moveCamToStart(double transition_time)
 void PoseInterpolator::moveCamToEnd()
 {
   // fill Camera Trajectory msg with markers and times
-  rviz_animated_view_controller::CameraTrajectoryPtr cam_trajectory(new rviz_animated_view_controller::CameraTrajectory());
+  rviz_cinematographer_msgs::CameraTrajectoryPtr cam_trajectory(new rviz_cinematographer_msgs::CameraTrajectory());
   cam_trajectory->target_frame = ui_.frame_text_edit->toPlainText().toStdString();
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_radio_button->isChecked();
 
-  rviz_animated_view_controller::CameraMovement cp = makeCameraMovement();
+  rviz_cinematographer_msgs::CameraMovement cp = makeCameraMovement();
   cp.transition_time = ros::Duration(ui_.transition_time_spin_box->value());
 
   if(!ui_.use_up_of_world_radio_button->isChecked())
