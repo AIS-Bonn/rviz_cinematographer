@@ -767,11 +767,10 @@ void AnimatedViewController::update(float dt, float ros_dt)
 //    image_pub_.publish(ros_image);
 
     if(do_record_ && !output_video_.isOpened())
-      output_video_.open("/tmp/raw_video.avi", cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), target_fps_, img_size, true);
+      if(!output_video_.open("/tmp/raw_video.avi", cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), target_fps_, img_size, true))
+        ROS_ERROR("Could not open the output video for write.");
 
-    if(!output_video_.isOpened())
-      ROS_ERROR("Could not open the output video for write.");
-    else
+    if(output_video_.isOpened())
       output_video_.write(image_rgb);
 
     //cv::imwrite("/tmp/Gray_Image" + std::to_string(counter_++) + ".jpg", image_rgb);
