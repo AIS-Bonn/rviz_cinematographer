@@ -15,7 +15,7 @@
   <depend>rqt_gui_cpp</depend>
   <depend>tf</depend>
   <depend>rviz_cinematographer_msgs</depend>
-  <depend>rviz_animated_view_controller</depend>
+  <depend>rviz_cinematographer_view_controller</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

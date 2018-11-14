@@ -119,22 +119,22 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz_animated_view_controller/Animated
+      Class: rviz_cinematographer_view_controller/Cinematographer
       Control Mode: Orbit
-      Distance: 129.648972
+      Distance: 142.064651
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Eye:
-        X: -45.8250504
-        Y: -48.2734566
-        Z: 122.405106
+        X: -70.168663
+        Y: -71.1375504
+        Z: 101.632149
       Focus:
-        X: 12.6717377
-        Y: 4.16562271
-        Z: 19.2686615
+        X: 13.7786865
+        Y: 2.81224823
+        Z: 14.0728226
       Invert Z Axis: false
       Maintain Vertical Axis: true
       Mouse Enabled: true
@@ -147,7 +147,7 @@ Visualization Manager:
         X: 0
         Y: 0
         Z: 1
-      Value: Animated (rviz_animated_view_controller)
+      Value: Cinematographer (rviz_cinematographer_view_controller)
     Saved: ~
 Window Geometry:
   "&Displays":
@@ -165,5 +165,5 @@ Window Geometry:
   Tool Properties:
     collapsed: false
   Width: 2162
-  X: 346
+  X: 342
   Y: 0

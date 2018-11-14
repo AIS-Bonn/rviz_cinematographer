@@ -91,7 +91,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz_animated_view_controller/Animated
+      Class: rviz_cinematographer_view_controller/Animated
       Control Mode: Orbit
       Distance: 9.84182
       Enable Stereo Rendering:
@@ -118,7 +118,7 @@ Visualization Manager:
         X: 0
         Y: 0
         Z: 1
-      Value: Animated (rviz_animated_view_controller)
+      Value: Animated (rviz_cinematographer_view_controller)
     Saved: ~
 Window Geometry:
   Displays:

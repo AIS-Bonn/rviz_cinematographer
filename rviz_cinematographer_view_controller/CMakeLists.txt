@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(rviz_animated_view_controller)
+project(rviz_cinematographer_view_controller)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -42,7 +42,7 @@ catkin_package(
   CATKIN_DEPENDS rviz_cinematographer_msgs)
 
 qt5_wrap_cpp(MOC_FILES
-  include/${PROJECT_NAME}/rviz_animated_view_controller.h
+  include/${PROJECT_NAME}/rviz_cinematographer_view_controller.h
 )
 
 include_directories(
@@ -55,7 +55,7 @@ include_directories(
   ${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(${PROJECT_NAME}
-  src/rviz_animated_view_controller.cpp
+        src/rviz_cinematographer_view_controller.cpp
   ${MOC_FILES}
 )
 

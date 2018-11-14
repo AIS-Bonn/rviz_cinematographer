@@ -28,7 +28,7 @@
  */
 
 
-#include "rviz_animated_view_controller/rviz_animated_view_controller.h"
+#include "rviz_cinematographer_view_controller/rviz_cinematographer_view_controller.h"
 
 #include "rviz/load_resource.h"
 #include "rviz/uniform_string_stream.h"
@@ -49,7 +49,7 @@
 #include <OGRE/OgreSceneManager.h>
 #include <OGRE/OgreCamera.h>
 
-namespace rviz_animated_view_controller
+namespace rviz_cinematographer_view_controller
 {
 using namespace rviz;
 
@@ -86,7 +86,7 @@ static inline void vectorOgreToMsg(const Ogre::Vector3 &o, geometry_msgs::Vector
 // -----------------------------------------------------------------------------
 
 
-AnimatedViewController::AnimatedViewController()
+CinematographerViewController::CinematographerViewController()
   : nh_("")
     , animate_(false)
     , dragging_( false )
@@ -131,7 +131,7 @@ AnimatedViewController::AnimatedViewController()
                                                           "Topic for CameraTrajectory messages", this, SLOT(updateTopics()));
 }
 
-AnimatedViewController::~AnimatedViewController()
+CinematographerViewController::~CinematographerViewController()
 {
   delete focal_shape_;
   context_->getSceneManager()->destroySceneNode( attached_scene_node_ );
@@ -139,14 +139,14 @@ AnimatedViewController::~AnimatedViewController()
   image_pub_.shutdown();
 }
 
-void AnimatedViewController::updateTopics()
+void CinematographerViewController::updateTopics()
 {
   trajectory_subscriber_ = nh_.subscribe<rviz_cinematographer_msgs::CameraTrajectory>
                               (camera_trajectory_topic_property_->getStdString(), 1,
-                              boost::bind(&AnimatedViewController::cameraTrajectoryCallback, this, _1));
+                              boost::bind(&CinematographerViewController::cameraTrajectoryCallback, this, _1));
 //  movement_subscriber_  = nh_.subscribe<rviz_cinematographer_msgs::CameraMovement>
 //                              (camera_movement_topic_property_->getStdString(), 1,
-//                              boost::bind(&AnimatedViewController::cameraMovementCallback, this, _1));
+//                              boost::bind(&CinematographerViewController::cameraMovementCallback, this, _1));
   placement_publisher_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
   odometry_pub_ = nh_.advertise<nav_msgs::Odometry>("/rviz/trajectory_odometry", 1);
 
@@ -154,7 +154,7 @@ void AnimatedViewController::updateTopics()
   image_pub_ = it.advertise("view_controller/image", 1);
 }
 
-void AnimatedViewController::onInitialize()
+void CinematographerViewController::onInitialize()
 {
   attached_frame_property_->setFrameManager( context_->getFrameManager() );
   attached_scene_node_ = context_->getSceneManager()->getRootSceneNode()->createChildSceneNode();
@@ -172,7 +172,7 @@ void AnimatedViewController::onInitialize()
   cam_movements_buffer_ = BufferCamMovements(buffer_capacity);
 }
 
-void AnimatedViewController::onActivate()
+void CinematographerViewController::onActivate()
 {
   updateAttachedSceneNode();
 
@@ -191,7 +191,7 @@ void AnimatedViewController::onActivate()
 
 }
 
-void AnimatedViewController::connectPositionProperties()
+void CinematographerViewController::connectPositionProperties()
 {
   connect( distance_property_,    SIGNAL( changed() ), this, SLOT( onDistancePropertyChanged() ), Qt::UniqueConnection);
   connect( eye_point_property_,   SIGNAL( changed() ), this, SLOT( onEyePropertyChanged() ),      Qt::UniqueConnection);
@@ -199,7 +199,7 @@ void AnimatedViewController::connectPositionProperties()
   connect( up_vector_property_,   SIGNAL( changed() ), this, SLOT( onUpPropertyChanged() ),       Qt::UniqueConnection);
 }
 
-void AnimatedViewController::disconnectPositionProperties()
+void CinematographerViewController::disconnectPositionProperties()
 {
   disconnect( distance_property_,    SIGNAL( changed() ), this, SLOT( onDistancePropertyChanged() ));
   disconnect( eye_point_property_,   SIGNAL( changed() ), this, SLOT( onEyePropertyChanged() ));
@@ -207,17 +207,17 @@ void AnimatedViewController::disconnectPositionProperties()
   disconnect( up_vector_property_,   SIGNAL( changed() ), this, SLOT( onUpPropertyChanged() ));
 }
 
-void AnimatedViewController::onEyePropertyChanged()
+void CinematographerViewController::onEyePropertyChanged()
 {
   distance_property_->setFloat(getDistanceFromCameraToFocalPoint());
 }
 
-void AnimatedViewController::onFocusPropertyChanged()
+void CinematographerViewController::onFocusPropertyChanged()
 {
   distance_property_->setFloat(getDistanceFromCameraToFocalPoint());
 }
 
-void AnimatedViewController::onDistancePropertyChanged()
+void CinematographerViewController::onDistancePropertyChanged()
 {
   disconnectPositionProperties();
   Ogre::Vector3 new_eye_position = focus_point_property_->getVector() + distance_property_->getFloat()* camera_->getOrientation().zAxis();
@@ -225,7 +225,7 @@ void AnimatedViewController::onDistancePropertyChanged()
   connectPositionProperties();
 }
 
-void AnimatedViewController::onUpPropertyChanged()
+void CinematographerViewController::onUpPropertyChanged()
 {
   disconnect( up_vector_property_,   SIGNAL( changed() ), this, SLOT( onUpPropertyChanged() ));
   if(fixed_up_property_->getBool()){
@@ -242,7 +242,7 @@ void AnimatedViewController::onUpPropertyChanged()
   connect( up_vector_property_,   SIGNAL( changed() ), this, SLOT( onUpPropertyChanged() ),       Qt::UniqueConnection);
 }
 
-void AnimatedViewController::updateAttachedFrame()
+void CinematographerViewController::updateAttachedFrame()
 {
   Ogre::Vector3 old_position = attached_scene_node_->getPosition();
   Ogre::Quaternion old_orientation = attached_scene_node_->getOrientation();
@@ -252,7 +252,7 @@ void AnimatedViewController::updateAttachedFrame()
   onAttachedFrameChanged( old_position, old_orientation );
 }
 
-void AnimatedViewController::updateAttachedSceneNode()
+void CinematographerViewController::updateAttachedSceneNode()
 {
   // TODO: this can be wildly refactored
   Ogre::Vector3 new_reference_position;
@@ -271,7 +271,7 @@ void AnimatedViewController::updateAttachedSceneNode()
   if(queue) context_->queueRender();
 }
 
-void AnimatedViewController::onAttachedFrameChanged(const Ogre::Vector3& old_reference_position, const Ogre::Quaternion& old_reference_orientation)
+void CinematographerViewController::onAttachedFrameChanged(const Ogre::Vector3& old_reference_position, const Ogre::Quaternion& old_reference_orientation)
 {
   Ogre::Vector3 fixed_frame_focus_position = old_reference_orientation*focus_point_property_->getVector() + old_reference_position;
   Ogre::Vector3 fixed_frame_eye_position = old_reference_orientation*eye_point_property_->getVector() + old_reference_position;
@@ -291,12 +291,12 @@ void AnimatedViewController::onAttachedFrameChanged(const Ogre::Vector3& old_ref
   camera_->setDirection( reference_orientation_ * (focus_point_property_->getVector() - eye_point_property_->getVector()));
 }
 
-float AnimatedViewController::getDistanceFromCameraToFocalPoint()
+float CinematographerViewController::getDistanceFromCameraToFocalPoint()
 {
     return (eye_point_property_->getVector() - focus_point_property_->getVector()).length();
 }
 
-void AnimatedViewController::reset()
+void CinematographerViewController::reset()
 {
   eye_point_property_->setVector(Ogre::Vector3(5, 5, 10));
     focus_point_property_->setVector(Ogre::Vector3::ZERO);
@@ -315,7 +315,7 @@ void AnimatedViewController::reset()
   setPropertiesFromCamera( camera_ );
 }
 
-void AnimatedViewController::handleMouseEvent(ViewportMouseEvent& event)
+void CinematographerViewController::handleMouseEvent(ViewportMouseEvent& event)
 {
   if( !mouse_enabled_property_->getBool() )
   {
@@ -438,7 +438,7 @@ void AnimatedViewController::handleMouseEvent(ViewportMouseEvent& event)
   }
 }
 
-//void AnimatedViewController::setUpVectorPropertyModeDependent( const Ogre::Vector3 &vector )
+//void CinematographerViewController::setUpVectorPropertyModeDependent( const Ogre::Vector3 &vector )
 //{
 //  if(fixed_up_property_->getBool())
 //  {
@@ -450,7 +450,7 @@ void AnimatedViewController::handleMouseEvent(ViewportMouseEvent& event)
 //}
 
 
-void AnimatedViewController::setPropertiesFromCamera( Ogre::Camera* source_camera )
+void CinematographerViewController::setPropertiesFromCamera( Ogre::Camera* source_camera )
 {
   disconnectPositionProperties();
   Ogre::Vector3 direction = source_camera->getOrientation() * Ogre::Vector3::NEGATIVE_UNIT_Z;
@@ -465,7 +465,7 @@ void AnimatedViewController::setPropertiesFromCamera( Ogre::Camera* source_camer
   connectPositionProperties();
 }
 
-void AnimatedViewController::mimic( ViewController* source_view )
+void CinematographerViewController::mimic( ViewController* source_view )
 {
   QVariant target_frame = source_view->subProp( "Target Frame" )->getValue();
     if( target_frame.isValid() )
@@ -493,9 +493,9 @@ void AnimatedViewController::mimic( ViewController* source_view )
     updateCamera();
 }
 
-void AnimatedViewController::transitionFrom( ViewController* previous_view )
+void CinematographerViewController::transitionFrom( ViewController* previous_view )
 {
-  AnimatedViewController* fvc = dynamic_cast<AnimatedViewController*>(previous_view);
+  CinematographerViewController* fvc = dynamic_cast<CinematographerViewController*>(previous_view);
   if(fvc)
   {
     Ogre::Vector3 new_eye =   eye_point_property_->getVector();
@@ -513,7 +513,7 @@ void AnimatedViewController::transitionFrom( ViewController* previous_view )
   }
 }
 
-void AnimatedViewController::beginNewTransition(const Ogre::Vector3 &eye,
+void CinematographerViewController::beginNewTransition(const Ogre::Vector3 &eye,
                                                 const Ogre::Vector3 &focus,
                                                 const Ogre::Vector3 &up,
                                                 ros::Duration transition_time,
@@ -543,13 +543,13 @@ void AnimatedViewController::beginNewTransition(const Ogre::Vector3 &eye,
   animate_ = true;
 }
 
-void AnimatedViewController::cancelTransition()
+void CinematographerViewController::cancelTransition()
 {
   animate_ = false;
   cam_movements_buffer_.clear();
 }
 
-void AnimatedViewController::cameraTrajectoryCallback(const rviz_cinematographer_msgs::CameraTrajectoryConstPtr &ct_ptr)
+void CinematographerViewController::cameraTrajectoryCallback(const rviz_cinematographer_msgs::CameraTrajectoryConstPtr &ct_ptr)
 {
   rviz_cinematographer_msgs::CameraTrajectory ct = *ct_ptr;
 
@@ -586,7 +586,7 @@ void AnimatedViewController::cameraTrajectoryCallback(const rviz_cinematographer
   }
 }
 
-void AnimatedViewController::transformCameraMovementToAttachedFrame(rviz_cinematographer_msgs::CameraMovement &cm)
+void CinematographerViewController::transformCameraMovementToAttachedFrame(rviz_cinematographer_msgs::CameraMovement &cm)
 {
   Ogre::Vector3 position_fixed_eye, position_fixed_focus, position_fixed_up; // position_fixed_attached;
   Ogre::Quaternion rotation_fixed_eye, rotation_fixed_focus, rotation_fixed_up; // rotation_fixed_attached;
@@ -615,7 +615,7 @@ void AnimatedViewController::transformCameraMovementToAttachedFrame(rviz_cinemat
 
 
 // We must assume that this point is in the Rviz Fixed frame since it came from Rviz...
-void AnimatedViewController::lookAt( const Ogre::Vector3& point )
+void CinematographerViewController::lookAt( const Ogre::Vector3& point )
 {
   if( !mouse_enabled_property_->getBool() ) return;
 
@@ -631,7 +631,7 @@ void AnimatedViewController::lookAt( const Ogre::Vector3& point )
   //  moveCameraWithFocusTo(point);
 }
 
-void AnimatedViewController::orbitCameraTo( const Ogre::Vector3& point)
+void CinematographerViewController::orbitCameraTo( const Ogre::Vector3& point)
 {
   beginNewTransition(point,
                      focus_point_property_->getVector(),
@@ -639,7 +639,7 @@ void AnimatedViewController::orbitCameraTo( const Ogre::Vector3& point)
                      ros::Duration(default_transition_time_property_->getFloat()));
 }
 
-void AnimatedViewController::moveEyeWithFocusTo( const Ogre::Vector3& point)
+void CinematographerViewController::moveEyeWithFocusTo( const Ogre::Vector3& point)
 {
   beginNewTransition(point,
                      focus_point_property_->getVector() + (point - eye_point_property_->getVector()),
@@ -647,7 +647,7 @@ void AnimatedViewController::moveEyeWithFocusTo( const Ogre::Vector3& point)
                      ros::Duration(default_transition_time_property_->getFloat()));
 }
 
-void AnimatedViewController::publishOdometry(const Ogre::Vector3& position,
+void CinematographerViewController::publishOdometry(const Ogre::Vector3& position,
                                              const Ogre::Vector3& velocity)
 {
   nav_msgs::Odometry odometry;
@@ -670,7 +670,7 @@ void AnimatedViewController::publishOdometry(const Ogre::Vector3& position,
   odometry_pub_.publish(odometry);
 }
 
-void AnimatedViewController::update(float dt, float ros_dt)
+void CinematographerViewController::update(float dt, float ros_dt)
 {
   updateAttachedSceneNode();
 
@@ -805,7 +805,7 @@ void AnimatedViewController::update(float dt, float ros_dt)
   updateCamera();
 }
 
-void AnimatedViewController::updateCamera()
+void CinematographerViewController::updateCamera()
 {
   camera_->setPosition( eye_point_property_->getVector() );
   camera_->setFixedYawAxis(fixed_up_property_->getBool(), reference_orientation_ * up_vector_property_->getVector());
@@ -814,7 +814,7 @@ void AnimatedViewController::updateCamera()
   focal_shape_->setPosition( focus_point_property_->getVector() );
 }
 
-void AnimatedViewController::publishCameraPose()
+void CinematographerViewController::publishCameraPose()
 {
   geometry_msgs::Pose cam_pose;
   cam_pose.position.x = camera_->getPosition().x;
@@ -827,7 +827,7 @@ void AnimatedViewController::publishCameraPose()
   placement_publisher_.publish(cam_pose);
 }
 
-void AnimatedViewController::yaw_pitch_roll( float yaw, float pitch, float roll )
+void CinematographerViewController::yaw_pitch_roll( float yaw, float pitch, float roll )
 {
   Ogre::Quaternion old_camera_orientation = camera_->getOrientation();
   Ogre::Radian old_pitch = old_camera_orientation.getPitch(false);// - Ogre::Radian(Ogre::Math::HALF_PI);
@@ -869,19 +869,19 @@ void AnimatedViewController::yaw_pitch_roll( float yaw, float pitch, float roll 
   }
 }
 
-Ogre::Quaternion AnimatedViewController::getOrientation()  // Do we need this?
+Ogre::Quaternion CinematographerViewController::getOrientation()  // Do we need this?
 {
   return camera_->getOrientation();
 }
 
-void AnimatedViewController::move_focus_and_eye( float x, float y, float z )
+void CinematographerViewController::move_focus_and_eye( float x, float y, float z )
 {
   Ogre::Vector3 translate( x, y, z );
   eye_point_property_->add( getOrientation() * translate );
   focus_point_property_->add( getOrientation() * translate );
 }
 
-void AnimatedViewController::move_eye( float x, float y, float z )
+void CinematographerViewController::move_eye( float x, float y, float z )
 {
   Ogre::Vector3 translate( x, y, z );
   // Only update the camera position if it won't "pass through" the origin
@@ -896,4 +896,4 @@ void AnimatedViewController::move_eye( float x, float y, float z )
 } // end namespace rviz
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS( rviz_animated_view_controller::AnimatedViewController, rviz::ViewController )
+PLUGINLIB_EXPORT_CLASS( rviz_cinematographer_view_controller::CinematographerViewController, rviz::ViewController )

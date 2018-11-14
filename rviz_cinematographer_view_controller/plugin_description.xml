@@ -1,0 +1,7 @@
+<library path="librviz_cinematographer_view_controller">
+  <class name="rviz_cinematographer_view_controller/Cinematographer" type="rviz_cinematographer_view_controller::CinematographerViewController" base_class_type="rviz::ViewController">
+    <description>
+      A view controller for Rviz that allows message API control, smooth view transitions, and switchable Orbit/FPS interaction.
+    </description>
+  </class>
+</library>

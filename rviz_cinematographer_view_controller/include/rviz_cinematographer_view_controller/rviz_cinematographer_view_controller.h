@@ -29,8 +29,8 @@
  * Author: Adam Leeper
  */
 
-#ifndef RVIZ_ANIMATED_VIEW_CONTROLLER_H
-#define RVIZ_ANIMATED_VIEW_CONTROLLER_H
+#ifndef RVIZ_CINEMATOGRAPHER_VIEW_CONTROLLER_H
+#define RVIZ_CINEMATOGRAPHER_VIEW_CONTROLLER_H
 
 #include "rviz/view_controller.h"
 #include "rviz/view_manager.h"
@@ -67,11 +67,11 @@ namespace rviz {
   class RosTopicProperty;
 }
 
-namespace rviz_animated_view_controller
+namespace rviz_cinematographer_view_controller
 {
 
 /** @brief An un-constrained "flying" camera, specified by an eye point, focus point, and up vector. */
-class AnimatedViewController : public rviz::ViewController
+class CinematographerViewController : public rviz::ViewController
 {
 Q_OBJECT
 public:
@@ -104,8 +104,8 @@ public:
   enum { TRANSITION_LINEAR = 0,
          TRANSITION_SPHERICAL};
 
-  AnimatedViewController();
-  virtual ~AnimatedViewController();
+  CinematographerViewController();
+  virtual ~CinematographerViewController();
 
   /** @brief Do subclass-specific initialization.  Called by
    * ViewController::initialize after context_ and camera_ are set.
@@ -295,6 +295,6 @@ protected:    //members
   int recorded_frames_counter_;
 };
 
-}  // namespace rviz_animated_view_controller
+}  // namespace rviz_cinematographer_view_controller
 
-#endif // RVIZ_ANIMATED_VIEW_CONTROLLER_H
+#endif // RVIZ_CINEMATOGRAPHER_VIEW_CONTROLLER_H
