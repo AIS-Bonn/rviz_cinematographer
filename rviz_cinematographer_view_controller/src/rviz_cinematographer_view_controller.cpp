@@ -27,27 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #include "rviz_cinematographer_view_controller/rviz_cinematographer_view_controller.h"
-
-#include "rviz/load_resource.h"
-#include "rviz/uniform_string_stream.h"
-#include "rviz/display_context.h"
-#include "rviz/viewport_mouse_event.h"
-#include "rviz/frame_manager.h"
-#include "rviz/geometry.h"
-#include "rviz/ogre_helpers/shape.h"
-#include "rviz/properties/float_property.h"
-#include "rviz/properties/vector_property.h"
-#include "rviz/properties/bool_property.h"
-#include "rviz/properties/tf_frame_property.h"
-#include "rviz/properties/editable_enum_property.h"
-#include "rviz/properties/ros_topic_property.h"
-
-#include <OGRE/OgreViewport.h>
-#include <OGRE/OgreSceneNode.h>
-#include <OGRE/OgreSceneManager.h>
-#include <OGRE/OgreCamera.h>
 
 namespace rviz_cinematographer_view_controller
 {
@@ -58,11 +38,8 @@ static const std::string MODE_ORBIT = "Orbit";
 static const std::string MODE_FPS = "FPS";
 
 // Limits to prevent orbit controller singularity, but not currently used.
-//static const Ogre::Radian PITCH_LIMIT_LOW  = Ogre::Radian(-Ogre::Math::HALF_PI + 0.02);
-//static const Ogre::Radian PITCH_LIMIT_HIGH = Ogre::Radian( Ogre::Math::HALF_PI - 0.02);
-static const Ogre::Radian PITCH_LIMIT_LOW  = Ogre::Radian( 0.02 );
-static const Ogre::Radian PITCH_LIMIT_HIGH = Ogre::Radian( Ogre::Math::PI - 0.02);
-
+static const Ogre::Radian PITCH_LIMIT_LOW  = Ogre::Radian(0.02);
+static const Ogre::Radian PITCH_LIMIT_HIGH = Ogre::Radian(Ogre::Math::PI - 0.02);
 
 // Some convenience functions for Ogre / geometry_msgs conversions
 static inline Ogre::Vector3 vectorFromMsg(const geometry_msgs::Point &m) { return Ogre::Vector3(m.x, m.y, m.z); }
@@ -73,7 +50,6 @@ static inline geometry_msgs::Point pointOgreToMsg(const Ogre::Vector3 &o)
   m.x = o.x; m.y = o.y; m.z = o.z;
   return m;
 }
-static inline void pointOgreToMsg(const Ogre::Vector3 &o, geometry_msgs::Point &m)  { m.x = o.x; m.y = o.y; m.z = o.z; }
 
 static inline geometry_msgs::Vector3 vectorOgreToMsg(const Ogre::Vector3 &o)
 {
@@ -81,94 +57,73 @@ static inline geometry_msgs::Vector3 vectorOgreToMsg(const Ogre::Vector3 &o)
   m.x = o.x; m.y = o.y; m.z = o.z;
   return m;
 }
-static inline void vectorOgreToMsg(const Ogre::Vector3 &o, geometry_msgs::Vector3 &m) { m.x = o.x; m.y = o.y; m.z = o.z; }
 
 // -----------------------------------------------------------------------------
 
 
 CinematographerViewController::CinematographerViewController()
-  : nh_("")
-    , animate_(false)
-    , dragging_( false )
-    , do_record_(false)
-    , target_fps_(60)
-    , recorded_frames_counter_(0)
+: nh_("")
+  , animate_(false)
+  , dragging_(false)
+  , do_record_(false)
+  , target_fps_(60)
+  , recorded_frames_counter_(0)
 {
-  interaction_disabled_cursor_ = makeIconCursor( "package://rviz/icons/forbidden.svg" );
+  interaction_disabled_cursor_ = makeIconCursor("package://rviz/icons/forbidden.svg");
 
-  mouse_enabled_property_ = new BoolProperty("Mouse Enabled", true,
-                                   "Enables mouse control of the camera.",
-                                   this);
-  interaction_mode_property_ = new EditableEnumProperty("Control Mode", QString::fromStdString(MODE_ORBIT),
-                                   "Select the style of mouse interaction.",
-                                   this);
+  mouse_enabled_property_ = new BoolProperty("Mouse Enabled", true, "Enables mouse control of the camera.", this);
+
+  interaction_mode_property_ = new EditableEnumProperty("Control Mode", QString::fromStdString(MODE_ORBIT), "Select the style of mouse interaction.", this);
   interaction_mode_property_->addOptionStd(MODE_ORBIT);
   interaction_mode_property_->addOptionStd(MODE_FPS);
   interaction_mode_property_->setStdString(MODE_ORBIT);
 
-  fixed_up_property_ = new BoolProperty( "Maintain Vertical Axis", true,
-                                         "If enabled, the camera is not allowed to roll side-to-side.",
-                                          this);
-  attached_frame_property_ = new TfFrameProperty("Target Frame",
-                                                 TfFrameProperty::FIXED_FRAME_STRING,
-                                                 "TF frame the camera is attached to.",
-                                                 this, NULL, true );
-  eye_point_property_    = new VectorProperty( "Eye", Ogre::Vector3( 5, 5, 10 ),
-                                              "Position of the camera.", this );
-  focus_point_property_ = new VectorProperty( "Focus", Ogre::Vector3::ZERO,
-                                              "Position of the focus/orbit point.", this );
-  up_vector_property_ = new VectorProperty( "Up", Ogre::Vector3::UNIT_Z,
-                                            "The vector which maps to \"up\" in the camera image plane.", this );
-  distance_property_    = new FloatProperty( "Distance", getDistanceFromCameraToFocalPoint(),
-                                             "The distance between the camera position and the focus point.",
-                                             this );
-  distance_property_->setMin( 0.01 );
-  default_transition_time_property_ = new FloatProperty( "Transition Time", 0.5,
-                                                         "The default time to use for camera transitions.",
-                                                         this );
-  camera_trajectory_topic_property_ = new RosTopicProperty("Trajectory Topic", "/rviz/camera_trajectory",
-                                                          QString::fromStdString(ros::message_traits::datatype<rviz_cinematographer_msgs::CameraTrajectory>() ),
-                                                          "Topic for CameraTrajectory messages", this, SLOT(updateTopics()));
+  fixed_up_property_        = new BoolProperty("Maintain Vertical Axis", true, "If enabled, the camera is not allowed to roll side-to-side.", this);
+  attached_frame_property_  = new TfFrameProperty("Target Frame", TfFrameProperty::FIXED_FRAME_STRING, "TF frame the camera is attached to.", this, NULL, true);
+  eye_point_property_       = new VectorProperty("Eye", Ogre::Vector3( 5, 5, 10 ), "Position of the camera.", this);
+  focus_point_property_     = new VectorProperty("Focus", Ogre::Vector3::ZERO, "Position of the focus/orbit point.", this);
+  up_vector_property_       = new VectorProperty("Up", Ogre::Vector3::UNIT_Z, "The vector which maps to \"up\" in the camera image plane.", this);
+  distance_property_        = new FloatProperty("Distance", getDistanceFromCameraToFocalPoint(), "The distance between the camera position and the focus point.", this);
+  distance_property_->setMin(0.01);
+
+  default_transition_time_property_ = new FloatProperty("Transition Time", 0.5, "The default time to use for camera transitions.", this);
+  camera_trajectory_topic_property_ = new RosTopicProperty("Trajectory Topic", "/rviz/camera_trajectory", QString::fromStdString(ros::message_traits::datatype<rviz_cinematographer_msgs::CameraTrajectory>()), "Topic for CameraTrajectory messages", this, SLOT(updateTopics()));
+
+  // TODO: latch?
+  placement_pub_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
+  odometry_pub_ = nh_.advertise<nav_msgs::Odometry>("/rviz/trajectory_odometry", 1);
+
+  image_transport::ImageTransport it(nh_);
+  image_pub_ = it.advertise("/rviz/view_image", 1);
 }
 
 CinematographerViewController::~CinematographerViewController()
 {
-  delete focal_shape_;
-  context_->getSceneManager()->destroySceneNode( attached_scene_node_ );
-  odometry_pub_.shutdown();
-  image_pub_.shutdown();
+  context_->getSceneManager()->destroySceneNode(attached_scene_node_);
 }
 
 void CinematographerViewController::updateTopics()
 {
-  trajectory_subscriber_ = nh_.subscribe<rviz_cinematographer_msgs::CameraTrajectory>
-                              (camera_trajectory_topic_property_->getStdString(), 1,
-                              boost::bind(&CinematographerViewController::cameraTrajectoryCallback, this, _1));
-//  movement_subscriber_  = nh_.subscribe<rviz_cinematographer_msgs::CameraMovement>
-//                              (camera_movement_topic_property_->getStdString(), 1,
-//                              boost::bind(&CinematographerViewController::cameraMovementCallback, this, _1));
-  placement_publisher_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
-  odometry_pub_ = nh_.advertise<nav_msgs::Odometry>("/rviz/trajectory_odometry", 1);
-
-  image_transport::ImageTransport it(nh_);
-  image_pub_ = it.advertise("view_controller/image", 1);
+  trajectory_sub_ = nh_.subscribe<rviz_cinematographer_msgs::CameraTrajectory>
+                        (camera_trajectory_topic_property_->getStdString(), 1,
+                         boost::bind(&CinematographerViewController::cameraTrajectoryCallback, this, _1));
 }
 
 void CinematographerViewController::onInitialize()
 {
-  attached_frame_property_->setFrameManager( context_->getFrameManager() );
-  attached_scene_node_ = context_->getSceneManager()->getRootSceneNode()->createChildSceneNode();
+  attached_frame_property_->setFrameManager(context_->getFrameManager());
+
   camera_->detachFromParent();
-  attached_scene_node_->attachObject( camera_ );
+  attached_scene_node_ = context_->getSceneManager()->getRootSceneNode()->createChildSceneNode();
+  attached_scene_node_->attachObject(camera_);
+  camera_->setProjectionType(Ogre::PT_PERSPECTIVE);
 
-  camera_->setProjectionType( Ogre::PT_PERSPECTIVE );
-
-  focal_shape_ = new Shape(Shape::Sphere, context_->getSceneManager(), attached_scene_node_);
+  focal_shape_ = std::make_shared<rviz::Shape>(Shape::Sphere, context_->getSceneManager(), attached_scene_node_);
   focal_shape_->setScale(Ogre::Vector3(0.05f, 0.05f, 0.01f));
   focal_shape_->setColor(1.0f, 1.0f, 0.0f, 0.5f);
   focal_shape_->getRootNode()->setVisible(false);
 
-  unsigned long buffer_capacity = 100;
+  const unsigned long buffer_capacity = 100;
   cam_movements_buffer_ = BufferCamMovements(buffer_capacity);
 }
 
@@ -182,13 +137,11 @@ void CinematographerViewController::onActivate()
   // property so that the view does not jump.  Therefore we make the
   // signal/slot connection from the property here in onActivate()
   // instead of in the constructor.
-  connect( attached_frame_property_, SIGNAL( changed() ), this, SLOT( updateAttachedFrame() ));
-  connect( fixed_up_property_,       SIGNAL( changed() ), this, SLOT( onUpPropertyChanged() ));
+  connect(attached_frame_property_, SIGNAL(changed()), this, SLOT(updateAttachedFrame()));
+  connect(fixed_up_property_,       SIGNAL(changed()), this, SLOT(onUpPropertyChanged()));
   connectPositionProperties();
 
-  // Only do this once activated!
   updateTopics();
-
 }
 
 void CinematographerViewController::connectPositionProperties()
@@ -824,7 +777,7 @@ void CinematographerViewController::publishCameraPose()
   cam_pose.orientation.x = camera_->getOrientation().x;
   cam_pose.orientation.y = camera_->getOrientation().y;
   cam_pose.orientation.z = camera_->getOrientation().z;
-  placement_publisher_.publish(cam_pose);
+  placement_pub_.publish(cam_pose);
 }
 
 void CinematographerViewController::yaw_pitch_roll( float yaw, float pitch, float roll )

@@ -26,7 +26,8 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Adam Leeper
+ * Original Author: Adam Leeper
+ * Adapted by Jan Razlaw
  */
 
 #ifndef RVIZ_CINEMATOGRAPHER_VIEW_CONTROLLER_H
@@ -35,6 +36,19 @@
 #include "rviz/view_controller.h"
 #include "rviz/view_manager.h"
 #include "rviz/render_panel.h"
+#include "rviz/load_resource.h"
+#include "rviz/uniform_string_stream.h"
+#include "rviz/display_context.h"
+#include "rviz/viewport_mouse_event.h"
+#include "rviz/frame_manager.h"
+#include "rviz/geometry.h"
+#include "rviz/ogre_helpers/shape.h"
+#include "rviz/properties/float_property.h"
+#include "rviz/properties/vector_property.h"
+#include "rviz/properties/bool_property.h"
+#include "rviz/properties/tf_frame_property.h"
+#include "rviz/properties/editable_enum_property.h"
+#include "rviz/properties/ros_topic_property.h"
 
 #include <ros/subscriber.h>
 #include <ros/ros.h>
@@ -47,6 +61,10 @@
 #include <OGRE/OgreVector3.h>
 #include <OGRE/OgreQuaternion.h>
 #include <OGRE/OgreRenderWindow.h>
+#include <OGRE/OgreViewport.h>
+#include <OGRE/OgreSceneNode.h>
+#include <OGRE/OgreSceneManager.h>
+#include <OGRE/OgreCamera.h>
 
 #include <boost/circular_buffer.hpp>
 
@@ -61,7 +79,6 @@ namespace rviz {
   class BoolProperty;
   class FloatProperty;
   class VectorProperty;
-  class QuaternionProperty;
   class TfFrameProperty;
   class EditableEnumProperty;
   class RosTopicProperty;
@@ -100,9 +117,6 @@ public:
     uint8_t interpolation_speed;
   };
   typedef boost::circular_buffer<OgreCameraMovement> BufferCamMovements;
-
-  enum { TRANSITION_LINEAR = 0,
-         TRANSITION_SPHERICAL};
 
   CinematographerViewController();
   virtual ~CinematographerViewController();
@@ -189,6 +203,9 @@ protected Q_SLOTS:
   /** @brief Called when up vector property is changed (does nothing for now...). */
   virtual void onUpPropertyChanged();
 
+  /** @brief Called when camera trajectory topic is changed; updates subscriber to camera trajectories. */
+  void updateTopics();
+
 protected:  //methods
 
   /** @brief Called at 30Hz by ViewManager::update() while this view
@@ -240,8 +257,7 @@ protected:  //methods
 
   Ogre::Quaternion getOrientation(); ///< Return a Quaternion
 
-protected Q_SLOTS:
-  void updateTopics();
+
 
 
 protected:    //members
@@ -274,21 +290,21 @@ protected:    //members
   ros::WallTime transition_start_time_;
   BufferCamMovements cam_movements_buffer_;
 
-  rviz::Shape* focal_shape_;    ///< A small ellipsoid to show the focus point.
+  std::shared_ptr<rviz::Shape> focal_shape_;    ///< A small ellipsoid to show the focus point.
   bool dragging_;         ///< A flag indicating the dragging state of the mouse.
 
   QCursor interaction_disabled_cursor_;         ///< A cursor for indicating mouse interaction is disabled.
   
-  ros::Subscriber trajectory_subscriber_;
-  ros::Publisher placement_publisher_;
+  ros::Subscriber trajectory_sub_;
 
+  ros::Publisher placement_pub_;
   ros::Publisher odometry_pub_;
+  image_transport::Publisher image_pub_;
 
   int counter_ = 0;
 
   cv::VideoWriter output_video_;
 
-  image_transport::Publisher image_pub_;
 
   bool do_record_;
   int target_fps_;
