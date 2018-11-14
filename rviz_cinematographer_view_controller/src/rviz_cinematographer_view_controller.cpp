@@ -65,7 +65,9 @@ CinematographerViewController::CinematographerViewController()
 : nh_("")
   , animate_(false)
   , dragging_(false)
+  , path_to_output_("")
   , do_record_(false)
+  , codec_(cv::VideoWriter::fourcc('D', 'I', 'V', 'X'))
   , target_fps_(60)
   , recorded_frames_counter_(0)
 {
@@ -95,11 +97,31 @@ CinematographerViewController::CinematographerViewController()
 
   image_transport::ImageTransport it(nh_);
   image_pub_ = it.advertise("/rviz/view_image", 1);
+
+  record_service_ = nh_.advertiseService("/rviz/record", &CinematographerViewController::setRecord, this);
 }
 
 CinematographerViewController::~CinematographerViewController()
 {
   context_->getSceneManager()->destroySceneNode(attached_scene_node_);
+}
+
+bool CinematographerViewController::setRecord(rviz_cinematographer_msgs::Record::Request  &req,
+                                              rviz_cinematographer_msgs::Record::Response &res)
+{
+  ROS_INFO("Got service call");
+
+  do_record_ = req.do_record > 0;
+  path_to_output_ = req.path_to_output;
+
+  if(req.compress > 0)
+    codec_ = cv::VideoWriter::fourcc('D', 'I', 'V', 'X');
+  else
+    codec_ = cv::VideoWriter::fourcc('F', 'F', 'V', '1');
+
+  target_fps_ = std::max(1, std::min(120, (int)req.frames_per_second));
+
+  return true;
 }
 
 void CinematographerViewController::updateTopics()
@@ -671,8 +693,8 @@ void CinematographerViewController::update(float dt, float ros_dt)
 //    image_pub_.publish(ros_image);
 
     if(do_record_ && !output_video_.isOpened())
-      if(!output_video_.open("/tmp/raw_video.avi", cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), target_fps_, img_size, true))
-        ROS_ERROR("Could not open the output video for write.");
+      if(!output_video_.open(path_to_output_, codec_, target_fps_, img_size, true))
+        ROS_ERROR_STREAM("Could not open the output video to write file in : " << path_to_output_);
 
     if(output_video_.isOpened())
       output_video_.write(image_rgb);

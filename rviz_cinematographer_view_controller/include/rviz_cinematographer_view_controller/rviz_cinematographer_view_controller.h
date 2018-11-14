@@ -55,6 +55,7 @@
 
 #include <rviz_cinematographer_msgs/CameraMovement.h>
 #include <rviz_cinematographer_msgs/CameraTrajectory.h>
+#include <rviz_cinematographer_msgs/Record.h>
 
 #include <nav_msgs/Odometry.h>
 
@@ -294,6 +295,10 @@ protected:  //methods
   /** @brief Publishes the camera pose. */
   void publishCameraPose();
 
+  /** @brief Sets parameters requested with service call. */
+  bool setRecord(rviz_cinematographer_msgs::Record::Request  &req,
+                 rviz_cinematographer_msgs::Record::Response &res);
+
   Ogre::Vector3 fixedFrameToAttachedLocal(const Ogre::Vector3 &v) { return reference_orientation_.Inverse() * (v - reference_position_); }
   Ogre::Vector3 attachedLocalToFixedFrame(const Ogre::Vector3 &v) { return reference_position_ + (reference_orientation_ * v); }
 
@@ -338,12 +343,14 @@ protected:    //members
   ros::Publisher placement_pub_;
   ros::Publisher odometry_pub_;
   image_transport::Publisher image_pub_;
+  ros::ServiceServer record_service_;
 
   int counter_ = 0;
 
   cv::VideoWriter output_video_;
-
+  std::string path_to_output_;
   bool do_record_;
+  int codec_;
   int target_fps_;
   int recorded_frames_counter_;
 };
