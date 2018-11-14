@@ -121,74 +121,92 @@ public:
   CinematographerViewController();
   virtual ~CinematographerViewController();
 
-  /** @brief Do subclass-specific initialization.  Called by
+  /** @brief Do subclass-specific initialization. Called by
    * ViewController::initialize after context_ and camera_ are set.
    *
-   * This version sets up the attached_scene_node, focus shape, and subscribers. */
-  virtual void onInitialize();
+   * This version sets up the attached_scene_node, focus shape, and camera movements buffer. */
+  void onInitialize() override;
 
-  /** @brief called by activate().
+  /** @brief Called by activate(). */
+  void onActivate() override;
+
+  /** @brief Applies a translation to the focus and eye points.
    *
-   * This version calls updateAttachedSceneNode(). */
-  virtual void onActivate();
+   * @param[in] x   x-part of translation.
+   * @param[in] y   y-part of translation.
+   * @param[in] z   z-part of translation.
+   */
+  void move_focus_and_eye(float x,
+                          float y,
+                          float z);
 
+  /** @brief Applies a translation to only the eye point.
+   *
+   * @param[in] x   x-part of translation.
+   * @param[in] y   y-part of translation.
+   * @param[in] z   z-part of translation.
+   */
+  void move_eye(float x,
+                float y,
+                float z);
 
-  /** @brief Applies a translation to the focus and eye points. */
-  void move_focus_and_eye( float x, float y, float z );
+  /** @brief Applies a body-fixed-axes sequence of rotations; only accurate for small angles.
+   *
+   * @param[in] yaw   yaw-part of rotation.
+   * @param[in] pitch pitch-part of rotation.
+   * @param[in] roll  roll-part of rotation.
+   */
+  void yaw_pitch_roll(float yaw,
+                      float pitch,
+                      float roll);
 
-  /** @brief Applies a translation to only the eye point. */
-  void move_eye( float x, float y, float z );
+  /** @brief Handles user mouse events.
+   *
+   * @param[in] evt     the event that occured.
+   */
+  void handleMouseEvent(rviz::ViewportMouseEvent& evt) override;
 
+  /** @brief Move the focus point to the point provided.
+   *
+   * Point is assumed to be in the Rviz Fixed Frame.
+   *
+   * @param[in] point   new focus point.
+   */
+  void lookAt(const Ogre::Vector3& point) override;
 
-  /** @brief Applies a body-fixed-axes sequence of rotations;
-      only accurate for small angles. */
-  void yaw_pitch_roll( float yaw, float pitch, float roll );
-
-
-  virtual void handleMouseEvent(rviz::ViewportMouseEvent& evt);
-
-
-  /** @brief Calls beginNewTransition() to
-      move the focus point to the point provided, assumed to be in the Rviz Fixed Frame */
-  virtual void lookAt( const Ogre::Vector3& point );
-
-
-  /** @brief Calls beginNewTransition() with the focus point fixed, moving the eye to the point given. */
-  void orbitCameraTo( const Ogre::Vector3& point);
-
-  /** @brief Calls beginNewTransition() to move the eye to the point given, keeping the direction fixed.*/
-  void moveEyeWithFocusTo( const Ogre::Vector3& point);
-
-  /** @brief Publishes the current camera pose as an Odometry msg.*/
+  /** @brief Publishes the current camera pose as an Odometry msg.
+   *
+   * @param[in] position    position of to be published odometry msg.
+   * @param[in] velocity    velocity of to be published odometry msg.
+   */
   void publishOdometry(const Ogre::Vector3& position,
                        const Ogre::Vector3& velocity);
 
   /** @brief Resets the camera parameters to a sane value. */
-  virtual void reset();
+  void reset() override;
 
   /** @brief Configure the settings of this view controller to give,
-   * as much as possible, a similar view as that given by the
-   * @a source_view.
+   * as much as possible, a similar view as that given by the source_view.
    *
-   * @a source_view must return a valid @c Ogre::Camera* from getCamera(). */
-  virtual void mimic( ViewController* source_view );
+   * @param[in] source_view     must return a valid Ogre::Camera* from getCamera(). */
+  void mimic(ViewController* source_view) override;
 
   /** @brief Called by ViewManager when this ViewController is being made current.
-   * @param previous_view is the previous "current" view, and will not be NULL.
    *
    * This gives ViewController subclasses an opportunity to implement
-   * a smooth transition from a previous viewpoint to the new
-   * viewpoint.
+   * a smooth transition from a previous viewpoint to the new viewpoint.
+   *
+   * @param[in] previous_view   the previous "current" view, and will not be NULL.
    */
-  virtual void transitionFrom( ViewController* previous_view );
+  void transitionFrom(ViewController* previous_view) override;
 
 
 protected Q_SLOTS:
-  /** @brief Called when Target Frame property changes while view is
-   * active.  Purpose is to change values in the view controller (like
+  /** @brief Called when Target Frame property changes while view is active.
+   *
+   * Purpose is to change values in the view controller (like
    * a position offset) such that the actual viewpoint does not
-   * change.  Calls updateTargetSceneNode() and
-   * onTargetFrameChanged(). */
+   * change. Calls updateTargetSceneNode() and onTargetFrameChanged(). */
   virtual void updateAttachedFrame();
   
   /** @brief Called when distance property is changed; computes new eye position. */
@@ -200,41 +218,67 @@ protected Q_SLOTS:
   /** @brief Called when eye property is changed; computes new distance. */
   virtual void onEyePropertyChanged();
 
-  /** @brief Called when up vector property is changed (does nothing for now...). */
+  /** @brief Called when up vector property is changed; sets according camera parameter. */
   virtual void onUpPropertyChanged();
 
   /** @brief Called when camera trajectory topic is changed; updates subscriber to camera trajectories. */
   void updateTopics();
 
 protected:  //methods
+  /** @brief Called at 30Hz by ViewManager::update() while this view is active.
+   *
+   * Performs camera motion if required.
+   *
+   * @param[in] dt      time difference to last call of update function.
+   * @param[in] ros_dt  time difference in ros time to last call of update function.
+   */
+  void update(float dt, float ros_dt) override;
 
-  /** @brief Called at 30Hz by ViewManager::update() while this view
-   * is active. Override with code that needs to run repeatedly. */
-  virtual void update(float dt, float ros_dt);
-
-  /** @brief Convenience function; connects the signals/slots for position properties. */
+  /** @brief Connects the signals/slots for position properties. */
   void connectPositionProperties();
 
-  /** @brief Convenience function; disconnects the signals/slots for position properties. */
+  /** @brief Disconnects the signals/slots for position properties. */
   void disconnectPositionProperties();
 
-  /** @brief Override to implement the change in properties which
-   * nullifies the change in attached frame.
-   * @see updateAttachedFrame() */
-  virtual void onAttachedFrameChanged( const Ogre::Vector3& old_reference_position, const Ogre::Quaternion& old_reference_orientation );
+  /** @brief Changes properties to nullify the change in attached frame.
+   *
+   * @param[in] old_reference_position      position in old frame.
+   * @param[in] old_reference_orientation   orientation in old frame.
+   *
+   * @see updateAttachedFrame()
+   */
+  virtual void onAttachedFrameChanged(const Ogre::Vector3& old_reference_position,
+                                      const Ogre::Quaternion& old_reference_orientation);
 
-  /** @brief Update the position of the attached_scene_node_ from the TF
-   * frame specified in the Attached Frame property. */
+  /** @brief Update the position of the attached_scene_node_ in the current frame. */
   void updateAttachedSceneNode();
 
-  void cameraTrajectoryCallback(const rviz_cinematographer_msgs::CameraTrajectoryConstPtr &ct_ptr);
-  void transformCameraMovementToAttachedFrame(rviz_cinematographer_msgs::CameraMovement &cm);
+  /** @brief Initiate camera motion from incoming CameraTrajectory.
+   *
+   * @param[in] ct_ptr  incoming CameraTrajectory msg.
+   */
+  void cameraTrajectoryCallback(const rviz_cinematographer_msgs::CameraTrajectoryConstPtr& ct_ptr);
 
-  //void setUpVectorPropertyModeDependent( const Ogre::Vector3 &vector );
+  /** @brief Transforms the camera movement into the attached frame.
+   *
+   * @param[in,out] cm  camera movement that should be transformed into attached frame.
+   */
+  void transformCameraMovementToAttachedFrame(rviz_cinematographer_msgs::CameraMovement& cm);
 
-  void setPropertiesFromCamera( Ogre::Camera* source_camera );
+  /** @brief Set eye, focus and up property from provided source_camera.
+   *
+   * @param[in] source_camera   camera to take the parameters from.
+   */
+  void setPropertiesFromCamera(Ogre::Camera* source_camera);
 
-  /** @brief Begins a camera movement animation to the given goal points. */
+  /** @brief Begins a camera movement animation to the given goal points.
+   *
+   * @param[in] eye                     position of camera
+   * @param[in] focus                   focus point of camera
+   * @param[in] up                      vector of camera pointing up
+   * @param[in] transition_time         time needed of transition
+   * @param[in] interpolation_speed     the interpolation speed profile
+   */
   void beginNewTransition(const Ogre::Vector3 &eye,
                           const Ogre::Vector3 &focus,
                           const Ogre::Vector3 &up,
@@ -250,14 +294,11 @@ protected:  //methods
   /** @brief Publishes the camera pose. */
   void publishCameraPose();
 
-  Ogre::Vector3 fixedFrameToAttachedLocal(const Ogre::Vector3 &v) { return reference_orientation_.Inverse()*(v - reference_position_); }
-  Ogre::Vector3 attachedLocalToFixedFrame(const Ogre::Vector3 &v) { return reference_position_ + (reference_orientation_*v); }
+  Ogre::Vector3 fixedFrameToAttachedLocal(const Ogre::Vector3 &v) { return reference_orientation_.Inverse() * (v - reference_position_); }
+  Ogre::Vector3 attachedLocalToFixedFrame(const Ogre::Vector3 &v) { return reference_position_ + (reference_orientation_ * v); }
 
-  float getDistanceFromCameraToFocalPoint(); ///< Return the distance between camera and focal point.
-
-  Ogre::Quaternion getOrientation(); ///< Return a Quaternion
-
-
+  /** @brief Return the distance between camera and focal point. */
+  float getDistanceFromCameraToFocalPoint();
 
 
 protected:    //members
@@ -284,9 +325,6 @@ protected:    //members
 
   // Variables used during animation
   bool animate_;
-  Ogre::Vector3 start_position_;
-  Ogre::Vector3 start_focus_;
-  Ogre::Vector3 start_up_;
   ros::WallTime transition_start_time_;
   BufferCamMovements cam_movements_buffer_;
 
@@ -304,7 +342,6 @@ protected:    //members
   int counter_ = 0;
 
   cv::VideoWriter output_video_;
-
 
   bool do_record_;
   int target_fps_;
