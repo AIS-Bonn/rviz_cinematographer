@@ -1,0 +1,4 @@
+bool do_record 
+string path_to_output
+bool compress
+int8 frames_per_second

@@ -21,6 +21,12 @@ add_message_files(
    CameraTrajectory.msg
 )
 
+add_service_files(
+   DIRECTORY srv 
+   FILES
+   Record.srv
+)
+
 generate_messages(
 	DEPENDENCIES
    ${MSG_DEPS}
