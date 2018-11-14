@@ -24,6 +24,7 @@
 
 #include <rviz_cinematographer_msgs/CameraMovement.h>
 #include <rviz_cinematographer_msgs/CameraTrajectory.h>
+#include <rviz_cinematographer_msgs/Record.h>
 
 #include <nav_msgs/Path.h>
 
@@ -146,6 +147,8 @@ public slots:
   void loadTrajectoryFromFile();
   /** @brief Saves poses and transition times of interactive markers to a file.*/
   void saveTrajectoryToFile();
+  /** @brief Opens file explorer to specify the path of the recorded video.*/
+  void setVideoOutputPath();
 
 private:
   /**
@@ -355,6 +358,9 @@ private:
                                      double frequency,
                                      bool smooth_velocity = true);
 
+  /** @brief Call service to record current trajectory. */
+  void callRecordService();
+
   /** @brief Ui object - connection to GUI. */
   Ui::trajectory_editor ui_;
   /** @brief Widget. */
@@ -367,6 +373,9 @@ private:
 
   /** @brief Subscribes to the camera pose. */
   ros::Subscriber camera_pose_sub_;
+
+  /** @brief Calls service for record. */
+  ros::ServiceClient service_client_;
 
   /** @brief Connects markers to callbacks. */
   interactive_markers::MenuHandler menu_handler_;

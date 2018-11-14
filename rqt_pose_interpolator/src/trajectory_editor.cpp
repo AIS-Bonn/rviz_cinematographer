@@ -49,6 +49,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   connect(ui_.move_to_first_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToFirst()));
   connect(ui_.move_to_next_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToNext()));
   connect(ui_.move_to_last_button, SIGNAL(clicked(bool)), this, SLOT(moveCamToLast()));
+
   connect(ui_.append_cam_pose, SIGNAL(clicked(bool)), this, SLOT(appendCamPoseToTrajectory()));
   connect(ui_.set_pose_to_cam_button, SIGNAL(clicked(bool)), this, SLOT(setCurrentPoseToCam()));
   connect(ui_.frame_line_edit, SIGNAL(editingFinished()), this, SLOT(setMarkerFrames()));
@@ -58,6 +59,8 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 
   connect(ui_.open_file_push_button, SIGNAL(clicked(bool)), this, SLOT(loadTrajectoryFromFile()));
   connect(ui_.save_file_push_button, SIGNAL(clicked(bool)), this, SLOT(saveTrajectoryToFile()));
+
+  connect(ui_.video_output_path_tool_button, SIGNAL(clicked(bool)), this, SLOT(setVideoOutputPath()));
 
   // add widget to the user interface
   context.addWidget(widget_);
@@ -93,6 +96,8 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>("trajectory");
   updateServer(markers_);
   updateTrajectory();
+
+  service_client_ = ph.serviceClient<rviz_cinematographer_msgs::Record>("/rviz/record");
 
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
 }
@@ -706,6 +711,19 @@ void TrajectoryEditor::saveTrajectoryToFile()
   }
 }
 
+void TrajectoryEditor::setVideoOutputPath()
+{
+  std::string directory_path = ui_.video_output_path_line_edit->text().toStdString();
+
+  std::string file_path = QFileDialog::getSaveFileName(widget_, "Specify Path to Recorded Video", QString(directory_path.c_str()), ".avi files (*.avi)").toStdString();
+
+  std::string extension = boost::filesystem::extension(file_path);
+  if(boost::filesystem::extension(file_path) != ".avi")
+    file_path = boost::filesystem::basename(file_path) + ".avi";
+
+  ui_.video_output_path_line_edit->setText(QString::fromStdString(file_path));
+}
+
 rviz_cinematographer_msgs::CameraMovement TrajectoryEditor::makeCameraMovement()
 {
   rviz_cinematographer_msgs::CameraMovement cm;
@@ -794,8 +812,29 @@ void TrajectoryEditor::convertMarkerToCamMovement(const TimedMarker& marker,
   cam_movement.focus.point.z = marker.marker.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 }
 
+// TODO:
+void TrajectoryEditor::callRecordService()
+{
+  rviz_cinematographer_msgs::Record srv;
+  srv.request.do_record = true;
+  srv.request.path_to_output = ui_.video_output_path_line_edit->text().toStdString();
+  srv.request.compress = ui_.video_compressed_check_box->isChecked();
+  srv.request.frames_per_second = ui_.video_fps_spin_box->value();
+  if(service_client_.call(srv))
+  {
+    ROS_INFO("Called record service.");
+  }
+  else
+  {
+    ROS_ERROR("Failed to call record service");
+  }
+}
+
 void TrajectoryEditor::moveCamToCurrent()
 {
+  if(ui_.record_radio_button->isChecked())
+    callRecordService();
+
   moveCamToMarker(current_marker_name_);
 }
 
@@ -804,6 +843,9 @@ void TrajectoryEditor::moveCamToFirst()
   // do nothing if current is already the first marker
   if(markers_.begin()->marker.name == current_marker_name_)
     return;
+
+  if(ui_.record_radio_button->isChecked())
+    callRecordService();
 
   // find current marker
   auto it = std::next(markers_.begin());
@@ -880,6 +922,9 @@ void TrajectoryEditor::moveCamToPrev()
   if(markers_.begin()->marker.name == current_marker_name_)
     return;
 
+  if(ui_.record_radio_button->isChecked())
+    callRecordService();
+
   // find current marker
   auto it = std::next(markers_.begin()), prev_marker = markers_.begin();
   for(; it != markers_.end(); ++it, ++prev_marker)
@@ -897,6 +942,9 @@ void TrajectoryEditor::moveCamToNext()
   if(std::prev(markers_.end())->marker.name == current_marker_name_)
     return;
 
+  if(ui_.record_radio_button->isChecked())
+    callRecordService();
+
   // find iterator to current marker
   auto it = markers_.begin(), next_marker = std::next(markers_.begin());
   for(; it != markers_.end(); ++it, ++next_marker)
@@ -913,6 +961,9 @@ void TrajectoryEditor::moveCamToLast()
   // do nothing if current is already the last marker
   if(std::prev(markers_.end())->marker.name == current_marker_name_)
     return;
+
+  if(ui_.record_radio_button->isChecked())
+    callRecordService();
 
   // find current marker
   auto it = markers_.begin();

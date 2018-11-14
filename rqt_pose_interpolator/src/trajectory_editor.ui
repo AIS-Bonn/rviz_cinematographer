@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>360</width>
-    <height>722</height>
+    <height>792</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,7 +19,7 @@
      <x>8</x>
      <y>8</y>
      <width>341</width>
-     <height>661</height>
+     <height>731</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -177,10 +177,65 @@
      </layout>
     </item>
     <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_7">
+      <item>
+       <spacer name="horizontalSpacer_5">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="record_radio_button">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
+        <property name="toolTip">
+         <string>Record next camera trajectory you initiate here. </string>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::RightToLeft</enum>
+        </property>
+        <property name="text">
+         <string>Record</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_6">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
      <layout class="QVBoxLayout" name="verticalLayout_6">
       <property name="sizeConstraint">
        <enum>QLayout::SetMinimumSize</enum>
       </property>
+      <item>
+       <widget class="Line" name="line_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="Line" name="line">
         <property name="orientation">
@@ -202,7 +257,7 @@
            <x>0</x>
            <y>0</y>
            <width>337</width>
-           <height>442</height>
+           <height>437</height>
           </rect>
          </property>
          <attribute name="label">
@@ -494,11 +549,11 @@
            <x>0</x>
            <y>0</y>
            <width>337</width>
-           <height>442</height>
+           <height>437</height>
           </rect>
          </property>
          <attribute name="label">
-          <string>Parameters</string>
+          <string>Trajectory Parameters</string>
          </attribute>
          <attribute name="toolTip">
           <string>Edit the parameters of the trajectory and the camera transition.</string>
@@ -652,6 +707,13 @@
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="font">
+                <font>
+                 <pointsize>12</pointsize>
+                 <weight>75</weight>
+                 <bold>true</bold>
+                </font>
+               </property>
                <property name="toolTip">
                 <string>Increase marker size.</string>
                </property>
@@ -667,6 +729,13 @@
                  <width>40</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>12</pointsize>
+                 <weight>75</weight>
+                 <bold>true</bold>
+                </font>
                </property>
                <property name="toolTip">
                 <string>Decrease marker size.</string>
@@ -732,17 +801,144 @@
           </layout>
          </widget>
         </widget>
+        <widget class="QWidget" name="page_4">
+         <attribute name="label">
+          <string>Recording Parameters</string>
+         </attribute>
+         <widget class="QWidget" name="verticalLayoutWidget">
+          <property name="geometry">
+           <rect>
+            <x>9</x>
+            <y>9</y>
+            <width>321</width>
+            <height>183</height>
+           </rect>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="QLabel" name="label">
+             <property name="font">
+              <font>
+               <pointsize>11</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Record to:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_6">
+             <item>
+              <widget class="QLineEdit" name="video_output_path_line_edit">
+               <property name="toolTip">
+                <string>Path to recorded video.</string>
+               </property>
+               <property name="text">
+                <string>/tmp/cinematographer.avi</string>
+               </property>
+               <property name="placeholderText">
+                <string>Path to recorded video</string>
+               </property>
+               <property name="clearButtonEnabled">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QToolButton" name="video_output_path_tool_button">
+               <property name="toolTip">
+                <string>Open file explorer to specify path to recorded video file.</string>
+               </property>
+               <property name="text">
+                <string>🗁</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="video_compressed_check_box">
+             <property name="font">
+              <font>
+               <pointsize>10</pointsize>
+              </font>
+             </property>
+             <property name="toolTip">
+              <string>If checked, the resulting video uses the divx codec. If not, a raw format using the FFV1 codec.</string>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::RightToLeft</enum>
+             </property>
+             <property name="text">
+              <string>Compress Video</string>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>16</width>
+               <height>16</height>
+              </size>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="video_fps_spin_box">
+             <property name="toolTip">
+              <string>Define the number of frames per second of the resulting video. </string>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::LeftToRight</enum>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+             <property name="suffix">
+              <string/>
+             </property>
+             <property name="prefix">
+              <string>Frames Per Second : </string>
+             </property>
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>120</number>
+             </property>
+             <property name="value">
+              <number>60</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="verticalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </widget>
         <widget class="QWidget" name="page_3">
          <property name="geometry">
           <rect>
            <x>0</x>
            <y>0</y>
            <width>337</width>
-           <height>442</height>
+           <height>437</height>
           </rect>
          </property>
          <attribute name="label">
-          <string>Save/Open</string>
+          <string>Save/Open Trajectory</string>
          </attribute>
          <attribute name="toolTip">
           <string>Save trajectory to file or open existing trajectory from file. </string>
@@ -818,6 +1014,7 @@
   <tabstop>move_to_current_button</tabstop>
   <tabstop>move_to_next_button</tabstop>
   <tabstop>move_to_last_button</tabstop>
+  <tabstop>record_radio_button</tabstop>
   <tabstop>append_cam_pose</tabstop>
   <tabstop>set_pose_to_cam_button</tabstop>
   <tabstop>translation_x_spin_box</tabstop>
@@ -838,6 +1035,10 @@
   <tabstop>frame_line_edit</tabstop>
   <tabstop>save_file_push_button</tabstop>
   <tabstop>open_file_push_button</tabstop>
+  <tabstop>video_output_path_line_edit</tabstop>
+  <tabstop>video_output_path_tool_button</tabstop>
+  <tabstop>video_compressed_check_box</tabstop>
+  <tabstop>video_fps_spin_box</tabstop>
  </tabstops>
  <resources/>
  <connections/>
