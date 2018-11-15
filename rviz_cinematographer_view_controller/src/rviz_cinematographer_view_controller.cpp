@@ -699,6 +699,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
 
     //cv::imwrite("/tmp/Gray_Image" + std::to_string(counter_++) + ".jpg", image_rgb);
 
+    delete[] data;
 
     // if current movement is over
     if(!animate_)
