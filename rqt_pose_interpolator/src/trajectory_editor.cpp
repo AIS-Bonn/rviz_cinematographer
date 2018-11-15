@@ -99,6 +99,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   updateTrajectory();
 
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
+  record_finished_sub_ = ph.subscribe("/rviz/record_finished", 1, &TrajectoryEditor::recordFinishedCallback, this);
 }
 
 void TrajectoryEditor::shutdownPlugin()
@@ -820,6 +821,11 @@ void TrajectoryEditor::publishRecordParams()
   record_params.frames_per_second = ui_.video_fps_spin_box->value();
   record_params_pub_.publish(record_params);
 }
+
+void TrajectoryEditor::recordFinishedCallback(const rviz_cinematographer_msgs::RecordFinished::ConstPtr& record_finished)
+{
+  if(record_finished->record_finished > 0)
+    ui_.record_radio_button->setChecked(false);
 }
 
 void TrajectoryEditor::moveCamToCurrent()

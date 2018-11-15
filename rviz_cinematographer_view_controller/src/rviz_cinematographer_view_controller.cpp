@@ -94,6 +94,7 @@ CinematographerViewController::CinematographerViewController()
   // TODO: latch?
   placement_pub_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
   odometry_pub_ = nh_.advertise<nav_msgs::Odometry>("/rviz/trajectory_odometry", 1);
+  record_finished_pub_ = nh_.advertise<rviz_cinematographer_msgs::RecordFinished>("/rviz/record_finished", 1);
 
   image_transport::ImageTransport it(nh_);
   image_pub_ = it.advertise("/rviz/view_image", 1);
@@ -720,7 +721,12 @@ void CinematographerViewController::update(float dt, float ros_dt)
         cam_movements_buffer_.clear();
 
         if(output_video_.isOpened())
+        {
           output_video_.release();
+          rviz_cinematographer_msgs::RecordFinished record_finished;
+          record_finished.record_finished = true;
+          record_finished_pub_.publish(record_finished);
+        }
       }
     }
   }

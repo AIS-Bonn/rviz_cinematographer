@@ -56,6 +56,7 @@
 #include <rviz_cinematographer_msgs/CameraMovement.h>
 #include <rviz_cinematographer_msgs/CameraTrajectory.h>
 #include <rviz_cinematographer_msgs/Record.h>
+#include <rviz_cinematographer_msgs/RecordFinished.h>
 
 #include <nav_msgs/Odometry.h>
 
@@ -345,6 +346,7 @@ protected:    //members
 
   ros::Publisher placement_pub_;
   ros::Publisher odometry_pub_;
+  ros::Publisher record_finished_pub_;
   image_transport::Publisher image_pub_;
 
   int counter_ = 0;

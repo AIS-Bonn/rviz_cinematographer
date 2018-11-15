@@ -25,6 +25,7 @@
 #include <rviz_cinematographer_msgs/CameraMovement.h>
 #include <rviz_cinematographer_msgs/CameraTrajectory.h>
 #include <rviz_cinematographer_msgs/Record.h>
+#include <rviz_cinematographer_msgs/RecordFinished.h>
 
 #include <nav_msgs/Path.h>
 
@@ -361,6 +362,9 @@ private:
   /** @brief Call service to record current trajectory. */
   void publishRecordParams();
 
+  /** @brief Listen to the message that the recording is over. */
+  void recordFinishedCallback(const rviz_cinematographer_msgs::RecordFinished::ConstPtr& record_finished);
+
   /** @brief Ui object - connection to GUI. */
   Ui::trajectory_editor ui_;
   /** @brief Widget. */
@@ -375,9 +379,8 @@ private:
 
   /** @brief Subscribes to the camera pose. */
   ros::Subscriber camera_pose_sub_;
-
-  /** @brief Calls service for record. */
-  ros::ServiceClient service_client_;
+  /** @brief Subscribes to listen when the recording is over. */
+  ros::Subscriber record_finished_sub_;
 
   /** @brief Connects markers to callbacks. */
   interactive_markers::MenuHandler menu_handler_;
