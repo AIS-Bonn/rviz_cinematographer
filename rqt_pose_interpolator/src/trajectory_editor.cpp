@@ -719,7 +719,7 @@ void TrajectoryEditor::setVideoOutputPath()
 
   std::string extension = boost::filesystem::extension(file_path);
   if(boost::filesystem::extension(file_path) != ".avi")
-    file_path = boost::filesystem::basename(file_path) + ".avi";
+    file_path = boost::filesystem::change_extension(file_path, ".avi").string();
 
   ui_.video_output_path_line_edit->setText(QString::fromStdString(file_path));
 }
