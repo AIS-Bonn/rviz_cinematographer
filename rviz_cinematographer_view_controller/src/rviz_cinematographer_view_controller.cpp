@@ -109,17 +109,19 @@ CinematographerViewController::~CinematographerViewController()
 
 void CinematographerViewController::setRecord(const rviz_cinematographer_msgs::Record::ConstPtr& record_params)
 {
-  ROS_INFO("Got service call");
-
   do_record_ = record_params->do_record > 0;
   path_to_output_ = record_params->path_to_output;
 
+  int max_fps = 120;
   if(record_params->compress > 0)
     codec_ = cv::VideoWriter::fourcc('D', 'I', 'V', 'X');
   else
-    codec_ = cv::VideoWriter::fourcc('F', 'F', 'V', '1');
+  {
+    codec_ = cv::VideoWriter::fourcc('P', 'I', 'M', '1');
+    max_fps = 60;
+  }
 
-  target_fps_ = std::max(1, std::min(120, (int)record_params->frames_per_second));
+  target_fps_ = std::max(1, std::min(max_fps, (int)record_params->frames_per_second));
 }
 
 void CinematographerViewController::updateTopics()
