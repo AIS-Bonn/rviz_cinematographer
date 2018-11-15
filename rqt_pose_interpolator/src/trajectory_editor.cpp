@@ -25,6 +25,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   ros::NodeHandle ph("~");
   camera_trajectory_pub_ = ph.advertise<rviz_cinematographer_msgs::CameraTrajectory>("/rviz/camera_trajectory", 1);
   view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1, true);
+  record_params_pub_ = ph.advertise<rviz_cinematographer_msgs::Record>("/rviz/record", 1);
 
   // access standalone command line arguments
   QStringList argv = context.argv();
@@ -96,8 +97,6 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>("trajectory");
   updateServer(markers_);
   updateTrajectory();
-
-  service_client_ = ph.serviceClient<rviz_cinematographer_msgs::Record>("/rviz/record");
 
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
 }
@@ -812,28 +811,21 @@ void TrajectoryEditor::convertMarkerToCamMovement(const TimedMarker& marker,
   cam_movement.focus.point.z = marker.marker.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 }
 
-// TODO:
-void TrajectoryEditor::callRecordService()
+void TrajectoryEditor::publishRecordParams()
 {
-  rviz_cinematographer_msgs::Record srv;
-  srv.request.do_record = true;
-  srv.request.path_to_output = ui_.video_output_path_line_edit->text().toStdString();
-  srv.request.compress = ui_.video_compressed_check_box->isChecked();
-  srv.request.frames_per_second = ui_.video_fps_spin_box->value();
-  if(service_client_.call(srv))
-  {
-    ROS_INFO("Called record service.");
-  }
-  else
-  {
-    ROS_ERROR("Failed to call record service");
-  }
+  rviz_cinematographer_msgs::Record record_params;
+  record_params.do_record = true;
+  record_params.path_to_output = ui_.video_output_path_line_edit->text().toStdString();
+  record_params.compress = ui_.video_compressed_check_box->isChecked();
+  record_params.frames_per_second = ui_.video_fps_spin_box->value();
+  record_params_pub_.publish(record_params);
+}
 }
 
 void TrajectoryEditor::moveCamToCurrent()
 {
   if(ui_.record_radio_button->isChecked())
-    callRecordService();
+    publishRecordParams();
 
   moveCamToMarker(current_marker_name_);
 }
@@ -845,7 +837,7 @@ void TrajectoryEditor::moveCamToFirst()
     return;
 
   if(ui_.record_radio_button->isChecked())
-    callRecordService();
+    publishRecordParams();
 
   // find current marker
   auto it = std::next(markers_.begin());
@@ -923,7 +915,7 @@ void TrajectoryEditor::moveCamToPrev()
     return;
 
   if(ui_.record_radio_button->isChecked())
-    callRecordService();
+    publishRecordParams();
 
   // find current marker
   auto it = std::next(markers_.begin()), prev_marker = markers_.begin();
@@ -943,7 +935,7 @@ void TrajectoryEditor::moveCamToNext()
     return;
 
   if(ui_.record_radio_button->isChecked())
-    callRecordService();
+    publishRecordParams();
 
   // find iterator to current marker
   auto it = markers_.begin(), next_marker = std::next(markers_.begin());
@@ -963,7 +955,7 @@ void TrajectoryEditor::moveCamToLast()
     return;
 
   if(ui_.record_radio_button->isChecked())
-    callRecordService();
+    publishRecordParams();
 
   // find current marker
   auto it = markers_.begin();

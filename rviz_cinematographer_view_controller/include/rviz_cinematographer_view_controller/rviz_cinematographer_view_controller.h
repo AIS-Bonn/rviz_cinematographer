@@ -295,9 +295,11 @@ protected:  //methods
   /** @brief Publishes the camera pose. */
   void publishCameraPose();
 
-  /** @brief Sets parameters requested with service call. */
-  bool setRecord(rviz_cinematographer_msgs::Record::Request  &req,
-                 rviz_cinematographer_msgs::Record::Response &res);
+  /** @brief Sets parameters requested with service call.
+   *
+   * @params[in] record_params  specifies that a record should be made and the parameters that should be used.
+   */
+  void setRecord(const rviz_cinematographer_msgs::Record::ConstPtr& record_params);
 
   Ogre::Vector3 fixedFrameToAttachedLocal(const Ogre::Vector3 &v) { return reference_orientation_.Inverse() * (v - reference_position_); }
   Ogre::Vector3 attachedLocalToFixedFrame(const Ogre::Vector3 &v) { return reference_position_ + (reference_orientation_ * v); }
@@ -337,13 +339,13 @@ protected:    //members
   bool dragging_;         ///< A flag indicating the dragging state of the mouse.
 
   QCursor interaction_disabled_cursor_;         ///< A cursor for indicating mouse interaction is disabled.
-  
+
   ros::Subscriber trajectory_sub_;
+  ros::Subscriber record_params_sub_;
 
   ros::Publisher placement_pub_;
   ros::Publisher odometry_pub_;
   image_transport::Publisher image_pub_;
-  ros::ServiceServer record_service_;
 
   int counter_ = 0;
 

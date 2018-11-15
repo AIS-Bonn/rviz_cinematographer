@@ -19,12 +19,7 @@ add_message_files(
 	FILES
    CameraMovement.msg
    CameraTrajectory.msg
-)
-
-add_service_files(
-   DIRECTORY srv 
-   FILES
-   Record.srv
+   Record.msg
 )
 
 generate_messages(

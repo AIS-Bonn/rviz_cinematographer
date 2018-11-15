@@ -359,7 +359,7 @@ private:
                                      bool smooth_velocity = true);
 
   /** @brief Call service to record current trajectory. */
-  void callRecordService();
+  void publishRecordParams();
 
   /** @brief Ui object - connection to GUI. */
   Ui::trajectory_editor ui_;
@@ -370,6 +370,8 @@ private:
   ros::Publisher camera_trajectory_pub_;
   /** @brief Publishes the trajectory that is defined by the markers. */
   ros::Publisher view_poses_array_pub_;
+  /** @brief Publishes the parameters for a recording. */
+  ros::Publisher record_params_pub_;
 
   /** @brief Subscribes to the camera pose. */
   ros::Subscriber camera_pose_sub_;

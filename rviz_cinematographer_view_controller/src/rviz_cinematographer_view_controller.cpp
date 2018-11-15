@@ -98,7 +98,7 @@ CinematographerViewController::CinematographerViewController()
   image_transport::ImageTransport it(nh_);
   image_pub_ = it.advertise("/rviz/view_image", 1);
 
-  record_service_ = nh_.advertiseService("/rviz/record", &CinematographerViewController::setRecord, this);
+  record_params_sub_ = nh_.subscribe("/rviz/record", 1, &CinematographerViewController::setRecord, this);
 }
 
 CinematographerViewController::~CinematographerViewController()
@@ -106,22 +106,19 @@ CinematographerViewController::~CinematographerViewController()
   context_->getSceneManager()->destroySceneNode(attached_scene_node_);
 }
 
-bool CinematographerViewController::setRecord(rviz_cinematographer_msgs::Record::Request  &req,
-                                              rviz_cinematographer_msgs::Record::Response &res)
+void CinematographerViewController::setRecord(const rviz_cinematographer_msgs::Record::ConstPtr& record_params)
 {
   ROS_INFO("Got service call");
 
-  do_record_ = req.do_record > 0;
-  path_to_output_ = req.path_to_output;
+  do_record_ = record_params->do_record > 0;
+  path_to_output_ = record_params->path_to_output;
 
-  if(req.compress > 0)
+  if(record_params->compress > 0)
     codec_ = cv::VideoWriter::fourcc('D', 'I', 'V', 'X');
   else
     codec_ = cv::VideoWriter::fourcc('F', 'F', 'V', '1');
 
-  target_fps_ = std::max(1, std::min(120, (int)req.frames_per_second));
-
-  return true;
+  target_fps_ = std::max(1, std::min(120, (int)record_params->frames_per_second));
 }
 
 void CinematographerViewController::updateTopics()
