@@ -494,6 +494,17 @@ void CinematographerViewController::cancelTransition()
 {
   animate_ = false;
   cam_movements_buffer_.clear();
+
+  if(do_record_)
+  {
+    if(output_video_.isOpened())
+      output_video_.release();
+
+    rviz_cinematographer_msgs::RecordFinished record_finished;
+    record_finished.record_finished = true;
+    record_finished_pub_.publish(record_finished);
+    do_record_ = false;
+  }
 }
 
 void CinematographerViewController::cameraTrajectoryCallback(const rviz_cinematographer_msgs::CameraTrajectoryConstPtr& ct_ptr)
