@@ -734,12 +734,15 @@ void CinematographerViewController::update(float dt, float ros_dt)
         // clean up
         cam_movements_buffer_.clear();
 
-        if(output_video_.isOpened())
+        if(do_record_)
         {
-          output_video_.release();
+          if(output_video_.isOpened())
+            output_video_.release();
+
           rviz_cinematographer_msgs::RecordFinished record_finished;
           record_finished.record_finished = true;
           record_finished_pub_.publish(record_finished);
+          do_record_ = false;
         }
       }
     }
