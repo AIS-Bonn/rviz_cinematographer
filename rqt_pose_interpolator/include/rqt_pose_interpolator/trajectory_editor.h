@@ -27,6 +27,8 @@
 #include <rviz_cinematographer_msgs/Record.h>
 #include <rviz_cinematographer_msgs/RecordFinished.h>
 
+#include <std_msgs/Empty.h>
+
 #include <nav_msgs/Path.h>
 
 #include <interactive_markers/interactive_marker_server.h>
@@ -270,7 +272,21 @@ private:
    *
    * @param[in] feedback    feedback from selected marker.
    */
-  void removeMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+  void removeClickedMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+
+  /**
+   * @brief Removes the marker called marker_name.
+   *
+   * @param[in] marker_name    name of marker that should be removed.
+   */
+  void removeMarker(const std::string& marker_name);
+
+  /**
+   * @brief Removes the current marker.
+   *
+   * @param[in] empty    empty msgs needed as this is a callback function.
+   */
+  void removeCurrentMarker(const std_msgs::EmptyConstPtr& empty);
 
   /**
    * @brief Saves markers in server.
@@ -381,6 +397,8 @@ private:
   ros::Subscriber camera_pose_sub_;
   /** @brief Subscribes to listen when the recording is over. */
   ros::Subscriber record_finished_sub_;
+  /** @brief Subscribes to delete marker msgs. */
+  ros::Subscriber delete_marker_sub_;
 
   /** @brief Connects markers to callbacks. */
   interactive_markers::MenuHandler menu_handler_;

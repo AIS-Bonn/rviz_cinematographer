@@ -66,7 +66,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   // add widget to the user interface
   context.addWidget(widget_);
 
-  menu_handler_.insert("Remove marker", boost::bind(&TrajectoryEditor::removeMarker, this, _1));
+  menu_handler_.insert("Remove marker", boost::bind(&TrajectoryEditor::removeClickedMarker, this, _1));
   menu_handler_.insert("Add marker after", boost::bind(&TrajectoryEditor::addMarkerBehind, this, _1));
   menu_handler_.insert("Add marker here", boost::bind(&TrajectoryEditor::addMarkerHere, this, _1));
   menu_handler_.insert("Add marker before", boost::bind(&TrajectoryEditor::addMarkerBefore, this, _1));
@@ -100,6 +100,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
 
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
   record_finished_sub_ = ph.subscribe("/rviz/record_finished", 1, &TrajectoryEditor::recordFinishedCallback, this);
+  delete_marker_sub_ = ph.subscribe("/rviz/delete", 1, &TrajectoryEditor::removeCurrentMarker, this);
 }
 
 void TrajectoryEditor::shutdownPlugin()
@@ -378,7 +379,17 @@ void TrajectoryEditor::setCurrentFromTo(TimedMarker& old_current,
   updateServer(markers_);
 }
 
-void TrajectoryEditor::removeMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
+void TrajectoryEditor::removeCurrentMarker(const std_msgs::EmptyConstPtr& empty)
+{
+  removeMarker(current_marker_name_);
+}
+
+void TrajectoryEditor::removeClickedMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
+{
+  removeMarker(feedback->marker_name);
+}
+
+void TrajectoryEditor::removeMarker(const std::string& marker_name)
 {
   if(markers_.size() < 3)
   {
@@ -389,7 +400,7 @@ void TrajectoryEditor::removeMarker(const visualization_msgs::InteractiveMarkerF
   // delete all markers from server and safe clicked marker
   auto searched_element = markers_.end();
   for(auto it = markers_.begin(); it != markers_.end(); ++it)
-    if(it->marker.name == feedback->marker_name)
+    if(it->marker.name == marker_name)
       searched_element = it;
 
   colorizeMarkersRed();

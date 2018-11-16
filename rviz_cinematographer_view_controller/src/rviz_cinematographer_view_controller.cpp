@@ -95,6 +95,7 @@ CinematographerViewController::CinematographerViewController()
   placement_pub_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
   odometry_pub_ = nh_.advertise<nav_msgs::Odometry>("/rviz/trajectory_odometry", 1);
   record_finished_pub_ = nh_.advertise<rviz_cinematographer_msgs::RecordFinished>("/rviz/record_finished", 1);
+  delete_pub_ = nh_.advertise<std_msgs::Empty>("/rviz/delete", 1);
 
   image_transport::ImageTransport it(nh_);
   image_pub_ = it.advertise("/rviz/view_image", 1);
@@ -401,6 +402,15 @@ void CinematographerViewController::handleMouseEvent(ViewportMouseEvent& event)
   {
     publishCameraPose();
     context_->queueRender();
+  }
+}
+
+void CinematographerViewController::handleKeyEvent(QKeyEvent* event, rviz::RenderPanel* panel)
+{
+  if(event->key() == 16777223) // press on delete button
+  {
+    std_msgs::Empty delete_msg;
+    delete_pub_.publish(delete_msg);
   }
 }
 

@@ -57,6 +57,7 @@
 #include <rviz_cinematographer_msgs/CameraTrajectory.h>
 #include <rviz_cinematographer_msgs/Record.h>
 #include <rviz_cinematographer_msgs/RecordFinished.h>
+#include <std_msgs/Empty.h>
 
 #include <nav_msgs/Odometry.h>
 
@@ -167,6 +168,14 @@ public:
    * @param[in] evt     the event that occured.
    */
   void handleMouseEvent(rviz::ViewportMouseEvent& evt) override;
+
+  /** @brief Handles keyboard events.
+   *
+   * Sends a msg that the delete button was pressed.
+   *
+   * @param[in] event     the event that occured.
+   */
+  void handleKeyEvent(QKeyEvent* event, rviz::RenderPanel* panel) override;
 
   /** @brief Move the focus point to the point provided.
    *
@@ -347,6 +356,7 @@ protected:    //members
   ros::Publisher placement_pub_;
   ros::Publisher odometry_pub_;
   ros::Publisher record_finished_pub_;
+  ros::Publisher delete_pub_;
   image_transport::Publisher image_pub_;
 
   int counter_ = 0;
