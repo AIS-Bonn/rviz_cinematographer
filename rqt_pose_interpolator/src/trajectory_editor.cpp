@@ -7,12 +7,13 @@
 
 #include <rqt_pose_interpolator/trajectory_editor.h>
 
-namespace pose_interpolator {
+namespace pose_interpolator
+{
 
 TrajectoryEditor::TrajectoryEditor()
-: rqt_gui_cpp::Plugin()
-  , widget_(0)
-  , current_marker_name_("")
+  : rqt_gui_cpp::Plugin()
+    , widget_(0)
+    , current_marker_name_("")
 {
   //cam_pose_.orientation.w = 1.0;
 
@@ -250,7 +251,8 @@ void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMark
     {
       new_marker.pose.position.x -= 0.5;
     }
-    clicked_element = markers_.insert(clicked_element, TimedMarker(std::move(new_marker), clicked_element->transition_time));
+    clicked_element = markers_.insert(clicked_element,
+                                      TimedMarker(std::move(new_marker), clicked_element->transition_time));
   }
 
   current_marker_name_ = feedback->marker_name;
@@ -339,7 +341,8 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
     {
       new_marker.pose.position.x -= 0.5;
     }
-    clicked_element = markers_.insert(std::next(clicked_element), TimedMarker(std::move(new_marker), clicked_element->transition_time));
+    clicked_element = markers_.insert(std::next(clicked_element),
+                                      TimedMarker(std::move(new_marker), clicked_element->transition_time));
   }
 
   // name of the new marker will be the one of the clicked marker incremented by 1
@@ -497,9 +500,10 @@ bool TrajectoryEditor::isCamWithinBounds()
      ui_.translation_y_spin_box->maximum() < cam_pose_.position.y ||
      ui_.translation_y_spin_box->minimum() > cam_pose_.position.y ||
      ui_.translation_z_spin_box->maximum() < cam_pose_.position.z ||
-     ui_.translation_z_spin_box->minimum() > cam_pose_.position.z )
+     ui_.translation_z_spin_box->minimum() > cam_pose_.position.z)
   {
-    ui_.messages_label->setText(QString("Message: Current position is out of scope.\n\tTry moving closer to the center of the frame."));
+    ui_.messages_label->setText(
+      QString("Message: Current position is out of scope.\n\tTry moving closer to the center of the frame."));
     return false;
   }
   return true;
@@ -602,9 +606,10 @@ void TrajectoryEditor::updateMarkerScales(float scale_factor)
 
 void TrajectoryEditor::loadTrajectoryFromFile()
 {
-  std::string directory_path = ros::package::getPath("rqt_pose_interpolator")  + "/trajectories/";
+  std::string directory_path = ros::package::getPath("rqt_pose_interpolator") + "/trajectories/";
 
-  QString file_name = QFileDialog::getOpenFileName(widget_, "Open Trajectory", QString(directory_path.c_str()), "All Files (*);;.yaml files (*.yaml);;.txt files (*.txt)");
+  QString file_name = QFileDialog::getOpenFileName(widget_, "Open Trajectory", QString(directory_path.c_str()),
+                                                   "All Files (*);;.yaml files (*.yaml);;.txt files (*.txt)");
   if(file_name == "")
   {
     ROS_ERROR_STREAM("No file specified.");
@@ -656,7 +661,9 @@ void TrajectoryEditor::loadTrajectoryFromFile()
 
       if(pose_strings.size() != 8)
       {
-        ROS_ERROR_STREAM("Line: " << line << " contains the wrong number of parameters. Format is: timestamp tx ty tz qx qy qz qw. Number of parameters are " << (int)pose_strings.size());
+        ROS_ERROR_STREAM("Line: " << line
+                                  << " contains the wrong number of parameters. Format is: timestamp tx ty tz qx qy qz qw. Number of parameters are "
+                                  << (int)pose_strings.size());
         continue;
       }
 
@@ -704,9 +711,10 @@ void TrajectoryEditor::loadTrajectoryFromFile()
 
 void TrajectoryEditor::saveTrajectoryToFile()
 {
-  std::string directory_path = ros::package::getPath("rqt_pose_interpolator")  + "/trajectories/";
+  std::string directory_path = ros::package::getPath("rqt_pose_interpolator") + "/trajectories/";
 
-  std::string file_path = QFileDialog::getSaveFileName(widget_, "Save Trajectory", QString(directory_path.c_str()), "All Files (*)").toStdString();
+  std::string file_path = QFileDialog::getSaveFileName(widget_, "Save Trajectory", QString(directory_path.c_str()),
+                                                       "All Files (*)").toStdString();
   if(file_path.empty())
   {
     ROS_ERROR_STREAM("No file specified.");
@@ -726,7 +734,9 @@ void TrajectoryEditor::setVideoOutputPath()
 {
   std::string directory_path = ui_.video_output_path_line_edit->text().toStdString();
 
-  std::string file_path = QFileDialog::getSaveFileName(widget_, "Specify Path to Recorded Video", QString(directory_path.c_str()), ".avi files (*.avi)").toStdString();
+  std::string file_path = QFileDialog::getSaveFileName(widget_, "Specify Path to Recorded Video",
+                                                       QString(directory_path.c_str()),
+                                                       ".avi files (*.avi)").toStdString();
 
   std::string extension = boost::filesystem::extension(file_path);
   if(boost::filesystem::extension(file_path) != ".avi")
@@ -833,7 +843,8 @@ void TrajectoryEditor::publishRecordParams()
   record_params_pub_.publish(record_params);
 }
 
-void TrajectoryEditor::recordFinishedCallback(const rviz_cinematographer_msgs::RecordFinished::ConstPtr& record_finished)
+void
+TrajectoryEditor::recordFinishedCallback(const rviz_cinematographer_msgs::RecordFinished::ConstPtr& record_finished)
 {
   if(record_finished->record_finished > 0)
     ui_.record_radio_button->setChecked(false);
@@ -903,7 +914,8 @@ void TrajectoryEditor::moveCamToFirst()
       convertMarkerToCamMovement(*previous, cam_movement);
 
       // set interpolation speed first rising, then full speed, then declining
-      cam_movement.interpolation_speed = (first) ? rviz_cinematographer_msgs::CameraMovement::RISING : rviz_cinematographer_msgs::CameraMovement::FULL;
+      cam_movement.interpolation_speed = (first) ? rviz_cinematographer_msgs::CameraMovement::RISING
+                                                 : rviz_cinematographer_msgs::CameraMovement::FULL;
       if(previous == markers_.begin())
       {
         // if the whole trajectory is between the first two markers, use WAVE, else decline
@@ -1018,7 +1030,8 @@ void TrajectoryEditor::moveCamToLast()
       convertMarkerToCamMovement(*next, cam_movement);
 
       // set interpolation speed first rising, then full speed, then declining
-      cam_movement.interpolation_speed = (first) ? rviz_cinematographer_msgs::CameraMovement::RISING : rviz_cinematographer_msgs::CameraMovement::FULL;
+      cam_movement.interpolation_speed = (first) ? rviz_cinematographer_msgs::CameraMovement::RISING
+                                                 : rviz_cinematographer_msgs::CameraMovement::FULL;
       if(next == std::prev(markers_.end()))
       {
         // if the whole trajectory is between the last two markers, use WAVE, else decline
@@ -1173,7 +1186,8 @@ void TrajectoryEditor::markersToSplinedCamTrajectory(const MarkerList& markers,
     position[2] = static_cast<float>(marker.marker.pose.position.z);
     input_eye_positions.push_back(position);
 
-    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -ui_.smoothness_spin_box->value()), marker.marker.pose.orientation);
+    tf::Vector3 rotated_vector = rotateVector(tf::Vector3(0, 0, -ui_.smoothness_spin_box->value()),
+                                              marker.marker.pose.orientation);
     position[0] = position[0] + static_cast<float>(rotated_vector.x());
     position[1] = position[1] + static_cast<float>(rotated_vector.y());
     position[2] = position[2] + static_cast<float>(rotated_vector.z());
@@ -1244,7 +1258,8 @@ void TrajectoryEditor::markersToSplinedCamTrajectory(const MarkerList& markers,
     }
     // else is not necessary - up is already set to default in makeCameraMovement
 
-    cam_movement.interpolation_speed = (first) ? rviz_cinematographer_msgs::CameraMovement::RISING : rviz_cinematographer_msgs::CameraMovement::FULL;
+    cam_movement.interpolation_speed = (first) ? rviz_cinematographer_msgs::CameraMovement::RISING
+                                               : rviz_cinematographer_msgs::CameraMovement::FULL;
 
     double transition_time = 0.0;
     if(smooth_velocity)
