@@ -52,7 +52,8 @@
 #include <spline_library/vector.h>
 
 
-namespace pose_interpolator {
+namespace pose_interpolator
+{
 
 /**
  * @brief Manipulates the rviz camera.
@@ -65,8 +66,8 @@ public:
   struct InteractiveMarkerWithTime
   {
     InteractiveMarkerWithTime(visualization_msgs::InteractiveMarker&& input_marker, const double time)
-    : marker(input_marker)
-      , transition_time(time)
+      : marker(input_marker)
+        , transition_time(time)
     {
     }
 
@@ -168,9 +169,9 @@ private:
    * @param[in] z   z position of marker.
    * @return InteractiveMarker.
    */
-  visualization_msgs::InteractiveMarker makeMarker(double x=0.0,
-                                                   double y=0.0,
-                                                   double z=0.0);
+  visualization_msgs::InteractiveMarker makeMarker(double x = 0.0,
+                                                   double y = 0.0,
+                                                   double z = 0.0);
 
   /**
    * @brief Colorize all markers in red.
@@ -339,7 +340,7 @@ private:
    * @param[in] transition_time transition time
    */
   void updatePoseInGUI(const geometry_msgs::Pose& pose,
-                       double transition_time=0.5);
+                       double transition_time = 0.5);
 
   /**
    * @brief Sets the value of the spin_box to the value without triggering a signal.

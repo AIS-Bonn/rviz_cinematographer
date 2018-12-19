@@ -66,17 +66,24 @@ set(H_FILES
     include/rqt_pose_interpolator/trajectory_editor.h
 )
 
+set(RESOURCES
+    src/resource.qrc
+)
+
 if(USE_QT5)
     qt5_wrap_ui(UIC_FILES ${UI_FILES})
     qt5_wrap_cpp(MOC_FILES ${H_FILES})
+    qt5_add_resources(RES_SOURCES ${RESOURCES})
 else()
     qt4_wrap_ui(UIC_FILES ${UI_FILES})
     qt4_wrap_cpp(MOC_FILES ${H_FILES})
+    qt4_add_resources(RES_SOURCES ${RESOURCES})
 endif()
 
 add_library(pose_interpolator_plugins
     ${UIC_FILES}
     ${MOC_FILES}
+    ${RES_SOURCES}
     src/plugins.cpp
     src/pose_interpolator.cpp
     src/trajectory_editor.cpp
