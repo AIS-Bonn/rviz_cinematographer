@@ -630,8 +630,8 @@ void CinematographerViewController::update(float dt, float ros_dt)
     double fraction = 0.0;
     if(do_record_)
     {
-      fraction = counter_ / (target_fps_ * goal->transition_time.toSec());
-      counter_++;
+      fraction = recorded_frames_counter_ / (target_fps_ * goal->transition_time.toSec());
+      recorded_frames_counter_++;
     }
     else
     {
@@ -769,13 +769,13 @@ void CinematographerViewController::update(float dt, float ros_dt)
     {
       // delete current start element in buffer
       cam_movements_buffer_.pop_front();
+      recorded_frames_counter_ = 0;
 
       // if there are still movements to perform
       if(cam_movements_buffer_.size() > 1)
       {
         // reset animate to perform the next movement
         animate_ = true;
-        counter_ = 0;
         // update the transition start time with the time the transition should have taken
         transition_start_time_ += ros::WallDuration(cam_movements_buffer_.front().transition_time.toSec());
       }
