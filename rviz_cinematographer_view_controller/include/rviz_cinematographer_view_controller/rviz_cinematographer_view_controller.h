@@ -360,14 +360,13 @@ protected:    //members
   ros::Publisher delete_pub_;
   image_transport::Publisher image_pub_;
 
-  int counter_ = 0;
-
   cv::VideoWriter output_video_;
   std::string path_to_output_;
   bool do_record_;
   int codec_;
   int target_fps_;
   int recorded_frames_counter_;
+  bool add_watermark_;
 };
 
 }  // namespace rviz_cinematographer_view_controller

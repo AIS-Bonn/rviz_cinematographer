@@ -70,6 +70,7 @@ CinematographerViewController::CinematographerViewController()
   , codec_(cv::VideoWriter::fourcc('D', 'I', 'V', 'X'))
   , target_fps_(60)
   , recorded_frames_counter_(0)
+  , add_watermark_(true)
 {
   interaction_disabled_cursor_ = makeIconCursor("package://rviz/icons/forbidden.svg");
 
@@ -123,6 +124,7 @@ void CinematographerViewController::setRecord(const rviz_cinematographer_msgs::R
   }
 
   target_fps_ = std::max(1, std::min(max_fps, (int)record_params->frames_per_second));
+  add_watermark_ = record_params->add_watermark;
 }
 
 void CinematographerViewController::updateTopics()
@@ -716,9 +718,6 @@ void CinematographerViewController::update(float dt, float ros_dt)
     if(do_record_ && !output_video_.isOpened())
       if(!output_video_.open(path_to_output_, codec_, target_fps_, img_size, true))
         ROS_ERROR_STREAM("Could not open the output video to write file in : " << path_to_output_);
-
-    // TODO: change to member and parameter that is set using a message 
-    bool add_watermark_ = true;
       
     if(output_video_.isOpened())
     {
