@@ -696,7 +696,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
 
     cv::Mat image_rgb(height, width, CV_8UC3, data);
 
-    // TODO: replace with sensor msgs
+    // TODO: recording to video in extra node?
 //    sensor_msgs::ImagePtr ros_image = sensor_msgs::ImagePtr(new sensor_msgs::Image());;
 //    ros_image->header.frame_id = attached_frame_property_->getStdString();
 //    ros_image->header.stamp = ros::Time::now();
@@ -717,10 +717,50 @@ void CinematographerViewController::update(float dt, float ros_dt)
       if(!output_video_.open(path_to_output_, codec_, target_fps_, img_size, true))
         ROS_ERROR_STREAM("Could not open the output video to write file in : " << path_to_output_);
 
+    // TODO: change to member and parameter that is set using a message 
+    bool add_watermark_ = true;
+      
     if(output_video_.isOpened())
+    {
+      if(add_watermark_)
+      {
+        // load watermark 
+        std::string path_to_watermark = ros::package::getPath("rqt_pose_interpolator");
+        if(path_to_watermark.empty())
+          ROS_ERROR("Can't find path to rqt_pose_interpolator_package to load watermark.");
+        else
+          path_to_watermark += "/icons/watermark.png"; 
+       
+        cv::Mat watermark = cv::imread(path_to_watermark, cv::IMREAD_UNCHANGED);
+        
+        // resize watermark to be at most half as wide as the image 
+        float watermark_resize_factor = (0.5f * image_rgb.cols) / watermark.cols;
+        if(watermark_resize_factor < 1.f)
+          cv::resize(watermark, watermark, cv::Size(), watermark_resize_factor, watermark_resize_factor);
+        
+        // add watermark 
+        int origin_watermark_row = image_rgb.rows - watermark.rows;
+        int origin_watermark_col = image_rgb.cols - watermark.cols;
+        int image_row = origin_watermark_row;
+        int image_col = origin_watermark_col;
+        float alpha = 0.8f;
+        for(int watermark_row = 0; watermark_row < watermark.rows; watermark_row++, image_row++)
+        {
+          image_col = origin_watermark_col;
+          for(int watermark_col = 0; watermark_col < watermark.cols; watermark_col++, image_col++)
+          {
+            // overlay if pixel in watermark is not transparent
+            unsigned char pixel_alpha = watermark.at<cv::Vec4b>(watermark_row, watermark_col)[3];
+            if(pixel_alpha != 0)
+              for(int i = 0; i < 3; ++i)
+                image_rgb.at<cv::Vec3b>(image_row, image_col)[i] = cv::saturate_cast<uchar>(alpha * image_rgb.at<cv::Vec3b>(image_row, image_col)[i] + (1.f-alpha) * watermark.at<cv::Vec4b>(watermark_row, watermark_col)[i]);
+           
+          }
+        }
+        
+      }
       output_video_.write(image_rgb);
-
-    //cv::imwrite("/tmp/Gray_Image" + std::to_string(counter_++) + ".jpg", image_rgb);
+    }
 
     delete[] data;
 

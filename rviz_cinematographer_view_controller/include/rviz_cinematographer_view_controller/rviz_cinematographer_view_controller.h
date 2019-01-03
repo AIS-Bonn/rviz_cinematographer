@@ -52,6 +52,7 @@
 
 #include <ros/subscriber.h>
 #include <ros/ros.h>
+#include <ros/package.h>
 
 #include <rviz_cinematographer_msgs/CameraMovement.h>
 #include <rviz_cinematographer_msgs/CameraTrajectory.h>
