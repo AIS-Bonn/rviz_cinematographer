@@ -59,10 +59,10 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   connect(ui_.marker_size_increase, SIGNAL(clicked(bool)), this, SLOT(increaseMarkerScale()));
   connect(ui_.marker_size_decrease, SIGNAL(clicked(bool)), this, SLOT(decreaseMarkerScale()));
 
+  connect(ui_.video_output_path_tool_button, SIGNAL(clicked(bool)), this, SLOT(setVideoOutputPath()));
+
   connect(ui_.open_file_push_button, SIGNAL(clicked(bool)), this, SLOT(loadTrajectoryFromFile()));
   connect(ui_.save_file_push_button, SIGNAL(clicked(bool)), this, SLOT(saveTrajectoryToFile()));
-
-  connect(ui_.video_output_path_tool_button, SIGNAL(clicked(bool)), this, SLOT(setVideoOutputPath()));
 
   // add widget to the user interface
   context.addWidget(widget_);
@@ -838,8 +838,9 @@ void TrajectoryEditor::publishRecordParams()
   rviz_cinematographer_msgs::Record record_params;
   record_params.do_record = true;
   record_params.path_to_output = ui_.video_output_path_line_edit->text().toStdString();
-  record_params.compress = ui_.video_compressed_check_box->isChecked();
   record_params.frames_per_second = ui_.video_fps_spin_box->value();
+  record_params.compress = ui_.video_compressed_check_box->isChecked();
+  record_params.add_watermark = ui_.watermark_check_box->isChecked();
   record_params_pub_.publish(record_params);
 }
 

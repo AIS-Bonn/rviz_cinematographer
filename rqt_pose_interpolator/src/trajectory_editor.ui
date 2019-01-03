@@ -336,7 +336,7 @@
             <x>0</x>
             <y>0</y>
             <width>481</width>
-            <height>556</height>
+            <height>560</height>
            </rect>
           </property>
           <attribute name="label">
@@ -939,6 +939,34 @@
               </layout>
              </item>
              <item>
+              <widget class="QSpinBox" name="video_fps_spin_box">
+               <property name="toolTip">
+                <string>Define the number of frames per second of the resulting video. </string>
+               </property>
+               <property name="layoutDirection">
+                <enum>Qt::LeftToRight</enum>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+               <property name="suffix">
+                <string/>
+               </property>
+               <property name="prefix">
+                <string>Frames Per Second : </string>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>120</number>
+               </property>
+               <property name="value">
+                <number>60</number>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QCheckBox" name="video_compressed_check_box">
                <property name="font">
                 <font>
@@ -966,30 +994,18 @@
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="video_fps_spin_box">
+              <widget class="QCheckBox" name="watermark_check_box">
                <property name="toolTip">
-                <string>Define the number of frames per second of the resulting video. </string>
+                <string>Adds watermark to recorded video. If you disable the watermark, please reference this tool in a comment below the video so others can find and use it as well.</string>
                </property>
                <property name="layoutDirection">
-                <enum>Qt::LeftToRight</enum>
+                <enum>Qt::RightToLeft</enum>
                </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               <property name="text">
+                <string>Add Watermark</string>
                </property>
-               <property name="suffix">
-                <string/>
-               </property>
-               <property name="prefix">
-                <string>Frames Per Second : </string>
-               </property>
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>120</number>
-               </property>
-               <property name="value">
-                <number>60</number>
+               <property name="checked">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -1167,8 +1183,9 @@
   <tabstop>frame_line_edit</tabstop>
   <tabstop>video_output_path_line_edit</tabstop>
   <tabstop>video_output_path_tool_button</tabstop>
-  <tabstop>video_compressed_check_box</tabstop>
   <tabstop>video_fps_spin_box</tabstop>
+  <tabstop>video_compressed_check_box</tabstop>
+  <tabstop>watermark_check_box</tabstop>
   <tabstop>save_file_push_button</tabstop>
   <tabstop>open_file_push_button</tabstop>
  </tabstops>
