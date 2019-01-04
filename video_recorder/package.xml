@@ -1,0 +1,30 @@
+<package format="2">
+
+  <name>video_recorder</name>
+  <version>0.1.1</version>
+  <description>Subscribes to images and generates a video.</description>
+  <author email="razlaw@ais.uni-bonn.de">Jan Razlaw</author>
+  <maintainer email="razlaw@ais.uni-bonn.de">Jan Razlaw</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>cmake_modules</depend>
+  <depend>roscpp</depend>
+  <depend>nodelet</depend>
+  <depend>cv_bridge</depend>
+  <depend>image_geometry</depend>
+  <depend>image_transport</depend>
+  <depend>sensor_msgs</depend>
+  <depend>rviz_cinematographer_msgs</depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- You can specify that this package is a metapackage here: -->
+    <!-- <metapackage/> -->
+    <nodelet plugin="${prefix}/nodelet_plugins.xml" />
+    <!-- Other tools can request additional information be placed here -->
+  </export>
+  
+</package>

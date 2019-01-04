@@ -100,7 +100,7 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   updateTrajectory();
 
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
-  record_finished_sub_ = ph.subscribe("/rviz/record_finished", 1, &TrajectoryEditor::recordFinishedCallback, this);
+  record_finished_sub_ = ph.subscribe("/video_recorder/record_finished", 1, &TrajectoryEditor::recordFinishedCallback, this);
   delete_marker_sub_ = ph.subscribe("/rviz/delete", 1, &TrajectoryEditor::removeCurrentMarker, this);
 }
 
@@ -845,9 +845,9 @@ void TrajectoryEditor::publishRecordParams()
 }
 
 void
-TrajectoryEditor::recordFinishedCallback(const rviz_cinematographer_msgs::RecordFinished::ConstPtr& record_finished)
+TrajectoryEditor::recordFinishedCallback(const rviz_cinematographer_msgs::Finished::ConstPtr& record_finished)
 {
-  if(record_finished->record_finished > 0)
+  if(record_finished->is_finished > 0)
     ui_.record_radio_button->setChecked(false);
 }
 

@@ -57,7 +57,8 @@
 #include <rviz_cinematographer_msgs/CameraMovement.h>
 #include <rviz_cinematographer_msgs/CameraTrajectory.h>
 #include <rviz_cinematographer_msgs/Record.h>
-#include <rviz_cinematographer_msgs/RecordFinished.h>
+#include <rviz_cinematographer_msgs/Finished.h>
+#include <rviz_cinematographer_msgs/Wait.h>
 #include <std_msgs/Empty.h>
 
 #include <nav_msgs/Odometry.h>
@@ -312,6 +313,12 @@ protected:  //methods
    */
   void setRecord(const rviz_cinematographer_msgs::Record::ConstPtr& record_params);
 
+  /** @brief Sets the duration the rendering has to wait for.
+   *
+   * @params[in] wait_duration  duration to wait for.
+   */
+  void setWaitDuration(const rviz_cinematographer_msgs::Wait::ConstPtr& wait_duration);
+
   Ogre::Vector3 fixedFrameToAttachedLocal(const Ogre::Vector3 &v) { return reference_orientation_.Inverse() * (v - reference_position_); }
   Ogre::Vector3 attachedLocalToFixedFrame(const Ogre::Vector3 &v) { return reference_position_ + (reference_orientation_ * v); }
 
@@ -353,20 +360,20 @@ protected:    //members
 
   ros::Subscriber trajectory_sub_;
   ros::Subscriber record_params_sub_;
+  ros::Subscriber wait_duration_sub_;
 
   ros::Publisher placement_pub_;
   ros::Publisher odometry_pub_;
-  ros::Publisher record_finished_pub_;
+  ros::Publisher finished_rendering_trajectory_pub_;
   ros::Publisher delete_pub_;
   image_transport::Publisher image_pub_;
 
-  cv::VideoWriter output_video_;
-  std::string path_to_output_;
-  bool do_record_;
-  int codec_;
+  bool render_frame_by_frame_;
   int target_fps_;
   int recorded_frames_counter_;
-  bool add_watermark_;
+  
+  bool do_wait_;
+  float wait_duration_;
 };
 
 }  // namespace rviz_cinematographer_view_controller

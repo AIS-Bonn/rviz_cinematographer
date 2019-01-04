@@ -7,4 +7,6 @@
         <rosparam command="load" file="$(find rqt_pose_interpolator)/trajectories/example_trajectory.yaml"/>
     </node>
 
+    <include file="$(find video_recorder)/launch/video_recorder.launch"/>
+    
 </launch>

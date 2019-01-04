@@ -1,0 +1,7 @@
+<library path="lib/libvideo_recorder_nodelet">
+  <class name="video_recorder/video_recorder_nodelet" type="video_recorder::VideoRecorderNodelet" base_class_type="nodelet::Nodelet">
+  <description>
+    Subscribes to images and generates video.
+  </description>
+  </class>
+</library>

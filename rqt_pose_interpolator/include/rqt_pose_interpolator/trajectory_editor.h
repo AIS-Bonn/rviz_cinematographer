@@ -25,7 +25,7 @@
 #include <rviz_cinematographer_msgs/CameraMovement.h>
 #include <rviz_cinematographer_msgs/CameraTrajectory.h>
 #include <rviz_cinematographer_msgs/Record.h>
-#include <rviz_cinematographer_msgs/RecordFinished.h>
+#include <rviz_cinematographer_msgs/Finished.h>
 
 #include <std_msgs/Empty.h>
 
@@ -380,7 +380,7 @@ private:
   void publishRecordParams();
 
   /** @brief Listen to the message that the recording is over. */
-  void recordFinishedCallback(const rviz_cinematographer_msgs::RecordFinished::ConstPtr& record_finished);
+  void recordFinishedCallback(const rviz_cinematographer_msgs::Finished::ConstPtr& record_finished);
 
   /** @brief Ui object - connection to GUI. */
   Ui::trajectory_editor ui_;

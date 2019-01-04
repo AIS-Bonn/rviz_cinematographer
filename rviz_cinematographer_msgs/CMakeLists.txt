@@ -16,11 +16,12 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_message_files(
    DIRECTORY msg 
-	FILES
+	 FILES
    CameraMovement.msg
    CameraTrajectory.msg
    Record.msg
-   RecordFinished.msg
+   Finished.msg
+   Wait.msg
 )
 
 generate_messages(

@@ -65,12 +65,11 @@ CinematographerViewController::CinematographerViewController()
 : nh_("")
   , animate_(false)
   , dragging_(false)
-  , path_to_output_("")
-  , do_record_(false)
-  , codec_(cv::VideoWriter::fourcc('D', 'I', 'V', 'X'))
+  , render_frame_by_frame_(false)
   , target_fps_(60)
   , recorded_frames_counter_(0)
-  , add_watermark_(true)
+  , do_wait_(false)
+  , wait_duration_(-1.f)
 {
   interaction_disabled_cursor_ = makeIconCursor("package://rviz/icons/forbidden.svg");
 
@@ -95,13 +94,14 @@ CinematographerViewController::CinematographerViewController()
   // TODO: latch?
   placement_pub_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
   odometry_pub_ = nh_.advertise<nav_msgs::Odometry>("/rviz/trajectory_odometry", 1);
-  record_finished_pub_ = nh_.advertise<rviz_cinematographer_msgs::RecordFinished>("/rviz/record_finished", 1);
+  finished_rendering_trajectory_pub_ = nh_.advertise<rviz_cinematographer_msgs::Finished>("/rviz/finished_rendering_trajectory", 1);
   delete_pub_ = nh_.advertise<std_msgs::Empty>("/rviz/delete", 1);
 
   image_transport::ImageTransport it(nh_);
   image_pub_ = it.advertise("/rviz/view_image", 1);
 
   record_params_sub_ = nh_.subscribe("/rviz/record", 1, &CinematographerViewController::setRecord, this);
+  wait_duration_sub_ = nh_.subscribe("/video_recorder/wait_duration", 1, &CinematographerViewController::setWaitDuration, this);
 }
 
 CinematographerViewController::~CinematographerViewController()
@@ -111,20 +111,19 @@ CinematographerViewController::~CinematographerViewController()
 
 void CinematographerViewController::setRecord(const rviz_cinematographer_msgs::Record::ConstPtr& record_params)
 {
-  do_record_ = record_params->do_record > 0;
-  path_to_output_ = record_params->path_to_output;
+  render_frame_by_frame_ = record_params->do_record > 0;
 
   int max_fps = 120;
-  if(record_params->compress > 0)
-    codec_ = cv::VideoWriter::fourcc('D', 'I', 'V', 'X');
-  else
-  {
-    codec_ = cv::VideoWriter::fourcc('P', 'I', 'M', '1');
+  if(record_params->compress == 0)
     max_fps = 60;
-  }
 
   target_fps_ = std::max(1, std::min(max_fps, (int)record_params->frames_per_second));
-  add_watermark_ = record_params->add_watermark;
+}
+
+void CinematographerViewController::setWaitDuration(const rviz_cinematographer_msgs::Wait::ConstPtr& wait_duration)
+{
+  wait_duration_ = wait_duration->seconds;
+  do_wait_ = true;
 }
 
 void CinematographerViewController::updateTopics()
@@ -508,16 +507,14 @@ void CinematographerViewController::cancelTransition()
 {
   animate_ = false;
   cam_movements_buffer_.clear();
-
-  if(do_record_)
+  recorded_frames_counter_ = 0;
+  
+  if(render_frame_by_frame_)
   {
-    if(output_video_.isOpened())
-      output_video_.release();
-
-    rviz_cinematographer_msgs::RecordFinished record_finished;
-    record_finished.record_finished = true;
-    record_finished_pub_.publish(record_finished);
-    do_record_ = false;
+    rviz_cinematographer_msgs::Finished finished;
+    finished.is_finished = true;
+    finished_rendering_trajectory_pub_.publish(finished);
+    render_frame_by_frame_ = false;
   }
 }
 
@@ -629,8 +626,9 @@ void CinematographerViewController::update(float dt, float ros_dt)
     auto start = cam_movements_buffer_.begin();
     auto goal = ++(cam_movements_buffer_.begin());
 
+    // TODO: rename fraction to something meaningful 
     double fraction = 0.0;
-    if(do_record_)
+    if(render_frame_by_frame_)
     {
       fraction = recorded_frames_counter_ / (target_fps_ * goal->transition_time.toSec());
       recorded_frames_counter_++;
@@ -648,6 +646,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
       animate_ = false;
     }
 
+    // TODO: extract to separate function 
     float progress = 0.0f;
     switch(goal->interpolation_speed)
     {
@@ -686,83 +685,53 @@ void CinematographerViewController::update(float dt, float ros_dt)
 
     publishCameraPose();
 
-    unsigned int height = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight();
-    unsigned int width = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth();
-    cv::Size img_size((int)width, (int)height);
-
-    Ogre::PixelFormat format = Ogre::PF_BYTE_BGR;
-    auto outBytesPerPixel = Ogre::PixelUtil::getNumElemBytes(format);
-    auto data = new unsigned char [width * height * outBytesPerPixel];
-    Ogre::Box extents(0, 0, width, height);
-    Ogre::PixelBox pb(extents, format, data);
-
-    cv::Mat image_rgb(height, width, CV_8UC3, data);
-
-    // TODO: recording to video in extra node?
-//    sensor_msgs::ImagePtr ros_image = sensor_msgs::ImagePtr(new sensor_msgs::Image());;
-//    ros_image->header.frame_id = attached_frame_property_->getStdString();
-//    ros_image->header.stamp = ros::Time::now();
-//    ros_image->height = height;
-//    ros_image->width = width;
-//    ros_image->encoding = sensor_msgs::image_encodings::BGR8;
-//    ros_image->is_bigendian = false;
-//    ros_image->step = static_cast<unsigned int>(width * outBytesPerPixel);
-//    size_t size = width * outBytesPerPixel * height;
-//    ros_image->data.resize(size);
-
-    context_->getViewManager()->getRenderPanel()->getRenderWindow()->copyContentsToMemory(pb, Ogre::RenderTarget::FB_AUTO);
-//    memcpy((char*)(&ros_image->data[0]), data, size);
-
-//    image_pub_.publish(ros_image);
-
-    if(do_record_ && !output_video_.isOpened())
-      if(!output_video_.open(path_to_output_, codec_, target_fps_, img_size, true))
-        ROS_ERROR_STREAM("Could not open the output video to write file in : " << path_to_output_);
-      
-    if(output_video_.isOpened())
+    // TODO: extract to function publishViewImage 
+    if(render_frame_by_frame_ && image_pub_.getNumSubscribers() > 0)
     {
-      if(add_watermark_)
+      // wait for specified duration - e.g. if recorder is not fast enough
+      if(do_wait_)
       {
-        // load watermark 
-        std::string path_to_watermark = ros::package::getPath("rqt_pose_interpolator");
-        if(path_to_watermark.empty())
-          ROS_ERROR("Can't find path to rqt_pose_interpolator_package to load watermark.");
-        else
-          path_to_watermark += "/icons/watermark.png"; 
-       
-        cv::Mat watermark = cv::imread(path_to_watermark, cv::IMREAD_UNCHANGED);
-        
-        // resize watermark to be at most half as wide as the image 
-        float watermark_resize_factor = (0.5f * image_rgb.cols) / watermark.cols;
-        if(watermark_resize_factor < 1.f)
-          cv::resize(watermark, watermark, cv::Size(), watermark_resize_factor, watermark_resize_factor);
-        
-        // add watermark 
-        int origin_watermark_row = image_rgb.rows - watermark.rows;
-        int origin_watermark_col = image_rgb.cols - watermark.cols;
-        int image_row = origin_watermark_row;
-        int image_col = origin_watermark_col;
-        float alpha = 0.8f;
-        for(int watermark_row = 0; watermark_row < watermark.rows; watermark_row++, image_row++)
+        ROS_INFO_STREAM("Waiting for " << wait_duration_ << " seconds.");
+        ros::WallTime start = ros::WallTime::now();
+        ros::Rate r(30); // 30Hz
+        ros::WallDuration duration_waited;
+        do
         {
-          image_col = origin_watermark_col;
-          for(int watermark_col = 0; watermark_col < watermark.cols; watermark_col++, image_col++)
-          {
-            // overlay if pixel in watermark is not transparent
-            unsigned char pixel_alpha = watermark.at<cv::Vec4b>(watermark_row, watermark_col)[3];
-            if(pixel_alpha != 0)
-              for(int i = 0; i < 3; ++i)
-                image_rgb.at<cv::Vec3b>(image_row, image_col)[i] = cv::saturate_cast<uchar>(alpha * image_rgb.at<cv::Vec3b>(image_row, image_col)[i] + (1.f-alpha) * watermark.at<cv::Vec4b>(watermark_row, watermark_col)[i]);
-           
-          }
+          r.sleep();
+          duration_waited = ros::WallTime::now() - start;
         }
-        
+        while(duration_waited.toSec() < wait_duration_);
       }
-      output_video_.write(image_rgb);
+      
+      unsigned int height = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight();
+      unsigned int width = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth();
+
+      Ogre::PixelFormat format = Ogre::PF_BYTE_BGR;
+      auto outBytesPerPixel = Ogre::PixelUtil::getNumElemBytes(format);
+      auto data = new unsigned char [width * height * outBytesPerPixel];
+      Ogre::Box extents(0, 0, width, height);
+      Ogre::PixelBox pb(extents, format, data);
+
+      // publish image 
+      sensor_msgs::ImagePtr ros_image = sensor_msgs::ImagePtr(new sensor_msgs::Image());;
+      ros_image->header.frame_id = attached_frame_property_->getStdString();
+      ros_image->header.stamp = ros::Time::now();
+      ros_image->height = height;
+      ros_image->width = width;
+      ros_image->encoding = sensor_msgs::image_encodings::BGR8;
+      ros_image->is_bigendian = false;
+      ros_image->step = static_cast<unsigned int>(width * outBytesPerPixel);
+      size_t size = width * outBytesPerPixel * height;
+      ros_image->data.resize(size);
+
+      context_->getViewManager()->getRenderPanel()->getRenderWindow()->copyContentsToMemory(pb, Ogre::RenderTarget::FB_AUTO);
+      memcpy((char*)(&ros_image->data[0]), data, size);
+
+      image_pub_.publish(ros_image);
+
+      delete[] data;
     }
-
-    delete[] data;
-
+    
     // if current movement is over
     if(!animate_)
     {
@@ -783,15 +752,13 @@ void CinematographerViewController::update(float dt, float ros_dt)
         // clean up
         cam_movements_buffer_.clear();
 
-        if(do_record_)
+        // publish that the rendering is finished 
+        if(render_frame_by_frame_)
         {
-          if(output_video_.isOpened())
-            output_video_.release();
-
-          rviz_cinematographer_msgs::RecordFinished record_finished;
-          record_finished.record_finished = true;
-          record_finished_pub_.publish(record_finished);
-          do_record_ = false;
+          rviz_cinematographer_msgs::Finished finished;
+          finished.is_finished = true;
+          finished_rendering_trajectory_pub_.publish(finished);
+          render_frame_by_frame_ = false;
         }
       }
     }

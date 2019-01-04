@@ -1,0 +1,8 @@
+<launch>
+  
+  <node pkg="nodelet" type="nodelet" name="video_recorder_nodelet"
+        args="standalone video_recorder/video_recorder_nodelet" output="screen" >
+    <!--param name="input_topic" value="$(arg input_topic)"/-->
+  </node>
+  
+</launch>
