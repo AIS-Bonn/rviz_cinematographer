@@ -45,27 +45,46 @@ protected:
    * @brief Nodelet initialization.
    */
   virtual void onInit();
-  
-  /** @brief Sets parameters requested with service call and initializes a thread to process incoming images.
+
+  /** @brief Sets requested recording parameters and initializes a thread to process incoming images.
    *
    * @params[in] record_params  specifies that a record should be made and the parameters that should be used.
    */
   void recordParamsCallback(const rviz_cinematographer_msgs::Record::ConstPtr& record_params);
 
-  //TODO
-  void renderingFinishedCallback(const rviz_cinematographer_msgs::Finished::ConstPtr& finished);
+  /** @brief Awaits a message indicating that the image stream ended to stop recording.
+   * 
+   * Waits until image_queue is processed, releases video writer and publishes that the recording is finished.
+   *
+   * @params[in] rendering_finished  true if image stream ended.
+   */
+  void renderingFinishedCallback(const rviz_cinematographer_msgs::Finished::ConstPtr& rendering_finished);
 
-  //TODO
+  /** @brief Stores subscribed images in queue and publishes a message if queue is too large.
+   * 
+   * If queue's size exceeds max_queue_size, the duration it takes to process most of the queue is computed and 
+   * published. This message can be used by the source of the image stream to wait for the estimated duration.
+   *
+   * @params[in] input_image  subscribed image.
+   */
   void imageCallback(const sensor_msgs::ImageConstPtr& input_image);
 
-  //TODO
+  /** @brief Feeds images from queue to video writer, optionally adding a watermark. */
   void processImages();
 
-  // TODO resize watermark to be at most half as wide as the image
-  void resizeWatermark(cv::Mat& watermark, int image_width);
-  
-  // TODO
-  void addWatermark(cv::Mat& image, cv::Mat& watermark);
+  /** @brief Resizes watermark to be at most half as wide as the input images.
+   * 
+   * @params[in,out]    watermark       the watermark being resized.
+   * @params[in]        image_width     the width of the input images.
+   */
+  void resizeWatermark(cv::Mat& watermark, const int image_width);
+
+  /** @brief Adds watermark to the image.
+   * 
+   * @params[in,out]    image       the image being watermarked.
+   * @params[in]        watermark   the watermark.
+   */
+  void addWatermark(cv::Mat& image, const cv::Mat& watermark);
 
 protected:
 
@@ -73,14 +92,14 @@ protected:
 
   ros::Subscriber record_params_sub_;
   ros::Subscriber rendering_finished_sub_;
-  
+
   image_transport::Subscriber image_sub_;
   std::queue<cv_bridge::CvImagePtr> image_queue_;
   int max_queue_size_;
   ros::WallDuration process_one_image_duration_;
-  
+
   boost::shared_ptr<boost::thread> process_images_thread_;
-  
+
   ros::Publisher record_finished_pub_;
   ros::Publisher wait_pub_;
 
