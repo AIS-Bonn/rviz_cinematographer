@@ -701,6 +701,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
           duration_waited = ros::WallTime::now() - start;
         }
         while(duration_waited.toSec() < wait_duration_);
+        do_wait_ = false;
       }
       
       unsigned int height = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight();
@@ -757,6 +758,8 @@ void CinematographerViewController::update(float dt, float ros_dt)
         {
           rviz_cinematographer_msgs::Finished finished;
           finished.is_finished = true;
+          // wait a little so last image is send before this "finished"-message 
+          ros::Rate r(1); r.sleep();
           finished_rendering_trajectory_pub_.publish(finished);
           render_frame_by_frame_ = false;
         }
