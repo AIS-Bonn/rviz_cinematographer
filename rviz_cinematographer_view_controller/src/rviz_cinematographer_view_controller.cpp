@@ -616,6 +616,22 @@ void CinematographerViewController::publishOdometry(const Ogre::Vector3& positio
   odometry_pub_.publish(odometry);
 }
 
+float CinematographerViewController::computeRelativeProgressInSpace(double relative_progress_in_time, uint8_t interpolation_speed)
+{
+  switch(interpolation_speed)
+  {
+    case rviz_cinematographer_msgs::CameraMovement::RISING:
+      return 1.f - static_cast<float>(cos(relative_progress_in_time * M_PI_2));
+    case rviz_cinematographer_msgs::CameraMovement::DECLINING:
+      return static_cast<float>(-cos(relative_progress_in_time * M_PI_2 + M_PI_2));
+    case rviz_cinematographer_msgs::CameraMovement::FULL:
+      return static_cast<float>(relative_progress_in_time);
+    case rviz_cinematographer_msgs::CameraMovement::WAVE:
+    default:
+      return 0.5f * ( 1.f - static_cast<float>(cos(relative_progress_in_time * M_PI)));
+  }
+}
+
 void CinematographerViewController::update(float dt, float ros_dt)
 {
   updateAttachedSceneNode();
@@ -626,48 +642,30 @@ void CinematographerViewController::update(float dt, float ros_dt)
     auto start = cam_movements_buffer_.begin();
     auto goal = ++(cam_movements_buffer_.begin());
 
-    // TODO: rename fraction to something meaningful 
-    double fraction = 0.0;
+    double relative_progress_in_time = 0.0;
     if(render_frame_by_frame_)
     {
-      fraction = recorded_frames_counter_ / (target_fps_ * goal->transition_time.toSec());
+      relative_progress_in_time = recorded_frames_counter_ / (target_fps_ * goal->transition_time.toSec());
       recorded_frames_counter_++;
     }
     else
     {
       ros::WallDuration time_from_start = ros::WallTime::now() - transition_start_time_;
-      fraction = time_from_start.toSec()/goal->transition_time.toSec();
+      relative_progress_in_time = time_from_start.toSec()/goal->transition_time.toSec();
     }
 
     // make sure we get all the way there before turning off
-    if(fraction >= 1.0)
+    if(relative_progress_in_time >= 1.0)
     {
-      fraction = 1.0;
+      relative_progress_in_time = 1.0;
       animate_ = false;
     }
 
-    // TODO: extract to separate function 
-    float progress = 0.0f;
-    switch(goal->interpolation_speed)
-    {
-      case rviz_cinematographer_msgs::CameraMovement::RISING:
-        progress = 1.f - static_cast<float>(cos(fraction * M_PI_2));
-        break;
-      case rviz_cinematographer_msgs::CameraMovement::DECLINING:
-        progress = static_cast<float>(-cos(fraction * M_PI_2 + M_PI_2));
-        break;
-      case rviz_cinematographer_msgs::CameraMovement::FULL:
-        progress = static_cast<float>(fraction);
-        break;
-      case rviz_cinematographer_msgs::CameraMovement::WAVE:
-      default:
-        progress = 0.5f * ( 1.f - static_cast<float>(cos(fraction * M_PI)));
-        break;
-    }
+    float relative_progress_in_space = computeRelativeProgressInSpace(relative_progress_in_time, goal->interpolation_speed);
 
-    Ogre::Vector3 new_position = start->eye + progress*(goal->eye - start->eye);
-    Ogre::Vector3 new_focus = start->focus + progress*(goal->focus - start->focus);
-    Ogre::Vector3 new_up = start->up + progress*(goal->up - start->up);
+    Ogre::Vector3 new_position = start->eye + relative_progress_in_space * (goal->eye - start->eye);
+    Ogre::Vector3 new_focus = start->focus + relative_progress_in_space * (goal->focus - start->focus);
+    Ogre::Vector3 new_up = start->up + relative_progress_in_space * (goal->up - start->up);
 
     if(odometry_pub_.getNumSubscribers() != 0)
       publishOdometry(new_position, (new_position - eye_point_property_->getVector()) / ros_dt);
@@ -685,54 +683,9 @@ void CinematographerViewController::update(float dt, float ros_dt)
 
     publishCameraPose();
 
-    // TODO: extract to function publishViewImage 
     if(render_frame_by_frame_ && image_pub_.getNumSubscribers() > 0)
-    {
-      // wait for specified duration - e.g. if recorder is not fast enough
-      if(do_wait_)
-      {
-        ROS_INFO_STREAM("Waiting for " << wait_duration_ << " seconds.");
-        ros::WallTime start = ros::WallTime::now();
-        ros::Rate r(30); // 30Hz
-        ros::WallDuration duration_waited;
-        do
-        {
-          r.sleep();
-          duration_waited = ros::WallTime::now() - start;
-        }
-        while(duration_waited.toSec() < wait_duration_);
-        do_wait_ = false;
-      }
-      
-      unsigned int height = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight();
-      unsigned int width = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth();
+      publishViewImage();
 
-      Ogre::PixelFormat format = Ogre::PF_BYTE_BGR;
-      auto outBytesPerPixel = Ogre::PixelUtil::getNumElemBytes(format);
-      auto data = new unsigned char [width * height * outBytesPerPixel];
-      Ogre::Box extents(0, 0, width, height);
-      Ogre::PixelBox pb(extents, format, data);
-
-      // publish image 
-      sensor_msgs::ImagePtr ros_image = sensor_msgs::ImagePtr(new sensor_msgs::Image());;
-      ros_image->header.frame_id = attached_frame_property_->getStdString();
-      ros_image->header.stamp = ros::Time::now();
-      ros_image->height = height;
-      ros_image->width = width;
-      ros_image->encoding = sensor_msgs::image_encodings::BGR8;
-      ros_image->is_bigendian = false;
-      ros_image->step = static_cast<unsigned int>(width * outBytesPerPixel);
-      size_t size = width * outBytesPerPixel * height;
-      ros_image->data.resize(size);
-
-      context_->getViewManager()->getRenderPanel()->getRenderWindow()->copyContentsToMemory(pb, Ogre::RenderTarget::FB_AUTO);
-      memcpy((char*)(&ros_image->data[0]), data, size);
-
-      image_pub_.publish(ros_image);
-
-      delete[] data;
-    }
-    
     // if current movement is over
     if(!animate_)
     {
@@ -759,7 +712,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
           rviz_cinematographer_msgs::Finished finished;
           finished.is_finished = true;
           // wait a little so last image is send before this "finished"-message 
-          ros::Rate r(1); r.sleep();
+          ros::WallRate r(1); r.sleep();
           finished_rendering_trajectory_pub_.publish(finished);
           render_frame_by_frame_ = false;
         }
@@ -768,6 +721,45 @@ void CinematographerViewController::update(float dt, float ros_dt)
   }
 
   updateCamera();
+}
+
+void CinematographerViewController::publishViewImage()
+{
+  // wait for specified duration - e.g. if recorder is not fast enough
+  if(do_wait_)
+  {
+    ros::WallRate r(1.f/wait_duration_); 
+    r.sleep();
+    do_wait_ = false;
+  }
+
+  unsigned int height = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight();
+  unsigned int width = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth();
+
+  // create a PixelBox of the needed size to store the rendered image
+  Ogre::PixelFormat format = Ogre::PF_BYTE_BGR;
+  auto outBytesPerPixel = Ogre::PixelUtil::getNumElemBytes(format);
+  auto data = new unsigned char [width * height * outBytesPerPixel];
+  Ogre::Box extents(0, 0, width, height);
+  Ogre::PixelBox pb(extents, format, data);
+  context_->getViewManager()->getRenderPanel()->getRenderWindow()->copyContentsToMemory(pb, Ogre::RenderTarget::FB_AUTO);
+
+  // convert the image in the PixelBox to a sensor_msgs::Image and publish
+  sensor_msgs::ImagePtr ros_image = sensor_msgs::ImagePtr(new sensor_msgs::Image());;
+  ros_image->header.frame_id = attached_frame_property_->getStdString();
+  ros_image->header.stamp = ros::Time::now();
+  ros_image->height = height;
+  ros_image->width = width;
+  ros_image->encoding = sensor_msgs::image_encodings::BGR8;
+  ros_image->is_bigendian = false;
+  ros_image->step = static_cast<unsigned int>(width * outBytesPerPixel);
+  size_t size = width * outBytesPerPixel * height;
+  ros_image->data.resize(size);
+  memcpy((char*)(&ros_image->data[0]), data, size);
+
+  image_pub_.publish(ros_image);
+
+  delete[] data;
 }
 
 void CinematographerViewController::updateCamera()

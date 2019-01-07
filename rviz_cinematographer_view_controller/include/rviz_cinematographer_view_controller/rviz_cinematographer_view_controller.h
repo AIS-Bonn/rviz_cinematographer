@@ -325,6 +325,15 @@ protected:  //methods
   /** @brief Return the distance between camera and focal point. */
   float getDistanceFromCameraToFocalPoint();
 
+  /** @brief Convert the relative progress in time to the corresponding relative progress in space wrt. the interpolation speed profile.
+   *
+   * @params[in] relative_progress_in_time  the relative progress in time.
+   * @params[in] interpolation_speed        speed profile.
+   */  
+  float computeRelativeProgressInSpace(double relative_progress_in_time, uint8_t interpolation_speed);
+
+  /** @brief Publish the rendered image that is visible to the user in rviz. */
+  void publishViewImage();
 
 protected:    //members
 
