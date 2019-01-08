@@ -1,18 +1,4 @@
 <library path="lib/libpose_interpolator_plugins">
-    <class name="pose_interpolator/PoseInterpolator" type="pose_interpolator::PoseInterpolator" base_class_type="rqt_gui_cpp::Plugin">
-        <description>
-            Define and perform simple camera movements inside rviz.
-        </description>
-        <qtgui>
-            <group>
-              <label>Visualization</label>
-            </group>
-            <label>Pose Interpolator</label>
-            <icon type="theme">system-help</icon>
-            <statustip>statustip.</statustip>
-        </qtgui>
-    </class>
-
     <class name="pose_interpolator/TrajectoryEditor" type="pose_interpolator::TrajectoryEditor" base_class_type="rqt_gui_cpp::Plugin">
         <description>
             Manipulate the rviz camera by creating camera trajectories.

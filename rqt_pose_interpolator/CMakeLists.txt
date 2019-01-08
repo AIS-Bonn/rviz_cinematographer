@@ -53,18 +53,16 @@ catkin_package(
 
 include_directories(
     include
-    ${CATKIN_DEVEL_PREFIX}/../build/${PROJECT_NAME} # workaround for ui_pose_interpolator.h file
+    ${CATKIN_DEVEL_PREFIX}/../build/${PROJECT_NAME} # workaround for ui_trajectory_editor.h file
     ${catkin_INCLUDE_DIRS}
 )
 
 set(UI_FILES
-    src/pose_interpolator.ui
-    src/trajectory_editor.ui
+  src/trajectory_editor.ui
 )
 
 set(H_FILES
-    include/rqt_pose_interpolator/pose_interpolator.h
-    include/rqt_pose_interpolator/trajectory_editor.h
+  include/rqt_pose_interpolator/trajectory_editor.h
 )
 
 set(RESOURCES
@@ -86,7 +84,6 @@ add_library(pose_interpolator_plugins
     ${MOC_FILES}
     ${RES_SOURCES}
     src/plugins.cpp
-    src/pose_interpolator.cpp
     src/trajectory_editor.cpp
 )
 

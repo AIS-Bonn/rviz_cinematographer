@@ -1,8 +1,0 @@
-<launch>
-
-    <!-- Start RViz separately, because the rqt rviz plugin can't handle published trajectories. -->
-    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find rqt_pose_interpolator)/launch/pose_interpolator.rviz"/>
-
-    <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" args="-s pose_interpolator/PoseInterpolator"/>
-
-</launch>
