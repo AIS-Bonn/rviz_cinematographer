@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(rqt_pose_interpolator)
+project(rviz_cinematographer_gui)
 
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
@@ -53,16 +53,16 @@ catkin_package(
 
 include_directories(
     include
-    ${CATKIN_DEVEL_PREFIX}/../build/${PROJECT_NAME} # workaround for ui_trajectory_editor.h file
+    ${CATKIN_DEVEL_PREFIX}/../build/${PROJECT_NAME} # workaround for ui_rviz_cinematographer_gui.h file
     ${catkin_INCLUDE_DIRS}
 )
 
 set(UI_FILES
-  src/trajectory_editor.ui
+  	src/rviz_cinematographer_gui.ui
 )
 
 set(H_FILES
-  include/rqt_pose_interpolator/trajectory_editor.h
+  	include/rviz_cinematographer_gui/rviz_cinematographer_gui.h
 )
 
 set(RESOURCES
@@ -79,21 +79,21 @@ else()
     qt4_add_resources(RES_SOURCES ${RESOURCES})
 endif()
 
-add_library(pose_interpolator_plugins
+add_library(rviz_cinematographer_gui_plugin
     ${UIC_FILES}
     ${MOC_FILES}
     ${RES_SOURCES}
     src/plugins.cpp
-    src/trajectory_editor.cpp
+    src/rviz_cinematographer_gui.cpp
 )
 
-target_link_libraries(pose_interpolator_plugins
-    ${catkin_LIBRARIES}
+target_link_libraries(rviz_cinematographer_gui_plugin
     ${QT_LIBRARIES}
     yaml-cpp
+    ${catkin_LIBRARIES}
 )
 
-add_dependencies(pose_interpolator_plugins
+add_dependencies(rviz_cinematographer_gui_plugin
     ${catkin_EXPORTED_TARGETS}
 )
 
@@ -101,7 +101,7 @@ add_dependencies(pose_interpolator_plugins
 ## Install ##
 #############
 
-install(TARGETS pose_interpolator_plugins
+install(TARGETS rviz_cinematographer_gui_plugin
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

@@ -5,12 +5,12 @@
  * @author Jan Razlaw
  */
 
-#include <rqt_pose_interpolator/trajectory_editor.h>
+#include <rviz_cinematographer_gui/rviz_cinematographer_gui.h>
 
-namespace pose_interpolator
+namespace rviz_cinematographer_gui
 {
 
-TrajectoryEditor::TrajectoryEditor()
+RvizCinematographerGUI::RvizCinematographerGUI()
   : rqt_gui_cpp::Plugin()
     , widget_(0)
     , current_marker_name_("")
@@ -18,10 +18,10 @@ TrajectoryEditor::TrajectoryEditor()
   //cam_pose_.orientation.w = 1.0;
 
   // give QObjects reasonable names
-  setObjectName("TrajectoryEditor");
+  setObjectName("RvizCinematographerGUI");
 }
 
-void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
+void RvizCinematographerGUI::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   ros::NodeHandle ph("~");
   camera_trajectory_pub_ = ph.advertise<rviz_cinematographer_msgs::CameraTrajectory>("/rviz/camera_trajectory", 1);
@@ -67,10 +67,10 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   // add widget to the user interface
   context.addWidget(widget_);
 
-  menu_handler_.insert("Remove marker", boost::bind(&TrajectoryEditor::removeClickedMarker, this, _1));
-  menu_handler_.insert("Add marker after", boost::bind(&TrajectoryEditor::addMarkerBehind, this, _1));
-  menu_handler_.insert("Add marker here", boost::bind(&TrajectoryEditor::addMarkerHere, this, _1));
-  menu_handler_.insert("Add marker before", boost::bind(&TrajectoryEditor::addMarkerBefore, this, _1));
+  menu_handler_.insert("Remove marker", boost::bind(&RvizCinematographerGUI::removeClickedMarker, this, _1));
+  menu_handler_.insert("Add marker after", boost::bind(&RvizCinematographerGUI::addMarkerBehind, this, _1));
+  menu_handler_.insert("Add marker here", boost::bind(&RvizCinematographerGUI::addMarkerHere, this, _1));
+  menu_handler_.insert("Add marker before", boost::bind(&RvizCinematographerGUI::addMarkerBefore, this, _1));
 
   // set up markers
   std::string poses_param_name = "poses";
@@ -99,12 +99,12 @@ void TrajectoryEditor::initPlugin(qt_gui_cpp::PluginContext& context)
   updateServer(markers_);
   updateTrajectory();
 
-  camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &TrajectoryEditor::camPoseCallback, this);
-  record_finished_sub_ = ph.subscribe("/video_recorder/record_finished", 1, &TrajectoryEditor::recordFinishedCallback, this);
-  delete_marker_sub_ = ph.subscribe("/rviz/delete", 1, &TrajectoryEditor::removeCurrentMarker, this);
+  camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &RvizCinematographerGUI::camPoseCallback, this);
+  record_finished_sub_ = ph.subscribe("/video_recorder/record_finished", 1, &RvizCinematographerGUI::recordFinishedCallback, this);
+  delete_marker_sub_ = ph.subscribe("/rviz/delete", 1, &RvizCinematographerGUI::removeCurrentMarker, this);
 }
 
-void TrajectoryEditor::shutdownPlugin()
+void RvizCinematographerGUI::shutdownPlugin()
 {
   // create empty path to "erase" previous path on shutdown
   nav_msgs::Path path;
@@ -121,27 +121,27 @@ void TrajectoryEditor::shutdownPlugin()
   view_poses_array_pub_.shutdown();
 }
 
-void TrajectoryEditor::saveSettings(qt_gui_cpp::Settings& plugin_settings,
+void RvizCinematographerGUI::saveSettings(qt_gui_cpp::Settings& plugin_settings,
                                     qt_gui_cpp::Settings& instance_settings) const
 {
   // TODO save intrinsic configuration, usually using:
   //instance_settings.setValue(k, v)
 }
 
-void TrajectoryEditor::restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
+void RvizCinematographerGUI::restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
                                        const qt_gui_cpp::Settings& instance_settings)
 {
   // TODO restore intrinsic configuration, usually using:
   // v = instance_settings.value(k)
 }
 
-void TrajectoryEditor::camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_pose)
+void RvizCinematographerGUI::camPoseCallback(const geometry_msgs::Pose::ConstPtr& cam_pose)
 {
   cam_pose_ = geometry_msgs::Pose(*cam_pose);
   server_->applyChanges();
 }
 
-void TrajectoryEditor::updateTrajectory()
+void RvizCinematographerGUI::updateTrajectory()
 {
   if(markers_.size() < 2)
     return;
@@ -180,7 +180,7 @@ void TrajectoryEditor::updateTrajectory()
   server_->applyChanges();
 }
 
-void TrajectoryEditor::safeTrajectoryToFile(const std::string& file_path)
+void RvizCinematographerGUI::safeTrajectoryToFile(const std::string& file_path)
 {
   std::ofstream file;
   file.open(file_path, std::ofstream::trunc);
@@ -203,7 +203,7 @@ void TrajectoryEditor::safeTrajectoryToFile(const std::string& file_path)
   file.close();
 }
 
-void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
+void RvizCinematographerGUI::addMarkerBefore(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   geometry_msgs::Pose pose_before, clicked_pose;
   bool pose_before_initialized = false;
@@ -264,7 +264,7 @@ void TrajectoryEditor::addMarkerBefore(const visualization_msgs::InteractiveMark
   updateTrajectory();
 }
 
-void TrajectoryEditor::addMarkerHere(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
+void RvizCinematographerGUI::addMarkerHere(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   // delete all markers from server and safe clicked marker
   auto clicked_element = markers_.end();
@@ -293,7 +293,7 @@ void TrajectoryEditor::addMarkerHere(const visualization_msgs::InteractiveMarker
   updateTrajectory();
 }
 
-void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
+void RvizCinematographerGUI::addMarkerBehind(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   geometry_msgs::Pose clicked_pose, pose_behind;
   bool clicked_pose_initialized = false;
@@ -355,7 +355,7 @@ void TrajectoryEditor::addMarkerBehind(const visualization_msgs::InteractiveMark
   updateTrajectory();
 }
 
-void TrajectoryEditor::setCurrentTo(TimedMarker& marker)
+void RvizCinematographerGUI::setCurrentTo(TimedMarker& marker)
 {
   marker.marker.controls[0].markers[0].color.r = 0.f;
   marker.marker.controls[0].markers[0].color.g = 1.f;
@@ -364,7 +364,7 @@ void TrajectoryEditor::setCurrentTo(TimedMarker& marker)
   updatePoseInGUI(marker.marker.pose, marker.transition_time);
 }
 
-void TrajectoryEditor::setCurrentFromTo(TimedMarker& old_current,
+void RvizCinematographerGUI::setCurrentFromTo(TimedMarker& old_current,
                                         TimedMarker& new_current)
 {
   // update current marker
@@ -382,17 +382,17 @@ void TrajectoryEditor::setCurrentFromTo(TimedMarker& old_current,
   updateServer(markers_);
 }
 
-void TrajectoryEditor::removeCurrentMarker(const std_msgs::EmptyConstPtr& empty)
+void RvizCinematographerGUI::removeCurrentMarker(const std_msgs::EmptyConstPtr& empty)
 {
   removeMarker(current_marker_name_);
 }
 
-void TrajectoryEditor::removeClickedMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
+void RvizCinematographerGUI::removeClickedMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   removeMarker(feedback->marker_name);
 }
 
-void TrajectoryEditor::removeMarker(const std::string& marker_name)
+void RvizCinematographerGUI::removeMarker(const std::string& marker_name)
 {
   if(markers_.size() < 3)
   {
@@ -432,7 +432,7 @@ void TrajectoryEditor::removeMarker(const std::string& marker_name)
   updateTrajectory();
 }
 
-void TrajectoryEditor::updateServer(MarkerList& markers)
+void RvizCinematographerGUI::updateServer(MarkerList& markers)
 {
   size_t count = 0;
   for(auto& marker : markers)
@@ -440,14 +440,14 @@ void TrajectoryEditor::updateServer(MarkerList& markers)
     marker.marker.name = std::to_string(count);
     marker.marker.description = std::to_string(count);
     count++;
-    server_->insert(marker.marker, boost::bind(&TrajectoryEditor::processFeedback, this, _1));
+    server_->insert(marker.marker, boost::bind(&RvizCinematographerGUI::processFeedback, this, _1));
     menu_handler_.apply(*server_, marker.marker.name);
   }
 
   server_->applyChanges();
 }
 
-void TrajectoryEditor::loadParams(const ros::NodeHandle& nh,
+void RvizCinematographerGUI::loadParams(const ros::NodeHandle& nh,
                                   const std::string& param_name)
 {
   XmlRpc::XmlRpcValue pose_list;
@@ -479,7 +479,7 @@ void TrajectoryEditor::loadParams(const ros::NodeHandle& nh,
   }
 }
 
-TrajectoryEditor::TimedMarker& TrajectoryEditor::getMarkerByName(const std::string& marker_name)
+RvizCinematographerGUI::TimedMarker& RvizCinematographerGUI::getMarkerByName(const std::string& marker_name)
 {
   for(auto& marker : markers_)
   {
@@ -491,7 +491,7 @@ TrajectoryEditor::TimedMarker& TrajectoryEditor::getMarkerByName(const std::stri
   return tmp;
 }
 
-bool TrajectoryEditor::isCamWithinBounds()
+bool RvizCinematographerGUI::isCamWithinBounds()
 {
   ui_.messages_label->setText(QString("Message: Right click on markers for options."));
 
@@ -509,7 +509,7 @@ bool TrajectoryEditor::isCamWithinBounds()
   return true;
 }
 
-void TrajectoryEditor::rvizCamToMarkerOrientation(const geometry_msgs::Pose& rviz_cam_pose,
+void RvizCinematographerGUI::rvizCamToMarkerOrientation(const geometry_msgs::Pose& rviz_cam_pose,
                                                   geometry_msgs::Pose& marker_pose)
 {
   // rotate cam pose around z axis for -90 degrees
@@ -520,7 +520,7 @@ void TrajectoryEditor::rvizCamToMarkerOrientation(const geometry_msgs::Pose& rvi
   marker_pose.position = cam_pose_.position;
 }
 
-void TrajectoryEditor::appendCamPoseToTrajectory()
+void RvizCinematographerGUI::appendCamPoseToTrajectory()
 {
   if(!isCamWithinBounds())
     return;
@@ -549,7 +549,7 @@ void TrajectoryEditor::appendCamPoseToTrajectory()
   updateTrajectory();
 }
 
-void TrajectoryEditor::setCurrentPoseToCam()
+void RvizCinematographerGUI::setCurrentPoseToCam()
 {
   if(!isCamWithinBounds())
     return;
@@ -566,7 +566,7 @@ void TrajectoryEditor::setCurrentPoseToCam()
   updateTrajectory();
 }
 
-void TrajectoryEditor::setMarkerFrames()
+void RvizCinematographerGUI::setMarkerFrames()
 {
   for(auto& marker : markers_)
     marker.marker.header.frame_id = ui_.frame_line_edit->text().toStdString();
@@ -575,17 +575,17 @@ void TrajectoryEditor::setMarkerFrames()
   updateTrajectory();
 }
 
-void TrajectoryEditor::increaseMarkerScale()
+void RvizCinematographerGUI::increaseMarkerScale()
 {
   updateMarkerScales(1.1f);
 }
 
-void TrajectoryEditor::decreaseMarkerScale()
+void RvizCinematographerGUI::decreaseMarkerScale()
 {
   updateMarkerScales(0.9f);
 }
 
-void TrajectoryEditor::updateMarkerScale(TimedMarker& marker, float scale_factor)
+void RvizCinematographerGUI::updateMarkerScale(TimedMarker& marker, float scale_factor)
 {
   marker.marker.scale *= scale_factor;
   marker.marker.controls[0].markers[0].scale.x *= scale_factor;
@@ -596,7 +596,7 @@ void TrajectoryEditor::updateMarkerScale(TimedMarker& marker, float scale_factor
   marker.marker.controls[0].markers[1].scale.z *= scale_factor;
 }
 
-void TrajectoryEditor::updateMarkerScales(float scale_factor)
+void RvizCinematographerGUI::updateMarkerScales(float scale_factor)
 {
   for(auto& marker : markers_)
     updateMarkerScale(marker, scale_factor);
@@ -604,9 +604,9 @@ void TrajectoryEditor::updateMarkerScales(float scale_factor)
   updateServer(markers_);
 }
 
-void TrajectoryEditor::loadTrajectoryFromFile()
+void RvizCinematographerGUI::loadTrajectoryFromFile()
 {
-  std::string directory_path = ros::package::getPath("rqt_pose_interpolator") + "/trajectories/";
+  std::string directory_path = ros::package::getPath("rviz_cinematographer_gui") + "/trajectories/";
 
   QString file_name = QFileDialog::getOpenFileName(widget_, "Open Trajectory", QString(directory_path.c_str()),
                                                    "All Files (*);;.yaml files (*.yaml);;.txt files (*.txt)");
@@ -709,9 +709,9 @@ void TrajectoryEditor::loadTrajectoryFromFile()
   updateTrajectory();
 }
 
-void TrajectoryEditor::saveTrajectoryToFile()
+void RvizCinematographerGUI::saveTrajectoryToFile()
 {
-  std::string directory_path = ros::package::getPath("rqt_pose_interpolator") + "/trajectories/";
+  std::string directory_path = ros::package::getPath("rviz_cinematographer_gui") + "/trajectories/";
 
   std::string file_path = QFileDialog::getSaveFileName(widget_, "Save Trajectory", QString(directory_path.c_str()),
                                                        "All Files (*)").toStdString();
@@ -730,7 +730,7 @@ void TrajectoryEditor::saveTrajectoryToFile()
   }
 }
 
-void TrajectoryEditor::setVideoOutputPath()
+void RvizCinematographerGUI::setVideoOutputPath()
 {
   std::string directory_path = ui_.video_output_path_line_edit->text().toStdString();
 
@@ -745,7 +745,7 @@ void TrajectoryEditor::setVideoOutputPath()
   ui_.video_output_path_line_edit->setText(QString::fromStdString(file_path));
 }
 
-rviz_cinematographer_msgs::CameraMovement TrajectoryEditor::makeCameraMovement()
+rviz_cinematographer_msgs::CameraMovement RvizCinematographerGUI::makeCameraMovement()
 {
   rviz_cinematographer_msgs::CameraMovement cm;
   cm.eye.header.stamp = ros::Time::now();
@@ -762,7 +762,7 @@ rviz_cinematographer_msgs::CameraMovement TrajectoryEditor::makeCameraMovement()
   return cm;
 }
 
-visualization_msgs::InteractiveMarker TrajectoryEditor::makeMarker(double x, double y, double z)
+visualization_msgs::InteractiveMarker RvizCinematographerGUI::makeMarker(double x, double y, double z)
 {
   visualization_msgs::InteractiveMarker marker;
   marker.header.frame_id = ui_.frame_line_edit->text().toStdString();
@@ -799,7 +799,7 @@ visualization_msgs::InteractiveMarker TrajectoryEditor::makeMarker(double x, dou
   return marker;
 }
 
-void TrajectoryEditor::colorizeMarkersRed()
+void RvizCinematographerGUI::colorizeMarkersRed()
 {
   for(auto& marker : markers_)
   {
@@ -808,7 +808,7 @@ void TrajectoryEditor::colorizeMarkersRed()
   }
 }
 
-void TrajectoryEditor::convertMarkerToCamMovement(const TimedMarker& marker,
+void RvizCinematographerGUI::convertMarkerToCamMovement(const TimedMarker& marker,
                                                   rviz_cinematographer_msgs::CameraMovement& cam_movement)
 {
   cam_movement = makeCameraMovement();
@@ -833,7 +833,7 @@ void TrajectoryEditor::convertMarkerToCamMovement(const TimedMarker& marker,
   cam_movement.focus.point.z = marker.marker.pose.position.z + ui_.smoothness_spin_box->value() * rotated_vector.z();
 }
 
-void TrajectoryEditor::publishRecordParams()
+void RvizCinematographerGUI::publishRecordParams()
 {
   rviz_cinematographer_msgs::Record record_params;
   record_params.do_record = true;
@@ -845,13 +845,13 @@ void TrajectoryEditor::publishRecordParams()
 }
 
 void
-TrajectoryEditor::recordFinishedCallback(const rviz_cinematographer_msgs::Finished::ConstPtr& record_finished)
+RvizCinematographerGUI::recordFinishedCallback(const rviz_cinematographer_msgs::Finished::ConstPtr& record_finished)
 {
   if(record_finished->is_finished > 0)
     ui_.record_radio_button->setChecked(false);
 }
 
-void TrajectoryEditor::moveCamToCurrent()
+void RvizCinematographerGUI::moveCamToCurrent()
 {
   if(ui_.record_radio_button->isChecked())
     publishRecordParams();
@@ -859,7 +859,7 @@ void TrajectoryEditor::moveCamToCurrent()
   moveCamToMarker(current_marker_name_);
 }
 
-void TrajectoryEditor::moveCamToFirst()
+void RvizCinematographerGUI::moveCamToFirst()
 {
   // do nothing if current is already the first marker
   if(markers_.begin()->marker.name == current_marker_name_)
@@ -938,7 +938,7 @@ void TrajectoryEditor::moveCamToFirst()
   camera_trajectory_pub_.publish(cam_trajectory);
 }
 
-void TrajectoryEditor::moveCamToPrev()
+void RvizCinematographerGUI::moveCamToPrev()
 {
   // do nothing if current is already the first marker
   if(markers_.begin()->marker.name == current_marker_name_)
@@ -958,7 +958,7 @@ void TrajectoryEditor::moveCamToPrev()
   moveCamToMarker(current_marker_name_);
 }
 
-void TrajectoryEditor::moveCamToNext()
+void RvizCinematographerGUI::moveCamToNext()
 {
   // do nothing if current is already the last marker
   if(std::prev(markers_.end())->marker.name == current_marker_name_)
@@ -978,7 +978,7 @@ void TrajectoryEditor::moveCamToNext()
   moveCamToMarker(current_marker_name_);
 }
 
-void TrajectoryEditor::moveCamToLast()
+void RvizCinematographerGUI::moveCamToLast()
 {
   // do nothing if current is already the last marker
   if(std::prev(markers_.end())->marker.name == current_marker_name_)
@@ -1053,9 +1053,9 @@ void TrajectoryEditor::moveCamToLast()
   camera_trajectory_pub_.publish(cam_trajectory);
 }
 
-void TrajectoryEditor::moveCamToMarker(const std::string& marker_name)
+void RvizCinematographerGUI::moveCamToMarker(const std::string& marker_name)
 {
-  TrajectoryEditor::TimedMarker marker = getMarkerByName(marker_name);
+  RvizCinematographerGUI::TimedMarker marker = getMarkerByName(marker_name);
 
   rviz_cinematographer_msgs::CameraTrajectoryPtr cam_trajectory(new rviz_cinematographer_msgs::CameraTrajectory());
   cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
@@ -1088,7 +1088,7 @@ void TrajectoryEditor::moveCamToMarker(const std::string& marker_name)
   camera_trajectory_pub_.publish(cam_trajectory);
 }
 
-void TrajectoryEditor::updatePoseInGUI(const geometry_msgs::Pose& pose,
+void RvizCinematographerGUI::updatePoseInGUI(const geometry_msgs::Pose& pose,
                                        double transition_time)
 {
   setValueQuietly(ui_.translation_x_spin_box, pose.position.x);
@@ -1103,14 +1103,14 @@ void TrajectoryEditor::updatePoseInGUI(const geometry_msgs::Pose& pose,
   setValueQuietly(ui_.transition_time_spin_box, transition_time);
 }
 
-void TrajectoryEditor::setValueQuietly(QDoubleSpinBox* spin_box, double value)
+void RvizCinematographerGUI::setValueQuietly(QDoubleSpinBox* spin_box, double value)
 {
   bool old_block_state = spin_box->blockSignals(true);
   spin_box->setValue(value);
   spin_box->blockSignals(old_block_state);
 }
 
-void TrajectoryEditor::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
+void RvizCinematographerGUI::processFeedback(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
   // update markers
   visualization_msgs::InteractiveMarker marker;
@@ -1137,7 +1137,7 @@ void TrajectoryEditor::processFeedback(const visualization_msgs::InteractiveMark
   }
 }
 
-void TrajectoryEditor::updateCurrentMarker()
+void RvizCinematographerGUI::updateCurrentMarker()
 {
   geometry_msgs::Pose pose;
   pose.position.x = ui_.translation_x_spin_box->value();
@@ -1158,7 +1158,7 @@ void TrajectoryEditor::updateCurrentMarker()
   updateTrajectory();
 }
 
-tf::Vector3 TrajectoryEditor::rotateVector(const tf::Vector3& vector,
+tf::Vector3 RvizCinematographerGUI::rotateVector(const tf::Vector3& vector,
                                            const geometry_msgs::Quaternion& quat)
 {
   tf::Quaternion rotation;
@@ -1166,7 +1166,7 @@ tf::Vector3 TrajectoryEditor::rotateVector(const tf::Vector3& vector,
   return tf::quatRotate(rotation, vector);
 }
 
-void TrajectoryEditor::markersToSplinedCamTrajectory(const MarkerList& markers,
+void RvizCinematographerGUI::markersToSplinedCamTrajectory(const MarkerList& markers,
                                                      rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory,
                                                      double frequency,
                                                      bool smooth_velocity)
@@ -1291,7 +1291,7 @@ void TrajectoryEditor::markersToSplinedCamTrajectory(const MarkerList& markers,
   }
 }
 
-void TrajectoryEditor::markersToSplinedPoses(const MarkerList& markers,
+void RvizCinematographerGUI::markersToSplinedPoses(const MarkerList& markers,
                                              std::vector<geometry_msgs::Pose>& spline_poses,
                                              double frequency,
                                              bool duplicate_ends)

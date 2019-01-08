@@ -5,8 +5,8 @@
  * @author Jan Razlaw
  */
 
-#ifndef RQT_POSE_INTERPOLATOR_TRAJECTORY_EDITOR_H
-#define RQT_POSE_INTERPOLATOR_TRAJECTORY_EDITOR_H
+#ifndef RVIZ_CINEMATOGRAPHER_GUI_H
+#define RVIZ_CINEMATOGRAPHER_GUI_H
 
 #include <fstream>
 #include <sstream>
@@ -39,8 +39,8 @@
 #include <QWidget>
 #include <QFileDialog>
 
-#include <rqt_pose_interpolator/utils.h>
-#include <ui_trajectory_editor.h>
+#include <rviz_cinematographer_gui/utils.h>
+#include <ui_rviz_cinematographer_gui.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -52,13 +52,13 @@
 #include <spline_library/vector.h>
 
 
-namespace pose_interpolator
+namespace rviz_cinematographer_gui
 {
 
 /**
  * @brief Manipulates the rviz camera.
  */
-class TrajectoryEditor : public rqt_gui_cpp::Plugin
+class RvizCinematographerGUI : public rqt_gui_cpp::Plugin
 {
 
 Q_OBJECT
@@ -80,7 +80,7 @@ public:
 
 
   /** @brief Constructor. */
-  TrajectoryEditor();
+  RvizCinematographerGUI();
 
   /**
    * @brief Sets up subscribers and publishers and connects GUI to functions.
@@ -383,7 +383,7 @@ private:
   void recordFinishedCallback(const rviz_cinematographer_msgs::Finished::ConstPtr& record_finished);
 
   /** @brief Ui object - connection to GUI. */
-  Ui::trajectory_editor ui_;
+  Ui::rviz_cinematographer_gui ui_;
   /** @brief Widget. */
   QWidget* widget_;
 
@@ -418,4 +418,4 @@ private:
 
 } // namespace
 
-#endif //RQT_POSE_INTERPOLATOR_TRAJECTORY_EDITOR_H
+#endif //RVIZ_CINEMATOGRAPHER_GUI_H

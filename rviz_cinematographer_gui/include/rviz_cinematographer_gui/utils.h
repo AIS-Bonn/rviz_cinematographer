@@ -5,8 +5,8 @@
  * @author Jan Razlaw
  */
 
-#ifndef RQT_POSE_INTERPOLATOR_UTILS_H
-#define RQT_POSE_INTERPOLATOR_UTILS_H
+#ifndef RVIZ_CINEMATOGRAPHER_GUI_UTILS_H
+#define RVIZ_CINEMATOGRAPHER_GUI_UTILS_H
 
 #include <ros/node_handle.h>
 
@@ -14,7 +14,7 @@
 #include <visualization_msgs/InteractiveMarker.h>
 #include <visualization_msgs/InteractiveMarkerControl.h>
 
-namespace pose_interpolator
+namespace rviz_cinematographer_gui
 {
 
 /**
@@ -104,4 +104,4 @@ template<typename T> inline bool getParam(const ros::NodeHandle& nh,
 
 }
 
-#endif //RQT_POSE_INTERPOLATOR_UTILS_H
+#endif //RVIZ_CINEMATOGRAPHER_GUI_UTILS_H

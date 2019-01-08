@@ -1,0 +1,171 @@
+Panels:
+  - Class: rviz/Displays
+    Help Height: 84
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Global Options1
+      Splitter Ratio: 0.4271099865436554
+    Tree Height: 701
+  - Class: rviz/Selection
+    Name: Selection
+  - Class: rviz/Tool Properties
+    Expanded:
+      - /2D Pose Estimate1
+      - /2D Nav Goal1
+      - /Publish Point1
+    Name: Tool Properties
+    Splitter Ratio: 0.5886790156364441
+  - Class: rviz/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+    Splitter Ratio: 0.5593220591545105
+  - Class: rviz/Time
+    Experimental: false
+    Name: Time
+    SyncMode: 0
+    SyncSource: ""
+Preferences:
+  PromptSaveOnExit: true
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 10
+      Class: rviz/Grid
+      Color: 127; 127; 127
+      Enabled: true
+      Line Style:
+        Line Width: 0.029999999329447746
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: -2.5
+      Plane: XY
+      Plane Cell Count: 20
+      Reference Frame: <Fixed Frame>
+      Value: true
+    - Class: rviz/InteractiveMarkers
+      Enable Transparency: true
+      Enabled: true
+      Name: TrajectoryMarkers
+      Show Axes: true
+      Show Descriptions: true
+      Show Visual Aids: false
+      Update Topic: /trajectory/update
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 0; 0; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /transformed_path
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Arrow Length: 0.30000001192092896
+      Axes Length: 1.5
+      Axes Radius: 0.10000000149011612
+      Class: rviz/PoseArray
+      Color: 255; 25; 0
+      Enabled: false
+      Head Length: 0.07000000029802322
+      Head Radius: 0.029999999329447746
+      Name: TrajectoryPoses
+      Shaft Length: 0.23000000417232513
+      Shaft Radius: 0.009999999776482582
+      Shape: Axes
+      Topic: /rviz/trajectory_steps
+      Unreliable: false
+      Value: false
+  Enabled: true
+  Global Options:
+    Background Color: 255; 255; 255
+    Default Light: true
+    Fixed Frame: base_link
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz/Interact
+      Hide Inactive Objects: true
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+    - Class: rviz/FocusCamera
+    - Class: rviz/Measure
+    - Class: rviz/SetInitialPose
+      Topic: /initialpose
+    - Class: rviz/SetGoal
+      Topic: /move_base_simple/goal
+    - Class: rviz/PublishPoint
+      Single click: true
+      Topic: /clicked_point
+  Value: true
+  Views:
+    Current:
+      Class: rviz_cinematographer_view_controller/Cinematographer
+      Control Mode: Orbit
+      Distance: 142.0646514892578
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.05999999865889549
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Eye:
+        X: -70.16866302490234
+        Y: -71.1375503540039
+        Z: 101.63214874267578
+      Focus:
+        X: 13.7786865234375
+        Y: 2.8122482299804688
+        Z: 14.072822570800781
+      Invert Z Axis: false
+      Maintain Vertical Axis: true
+      Mouse Enabled: true
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
+      Target Frame: <Fixed Frame>
+      Trajectory Topic: /rviz/camera_trajectory
+      Transition Time: 0.5
+      Up:
+        X: 0
+        Y: 0
+        Z: 1
+      Value: Cinematographer (rviz_cinematographer_view_controller)
+    Saved: ~
+Window Geometry:
+  "&Displays":
+    collapsed: false
+  "&Time":
+    collapsed: false
+  "&Views":
+    collapsed: false
+  Height: 1072
+  Hide Left Dock: false
+  Hide Right Dock: false
+  QMainWindow State: 000000ff00000000fd00000004000000000000018f00000364fc0200000011fb000000100044006900730070006c006100790073010000004c00000364000000fd01000003fb0000001200530065006c0065006300740069006f006e0000000203000001bd0000007601000003fb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d00610067006500000002ab000000e00000000000000000fb0000000c00430061006d006500720061000000038c000000220000000000000000fb0000000c00430061006d0065007200610100000241000001020000000000000000fb0000000a0049006d00610067006501000002de000000d00000000000000000fb0000000c00430061006d006500720061000000038c000000220000000000000000fb0000000c00430061006d00650072006101000002de000000d00000000000000000fb0000000c00430061006d006500720061000000038c000000220000000000000000fb0000000c00430061006d00650072006101000002de000000d00000000000000000fb0000000c00430061006d00650072006100000002bf000000ef0000000000000000000000010000016a00000364fc0200000008fb0000000c00430061006d0065007200610000000044000003660000000000000000fb0000000c00430061006d0065007200610100000044000002ff0000000000000000fc00000044000002ff0000000000fffffffa000000000100000002fb0000000c00430061006d0065007200610000000000ffffffff0000000000000000fb0000000c00430061006d00650072006100000004ac000000700000000000000000fb0000000c00430061006d0065007200610100000044000002ff0000000000000000fb0000000c00430061006d0065007200610000000044000002ff0000000000000000fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000004c00000364000000dc01000003fb0000001200530065006c0065006300740069006f006e010000025a000000b20000000000000000000000020000051c000000e3fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000087200000052fc0100000002fb0000000800540069006d00650100000000000008720000034a01000003fb0000000800540069006d00650100000000000004500000000000000000000005770000036400000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Selection:
+    collapsed: false
+  Tool Properties:
+    collapsed: false
+  Width: 2162
+  X: 491
+  Y: 0

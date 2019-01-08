@@ -1,9 +1,9 @@
 <package format="2">
 
-  <name>rqt_pose_interpolator</name>
+  <name>rviz_cinematographer_gui</name>
   <version>0.0.0</version>
-  <description>The rqt_pose_interpolator package</description>
-  <maintainer email="jan.razlaw@gmx.de">Jan Razlaw</maintainer>
+  <description>Manipulate the rviz camera using trajectories and record the resulting views. </description>
+  <maintainer email="razlaw@ais.uni-bonn.de">Jan Razlaw</maintainer>
   <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>

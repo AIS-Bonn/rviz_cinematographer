@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>trajectory_editor</class>
- <widget class="QWidget" name="trajectory_editor">
+ <class>rviz_cinematographer_gui</class>
+ <widget class="QWidget" name="rviz_cinematographer_gui">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Trajectory Editor</string>
+   <string>Rviz Cinematographer GUI</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
@@ -634,8 +634,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>481</width>
-            <height>556</height>
+            <width>281</width>
+            <height>302</height>
            </rect>
           </property>
           <attribute name="label">
@@ -886,8 +886,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>481</width>
-            <height>556</height>
+            <width>248</width>
+            <height>212</height>
            </rect>
           </property>
           <attribute name="label">
@@ -1031,8 +1031,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>481</width>
-            <height>556</height>
+            <width>207</width>
+            <height>60</height>
            </rect>
           </property>
           <attribute name="label">
