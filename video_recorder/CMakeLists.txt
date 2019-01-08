@@ -20,7 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME}
+  LIBRARIES ${PROJECT_NAME}_nodelet
 	CATKIN_DEPENDS rviz_cinematographer_msgs
 )
 
