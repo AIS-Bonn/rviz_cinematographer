@@ -21,7 +21,7 @@ $ roslaunch rviz_cinematographer_gui rviz_cinematographer_gui.launch
 The tutorial below introduces most features. 
 
 Alternatively, you can start the provided plugin inside rqt at any time to create camera trajectories within already running rviz visualizations.  
-Some [remarks](https://git.ais.uni-bonn.de/razlaw/rviz_cinematographer/tree/master/rviz_cinematographer_gui/README.md#remarks) for this use case are added after the tutorial section. 
+Some [remarks](https://git.ais.uni-bonn.de/razlaw/rviz_cinematographer/tree/screen_capture/rviz_cinematographer_gui#remarks) for this use case are added after the tutorial section. 
 
 # Tutorial
 
@@ -45,7 +45,7 @@ Left-click on a marker to select the clicked as the active marker.
 | ![alt text](icons/last.png ) | Move the camera within the trajectory from the active to the last marker |
 
 Activate the *Record* to record a video of the next camera movement initiated by the five buttons above.  
-More details to recording videos are provided [below](https://git.ais.uni-bonn.de/razlaw/rviz_cinematographer/tree/master/rviz_cinematographer_gui/README.md#recording-parameters). 
+More details to recording videos are provided [below](https://git.ais.uni-bonn.de/razlaw/rviz_cinematographer/tree/screen_capture/rviz_cinematographer_gui#recording-parameters). 
 
 ![rviz_cinematographer_gui](readme/rviz_cinematographer_gui.png)
 
