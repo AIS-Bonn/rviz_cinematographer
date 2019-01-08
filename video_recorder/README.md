@@ -1,10 +1,10 @@
 # General
 
-Subscribes to images and starts to generates a video on receiving a *record*-message, optionally adding a watermark.
+Subscribes to images and starts to generate a video on receiving a *record*-message, optionally adding a watermark.
 
 # Messages
 
-####Inputs:  
+#### Inputs:  
 
 1. **Topic** : /rviz/view_image  
    **Type** : sensor_msgs::Image    
@@ -19,7 +19,7 @@ Subscribes to images and starts to generates a video on receiving a *record*-mes
    **Type** : rviz_cinematographer_msgs::Finished    
    **Purpose** : Indicates that the input stream ended.  
 
-####Outputs:
+#### Outputs:
 
 1. **Topic** : /video_recorder/record_finished  
    **Type** : rviz_cinematographer_msgs::Finished  
