@@ -101,16 +101,17 @@ public:
   struct OgreCameraMovement
   {
     OgreCameraMovement(){};
+
     OgreCameraMovement(const Ogre::Vector3& eye,
                        const Ogre::Vector3& focus,
                        const Ogre::Vector3& up,
                        const ros::Duration& transition_time,
                        const uint8_t interpolation_speed)
-    : eye(eye)
-      , focus(focus)
-      , up(up)
-      , transition_time(transition_time)
-      , interpolation_speed(interpolation_speed)
+      : eye(eye)
+        , focus(focus)
+        , up(up)
+        , transition_time(transition_time)
+        , interpolation_speed(interpolation_speed)
     {
     }
 
@@ -121,6 +122,7 @@ public:
     ros::Duration transition_time;
     uint8_t interpolation_speed;
   };
+
   typedef boost::circular_buffer<OgreCameraMovement> BufferCamMovements;
 
   CinematographerViewController();
@@ -221,13 +223,13 @@ protected Q_SLOTS:
    * a position offset) such that the actual viewpoint does not
    * change. Calls updateTargetSceneNode() and onTargetFrameChanged(). */
   virtual void updateAttachedFrame();
-  
+
   /** @brief Called when distance property is changed; computes new eye position. */
   virtual void onDistancePropertyChanged();
 
   /** @brief Called focus property is changed; computes new distance. */
   virtual void onFocusPropertyChanged();
-  
+
   /** @brief Called when eye property is changed; computes new distance. */
   virtual void onEyePropertyChanged();
 
@@ -292,11 +294,11 @@ protected:  //methods
    * @param[in] transition_time         time needed of transition
    * @param[in] interpolation_speed     the interpolation speed profile
    */
-  void beginNewTransition(const Ogre::Vector3 &eye,
-                          const Ogre::Vector3 &focus,
-                          const Ogre::Vector3 &up,
+  void beginNewTransition(const Ogre::Vector3& eye,
+                          const Ogre::Vector3& focus,
+                          const Ogre::Vector3& up,
                           ros::Duration transition_time,
-                          uint8_t interpolation_speed=rviz_cinematographer_msgs::CameraMovement::WAVE);
+                          uint8_t interpolation_speed = rviz_cinematographer_msgs::CameraMovement::WAVE);
 
   /** @brief Cancels any currently active camera movement. */
   void cancelTransition();
@@ -319,8 +321,8 @@ protected:  //methods
    */
   void setWaitDuration(const rviz_cinematographer_msgs::Wait::ConstPtr& wait_duration);
 
-  Ogre::Vector3 fixedFrameToAttachedLocal(const Ogre::Vector3 &v) { return reference_orientation_.Inverse() * (v - reference_position_); }
-  Ogre::Vector3 attachedLocalToFixedFrame(const Ogre::Vector3 &v) { return reference_position_ + (reference_orientation_ * v); }
+  Ogre::Vector3 fixedFrameToAttachedLocal(const Ogre::Vector3& v) { return reference_orientation_.Inverse() * (v - reference_position_); }
+  Ogre::Vector3 attachedLocalToFixedFrame(const Ogre::Vector3& v) { return reference_position_ + (reference_orientation_ * v); }
 
   /** @brief Return the distance between camera and focal point. */
   float getDistanceFromCameraToFocalPoint();
@@ -329,7 +331,7 @@ protected:  //methods
    *
    * @params[in] relative_progress_in_time  the relative progress in time.
    * @params[in] interpolation_speed        speed profile.
-   */  
+   */
   float computeRelativeProgressInSpace(double relative_progress_in_time, uint8_t interpolation_speed);
 
   /** @brief Publish the rendered image that is visible to the user in rviz. */
@@ -380,7 +382,7 @@ protected:    //members
   bool render_frame_by_frame_;
   int target_fps_;
   int recorded_frames_counter_;
-  
+
   bool do_wait_;
   float wait_duration_;
 };

@@ -42,16 +42,17 @@ static const Ogre::Radian PITCH_LIMIT_LOW  = Ogre::Radian(0.02);
 static const Ogre::Radian PITCH_LIMIT_HIGH = Ogre::Radian(Ogre::Math::PI - 0.02);
 
 // Some convenience functions for Ogre / geometry_msgs conversions
-static inline Ogre::Vector3 vectorFromMsg(const geometry_msgs::Point &m) { return Ogre::Vector3(m.x, m.y, m.z); }
-static inline Ogre::Vector3 vectorFromMsg(const geometry_msgs::Vector3 &m) { return Ogre::Vector3(m.x, m.y, m.z); }
-static inline geometry_msgs::Point pointOgreToMsg(const Ogre::Vector3 &o)
+static inline Ogre::Vector3 vectorFromMsg(const geometry_msgs::Point& m) { return Ogre::Vector3(m.x, m.y, m.z); }
+static inline Ogre::Vector3 vectorFromMsg(const geometry_msgs::Vector3& m) { return Ogre::Vector3(m.x, m.y, m.z); }
+
+static inline geometry_msgs::Point pointOgreToMsg(const Ogre::Vector3& o)
 {
   geometry_msgs::Point m;
   m.x = o.x; m.y = o.y; m.z = o.z;
   return m;
 }
 
-static inline geometry_msgs::Vector3 vectorOgreToMsg(const Ogre::Vector3 &o)
+static inline geometry_msgs::Vector3 vectorOgreToMsg(const Ogre::Vector3& o)
 {
   geometry_msgs::Vector3 m;
   m.x = o.x; m.y = o.y; m.z = o.z;
@@ -62,20 +63,21 @@ static inline geometry_msgs::Vector3 vectorOgreToMsg(const Ogre::Vector3 &o)
 
 
 CinematographerViewController::CinematographerViewController()
-: nh_("")
-  , animate_(false)
-  , dragging_(false)
-  , render_frame_by_frame_(false)
-  , target_fps_(60)
-  , recorded_frames_counter_(0)
-  , do_wait_(false)
-  , wait_duration_(-1.f)
+  : nh_("")
+    , animate_(false)
+    , dragging_(false)
+    , render_frame_by_frame_(false)
+    , target_fps_(60)
+    , recorded_frames_counter_(0)
+    , do_wait_(false)
+    , wait_duration_(-1.f)
 {
   interaction_disabled_cursor_ = makeIconCursor("package://rviz/icons/forbidden.svg");
 
   mouse_enabled_property_ = new BoolProperty("Mouse Enabled", true, "Enables mouse control of the camera.", this);
 
-  interaction_mode_property_ = new EditableEnumProperty("Control Mode", QString::fromStdString(MODE_ORBIT), "Select the style of mouse interaction.", this);
+  interaction_mode_property_ = new EditableEnumProperty("Control Mode", QString::fromStdString(MODE_ORBIT),
+                                                        "Select the style of mouse interaction.", this);
   interaction_mode_property_->addOptionStd(MODE_ORBIT);
   interaction_mode_property_->addOptionStd(MODE_FPS);
   interaction_mode_property_->setStdString(MODE_ORBIT);
@@ -88,8 +90,13 @@ CinematographerViewController::CinematographerViewController()
   distance_property_        = new FloatProperty("Distance", getDistanceFromCameraToFocalPoint(), "The distance between the camera position and the focus point.", this);
   distance_property_->setMin(0.01);
 
-  default_transition_time_property_ = new FloatProperty("Transition Time", 0.5, "The default time to use for camera transitions.", this);
-  camera_trajectory_topic_property_ = new RosTopicProperty("Trajectory Topic", "/rviz/camera_trajectory", QString::fromStdString(ros::message_traits::datatype<rviz_cinematographer_msgs::CameraTrajectory>()), "Topic for CameraTrajectory messages", this, SLOT(updateTopics()));
+  default_transition_time_property_ = new FloatProperty("Transition Time", 0.5,
+                                                        "The default time to use for camera transitions.", this);
+  camera_trajectory_topic_property_ = new RosTopicProperty("Trajectory Topic", "/rviz/camera_trajectory",
+                                                           QString::fromStdString(
+                                                             ros::message_traits::datatype<rviz_cinematographer_msgs::CameraTrajectory>()),
+                                                           "Topic for CameraTrajectory messages", this,
+                                                           SLOT(updateTopics()));
 
   // TODO: latch?
   placement_pub_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
@@ -101,7 +108,8 @@ CinematographerViewController::CinematographerViewController()
   image_pub_ = it.advertise("/rviz/view_image", 1);
 
   record_params_sub_ = nh_.subscribe("/rviz/record", 1, &CinematographerViewController::setRecord, this);
-  wait_duration_sub_ = nh_.subscribe("/video_recorder/wait_duration", 1, &CinematographerViewController::setWaitDuration, this);
+  wait_duration_sub_ = nh_.subscribe("/video_recorder/wait_duration", 1,
+                                     &CinematographerViewController::setWaitDuration, this);
 }
 
 CinematographerViewController::~CinematographerViewController()
@@ -129,8 +137,8 @@ void CinematographerViewController::setWaitDuration(const rviz_cinematographer_m
 void CinematographerViewController::updateTopics()
 {
   trajectory_sub_ = nh_.subscribe<rviz_cinematographer_msgs::CameraTrajectory>
-                        (camera_trajectory_topic_property_->getStdString(), 1,
-                         boost::bind(&CinematographerViewController::cameraTrajectoryCallback, this, _1));
+                         (camera_trajectory_topic_property_->getStdString(), 1,
+                          boost::bind(&CinematographerViewController::cameraTrajectoryCallback, this, _1));
 }
 
 void CinematographerViewController::onInitialize()
@@ -197,7 +205,8 @@ void CinematographerViewController::onFocusPropertyChanged()
 void CinematographerViewController::onDistancePropertyChanged()
 {
   disconnectPositionProperties();
-  Ogre::Vector3 new_eye_position = focus_point_property_->getVector() + distance_property_->getFloat() * camera_->getOrientation().zAxis();
+  Ogre::Vector3 new_eye_position =
+    focus_point_property_->getVector() + distance_property_->getFloat() * camera_->getOrientation().zAxis();
   eye_point_property_->setVector(new_eye_position);
   connectPositionProperties();
 }
@@ -214,7 +223,8 @@ void CinematographerViewController::onUpPropertyChanged()
   {
     // force orientation to match up vector; first call doesn't actually change the quaternion
     camera_->setFixedYawAxis(true, reference_orientation_ * up_vector_property_->getVector());
-    camera_->setDirection(reference_orientation_ * (focus_point_property_->getVector() - eye_point_property_->getVector()));
+    camera_->setDirection(
+      reference_orientation_ * (focus_point_property_->getVector() - eye_point_property_->getVector()));
     // restore normal behavior
     camera_->setFixedYawAxis(false);
   }
@@ -236,7 +246,8 @@ void CinematographerViewController::updateAttachedSceneNode()
   std::string error_msg;
   if(!context_->getFrameManager()->transformHasProblems(attached_frame_property_->getFrameStd(), ros::Time(), error_msg))
   {
-    context_->getFrameManager()->getTransform(attached_frame_property_->getFrameStd(), ros::Time(), reference_position_, reference_orientation_ );
+    context_->getFrameManager()->getTransform(attached_frame_property_->getFrameStd(), ros::Time(), reference_position_,
+                                              reference_orientation_);
     attached_scene_node_->setPosition(reference_position_);
     attached_scene_node_->setOrientation(reference_orientation_);
     context_->queueRender();
@@ -250,20 +261,23 @@ void CinematographerViewController::updateAttachedSceneNode()
 void CinematographerViewController::onAttachedFrameChanged(const Ogre::Vector3& old_reference_position,
                                                            const Ogre::Quaternion& old_reference_orientation)
 {
-  Ogre::Vector3 fixed_frame_focus_position = old_reference_orientation*focus_point_property_->getVector() + old_reference_position;
-  Ogre::Vector3 fixed_frame_eye_position = old_reference_orientation*eye_point_property_->getVector() + old_reference_position;
+  Ogre::Vector3 fixed_frame_focus_position =
+    old_reference_orientation * focus_point_property_->getVector() + old_reference_position;
+  Ogre::Vector3 fixed_frame_eye_position =
+    old_reference_orientation * eye_point_property_->getVector() + old_reference_position;
   Ogre::Vector3 new_focus_position = fixedFrameToAttachedLocal(fixed_frame_focus_position);
   Ogre::Vector3 new_eye_position = fixedFrameToAttachedLocal(fixed_frame_eye_position);
-  Ogre::Vector3 new_up_vector = reference_orientation_.Inverse()*old_reference_orientation*up_vector_property_->getVector();
+  Ogre::Vector3 new_up_vector =
+    reference_orientation_.Inverse() * old_reference_orientation * up_vector_property_->getVector();
 
   focus_point_property_->setVector(new_focus_position);
   eye_point_property_->setVector(new_eye_position);
   up_vector_property_->setVector(fixed_up_property_->getBool() ? Ogre::Vector3::UNIT_Z : new_up_vector);
-  distance_property_->setFloat( getDistanceFromCameraToFocalPoint());
+  distance_property_->setFloat(getDistanceFromCameraToFocalPoint());
 
   // force orientation to match up vector; first call doesn't actually change the quaternion
   camera_->setFixedYawAxis(true, reference_orientation_ * up_vector_property_->getVector());
-  camera_->setDirection( reference_orientation_ * (focus_point_property_->getVector() - eye_point_property_->getVector()));
+  camera_->setDirection(reference_orientation_ * (focus_point_property_->getVector() - eye_point_property_->getVector()));
 }
 
 float CinematographerViewController::getDistanceFromCameraToFocalPoint()
@@ -299,15 +313,15 @@ void CinematographerViewController::handleMouseEvent(ViewportMouseEvent& event)
   }
   else if(event.shift())
   {
-    setStatus( "TODO: Fix me! <b>Left-Click:</b> Move X/Y.  <b>Right-Click:</b>: Move Z." );
+    setStatus("TODO: Fix me! <b>Left-Click:</b> Move X/Y.  <b>Right-Click:</b>: Move Z.");
   }
   else if(event.control())
   {
-    setStatus( "TODO: Fix me! <b>Left-Click:</b> Move X/Y.  <b>Right-Click:</b>: Move Z." );
+    setStatus("TODO: Fix me! <b>Left-Click:</b> Move X/Y.  <b>Right-Click:</b>: Move Z.");
   }
   else
   {
-    setStatus( "TODO: Fix me! <b>Left-Click:</b> Rotate.  <b>Middle-Click:</b> Move X/Y.  <b>Right-Click:</b>: Zoom.  <b>Shift</b>: More options." );
+    setStatus("TODO: Fix me! <b>Left-Click:</b> Rotate.  <b>Middle-Click:</b> Move X/Y.  <b>Right-Click:</b>: Zoom.  <b>Shift</b>: More options.");
   }
 
   float distance = distance_property_->getFloat();
@@ -387,7 +401,7 @@ void CinematographerViewController::handleMouseEvent(ViewportMouseEvent& event)
     if(event.shift())
       move_focus_and_eye(0, 0, -diff * 0.001f * distance);
     else if(event.control())
-      yaw_pitch_roll(0, 0, diff*0.001f);
+      yaw_pitch_roll(0, 0, diff * 0.001f);
     else
       move_eye(0, 0, -diff * 0.001f * distance);
     moved = true;
@@ -473,9 +487,9 @@ void CinematographerViewController::transitionFrom(ViewController* previous_view
   }
 }
 
-void CinematographerViewController::beginNewTransition(const Ogre::Vector3 &eye,
-                                                       const Ogre::Vector3 &focus,
-                                                       const Ogre::Vector3 &up,
+void CinematographerViewController::beginNewTransition(const Ogre::Vector3& eye,
+                                                       const Ogre::Vector3& focus,
+                                                       const Ogre::Vector3& up,
                                                        ros::Duration transition_time,
                                                        uint8_t interpolation_speed)
 {
@@ -508,7 +522,7 @@ void CinematographerViewController::cancelTransition()
   animate_ = false;
   cam_movements_buffer_.clear();
   recorded_frames_counter_ = 0;
-  
+
   if(render_frame_by_frame_)
   {
     rviz_cinematographer_msgs::Finished finished;
@@ -560,9 +574,9 @@ void CinematographerViewController::transformCameraMovementToAttachedFrame(rviz_
   Ogre::Vector3 position_fixed_eye, position_fixed_focus, position_fixed_up;
   Ogre::Quaternion rotation_fixed_eye, rotation_fixed_focus, rotation_fixed_up;
 
-  context_->getFrameManager()->getTransform(cm.eye.header.frame_id, ros::Time(0), position_fixed_eye, rotation_fixed_eye);
+  context_->getFrameManager()->getTransform(cm.eye.header.frame_id,   ros::Time(0), position_fixed_eye,   rotation_fixed_eye);
   context_->getFrameManager()->getTransform(cm.focus.header.frame_id, ros::Time(0), position_fixed_focus, rotation_fixed_focus);
-  context_->getFrameManager()->getTransform(cm.up.header.frame_id, ros::Time(0), position_fixed_up, rotation_fixed_up);
+  context_->getFrameManager()->getTransform(cm.up.header.frame_id,    ros::Time(0), position_fixed_up,    rotation_fixed_up);
 
   Ogre::Vector3 eye = vectorFromMsg(cm.eye.point);
   Ogre::Vector3 focus = vectorFromMsg(cm.focus.point);
@@ -616,7 +630,8 @@ void CinematographerViewController::publishOdometry(const Ogre::Vector3& positio
   odometry_pub_.publish(odometry);
 }
 
-float CinematographerViewController::computeRelativeProgressInSpace(double relative_progress_in_time, uint8_t interpolation_speed)
+float CinematographerViewController::computeRelativeProgressInSpace(double relative_progress_in_time,
+                                                                    uint8_t interpolation_speed)
 {
   switch(interpolation_speed)
   {
@@ -628,7 +643,7 @@ float CinematographerViewController::computeRelativeProgressInSpace(double relat
       return static_cast<float>(relative_progress_in_time);
     case rviz_cinematographer_msgs::CameraMovement::WAVE:
     default:
-      return 0.5f * ( 1.f - static_cast<float>(cos(relative_progress_in_time * M_PI)));
+      return 0.5f * (1.f - static_cast<float>(cos(relative_progress_in_time * M_PI)));
   }
 }
 
@@ -651,7 +666,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
     else
     {
       ros::WallDuration time_from_start = ros::WallTime::now() - transition_start_time_;
-      relative_progress_in_time = time_from_start.toSec()/goal->transition_time.toSec();
+      relative_progress_in_time = time_from_start.toSec() / goal->transition_time.toSec();
     }
 
     // make sure we get all the way there before turning off
@@ -661,7 +676,8 @@ void CinematographerViewController::update(float dt, float ros_dt)
       animate_ = false;
     }
 
-    float relative_progress_in_space = computeRelativeProgressInSpace(relative_progress_in_time, goal->interpolation_speed);
+    float relative_progress_in_space = computeRelativeProgressInSpace(relative_progress_in_time,
+                                                                      goal->interpolation_speed);
 
     Ogre::Vector3 new_position = start->eye + relative_progress_in_space * (goal->eye - start->eye);
     Ogre::Vector3 new_focus = start->focus + relative_progress_in_space * (goal->focus - start->focus);
@@ -728,7 +744,7 @@ void CinematographerViewController::publishViewImage()
   // wait for specified duration - e.g. if recorder is not fast enough
   if(do_wait_)
   {
-    ros::WallRate r(1.f/wait_duration_); 
+    ros::WallRate r(1.f / wait_duration_);
     r.sleep();
     do_wait_ = false;
   }
@@ -739,7 +755,7 @@ void CinematographerViewController::publishViewImage()
   // create a PixelBox of the needed size to store the rendered image
   Ogre::PixelFormat format = Ogre::PF_BYTE_BGR;
   auto outBytesPerPixel = Ogre::PixelUtil::getNumElemBytes(format);
-  auto data = new unsigned char [width * height * outBytesPerPixel];
+  auto data = new unsigned char[width * height * outBytesPerPixel];
   Ogre::Box extents(0, 0, width, height);
   Ogre::PixelBox pb(extents, format, data);
   context_->getViewManager()->getRenderPanel()->getRenderWindow()->copyContentsToMemory(pb, Ogre::RenderTarget::FB_AUTO);
@@ -801,7 +817,8 @@ void CinematographerViewController::yaw_pitch_roll(float yaw, float pitch, float
   Ogre::Radian new_pitch = new_camera_orientation.getPitch(false);
 
   if(fixed_up_property_->getBool() &&
-      ((new_pitch > PITCH_LIMIT_HIGH && new_pitch > old_pitch) || (new_pitch < PITCH_LIMIT_LOW && new_pitch < old_pitch)))
+     ((new_pitch > PITCH_LIMIT_HIGH && new_pitch > old_pitch) ||
+      (new_pitch < PITCH_LIMIT_LOW && new_pitch < old_pitch)))
   {
     orientation_change = yaw_quat * roll_quat;
     new_camera_orientation = old_camera_orientation * orientation_change;
@@ -811,7 +828,8 @@ void CinematographerViewController::yaw_pitch_roll(float yaw, float pitch, float
   if(interaction_mode_property_->getStdString() == MODE_ORBIT)
   {
     // In orbit mode the focal point stays fixed, so we need to compute the new camera position.
-    Ogre::Vector3 new_eye_position = focus_point_property_->getVector() + distance_property_->getFloat()* new_camera_orientation.zAxis();
+    Ogre::Vector3 new_eye_position =
+      focus_point_property_->getVector() + distance_property_->getFloat() * new_camera_orientation.zAxis();
     eye_point_property_->setVector(new_eye_position);
     camera_->setPosition(new_eye_position);
     setPropertiesFromCamera(camera_);
@@ -849,4 +867,5 @@ void CinematographerViewController::move_eye(const float x,
 } // end namespace rviz
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS( rviz_cinematographer_view_controller::CinematographerViewController, rviz::ViewController )
+
+PLUGINLIB_EXPORT_CLASS(rviz_cinematographer_view_controller::CinematographerViewController, rviz::ViewController)
