@@ -21,7 +21,7 @@ $ roslaunch rviz_cinematographer_gui rviz_cinematographer_gui.launch
 The tutorial below introduces most features. 
 
 Alternatively, you can start the provided plugin inside rqt at any time to create camera trajectories within already running rviz visualizations.  
-Some [remarks](https://git.ais.uni-bonn.de/razlaw/rviz_cinematographer/tree/screen_capture/rviz_cinematographer_gui#remarks) for this use case are added after the tutorial section. 
+Some [remarks](https://github.com/AIS-Bonn/rviz_cinematographer/tree/master/rviz_cinematographer_gui#remarks) for this use case are added after the tutorial section. 
 
 # Tutorial
 
