@@ -10,10 +10,13 @@
 namespace rviz_cinematographer_gui
 {
 
+template<typename T> inline void ignoreResult(T){}
+
 RvizCinematographerGUI::RvizCinematographerGUI()
   : rqt_gui_cpp::Plugin()
     , widget_(0)
     , current_marker_name_("")
+    , recorder_destructed_(false)
 {
   //cam_pose_.orientation.w = 1.0;
 
@@ -102,6 +105,8 @@ void RvizCinematographerGUI::initPlugin(qt_gui_cpp::PluginContext& context)
   camera_pose_sub_ = ph.subscribe("/rviz/current_camera_pose", 1, &RvizCinematographerGUI::camPoseCallback, this);
   record_finished_sub_ = ph.subscribe("/video_recorder/record_finished", 1, &RvizCinematographerGUI::recordFinishedCallback, this);
   delete_marker_sub_ = ph.subscribe("/rviz/delete", 1, &RvizCinematographerGUI::removeCurrentMarker, this);
+
+  video_recorder_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&RvizCinematographerGUI::videoRecorderThread, this)));
 }
 
 void RvizCinematographerGUI::shutdownPlugin()
@@ -119,6 +124,12 @@ void RvizCinematographerGUI::shutdownPlugin()
   view_poses_array_pub_.publish(path);
   usleep(1000); // sleep for a millisecond to give the publisher some time
   view_poses_array_pub_.shutdown();
+
+	if(!recorder_destructed_)
+	{
+		ignoreResult(system("rosnode kill video_recorder_nodelet"));
+  	video_recorder_thread_->join();
+	}
 }
 
 void RvizCinematographerGUI::saveSettings(qt_gui_cpp::Settings& plugin_settings,
@@ -1364,6 +1375,12 @@ void RvizCinematographerGUI::markersToSplinedPoses(const MarkerList& markers,
       i = max_t;
     }
   }
+}
+
+void RvizCinematographerGUI::videoRecorderThread()
+{
+  ignoreResult(system("roslaunch video_recorder video_recorder.launch"));
+  recorder_destructed_ = true;
 }
 
 } // namespace

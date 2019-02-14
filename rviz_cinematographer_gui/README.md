@@ -136,12 +136,6 @@ Additionally you have to select the rviz_cinematographer_view_controller in the 
 
 ![rviz_views](readme/rviz_view.png)
 
-If you want to record a video using the Rviz Cinematographer, you addionally have to run an instance of the *video_recorder* by
-
-```
-$ roslaunch video_recorder video_recorder.launch
-```
-
 I would recommend to use the *Fixed Frame* as the Target Frame for the view. 
 
 ---

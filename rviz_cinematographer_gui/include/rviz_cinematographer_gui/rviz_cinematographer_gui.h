@@ -45,6 +45,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/thread.hpp>
 #include <yaml-cpp/yaml.h>
 
 #include <spline_library/splines/natural_spline.h>
@@ -81,6 +82,7 @@ public:
 
   /** @brief Constructor. */
   RvizCinematographerGUI();
+  ~RvizCinematographerGUI() = default;
 
   /**
    * @brief Sets up subscribers and publishers and connects GUI to functions.
@@ -382,6 +384,9 @@ private:
   /** @brief Listen to the message that the recording is over. */
   void recordFinishedCallback(const rviz_cinematographer_msgs::Finished::ConstPtr& record_finished);
 
+  /** @brief Starts video recorder nodelet. */
+  void videoRecorderThread();
+
   /** @brief Ui object - connection to GUI. */
   Ui::rviz_cinematographer_gui ui_;
   /** @brief Widget. */
@@ -401,6 +406,9 @@ private:
   /** @brief Subscribes to delete marker msgs. */
   ros::Subscriber delete_marker_sub_;
 
+  /** @brief Starts video recorder nodelet. */
+  boost::shared_ptr<boost::thread> video_recorder_thread_;
+  
   /** @brief Connects markers to callbacks. */
   interactive_markers::MenuHandler menu_handler_;
   /** @brief Stores markers - needed for #menu_handler. */
@@ -414,6 +422,9 @@ private:
 
   /** @brief Currently maintained list of TimedMarkers. */
   MarkerList markers_;
+  
+  /** @brief True if recorder was destructed. */
+  bool recorder_destructed_;
 };
 
 } // namespace
