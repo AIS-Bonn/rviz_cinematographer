@@ -98,6 +98,9 @@ CinematographerViewController::CinematographerViewController()
                                                            "Topic for CameraTrajectory messages", this,
                                                            SLOT(updateTopics()));
 
+  window_width_property_        = new FloatProperty("Window Width", 1000, "The width of the rviz visualization window in pixels.", this);
+  window_height_property_       = new FloatProperty("Window Height", 1000, "The height of the rviz visualization window in pixels.", this);
+  
   // TODO: latch?
   placement_pub_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
   odometry_pub_ = nh_.advertise<nav_msgs::Odometry>("/rviz/trajectory_odometry", 1);
@@ -157,6 +160,9 @@ void CinematographerViewController::onInitialize()
 
   const unsigned long buffer_capacity = 100;
   cam_movements_buffer_ = BufferCamMovements(buffer_capacity);
+  
+  window_width_property_->setFloat(context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth());
+  window_height_property_->setFloat(context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight());
 }
 
 void CinematographerViewController::onActivate()
@@ -254,7 +260,7 @@ void CinematographerViewController::updateAttachedSceneNode()
   }
   else
   {
-    ROS_ERROR_STREAM("Transform not available : " << error_msg);
+    ROS_ERROR_STREAM_THROTTLE(2, "Transform not available : " << error_msg);
   }
 }
 
@@ -737,6 +743,9 @@ void CinematographerViewController::update(float dt, float ros_dt)
   }
 
   updateCamera();
+  
+  window_width_property_->setFloat(context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth());
+  window_height_property_->setFloat(context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight());
 }
 
 void CinematographerViewController::publishViewImage()
