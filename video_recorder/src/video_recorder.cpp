@@ -18,7 +18,7 @@ VideoRecorderNodelet::VideoRecorderNodelet()
     , target_fps_(60)
     , recorded_frames_counter_(0)
     , add_watermark_(true)
-    , resized_watermark_(false)
+    , is_watermark_resized_(false)
 {
 }
 
@@ -60,7 +60,8 @@ void VideoRecorderNodelet::recordParamsCallback(const rviz_cinematographer_msgs:
     else
     {
       path_to_watermark += "/watermark/watermark.png";
-      watermark_ = cv::imread(path_to_watermark, cv::IMREAD_UNCHANGED);
+      original_watermark_ = cv::imread(path_to_watermark, cv::IMREAD_UNCHANGED);
+      is_watermark_resized_ = false;
     }
   }
 
@@ -138,14 +139,15 @@ void VideoRecorderNodelet::processImages()
         if(add_watermark_)
         {
           // resize watermark only once per recording to better fit the video image size 
-          if(!resized_watermark_)
+          if(!is_watermark_resized_)
           {
-            resizeWatermark(watermark_, cv_ptr->image.cols);
-            resized_watermark_ = true;
+            original_watermark_.copyTo(resized_watermark_);
+            resizeWatermark(resized_watermark_, cv_ptr->image.cols);
+            is_watermark_resized_ = true;
           }
 
           // add watermark 
-          addWatermark(cv_ptr->image, watermark_);
+          addWatermark(cv_ptr->image, resized_watermark_);
         }
         output_video_.write(cv_ptr->image);
       }

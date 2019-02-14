@@ -9,6 +9,7 @@
 #define VIDEO_RECORDER_H
 
 #include <queue>
+#include <unistd.h>
 
 #include <nodelet/nodelet.h>
 
@@ -37,7 +38,6 @@ class VideoRecorderNodelet : public nodelet::Nodelet
 public:
 
   VideoRecorderNodelet();
-  ~VideoRecorderNodelet() = default;
 
 protected:
 
@@ -109,8 +109,9 @@ protected:
   int target_fps_;
   int recorded_frames_counter_;
   bool add_watermark_;
-  cv::Mat watermark_;
-  bool resized_watermark_;
+  cv::Mat original_watermark_;
+  cv::Mat resized_watermark_;
+  bool is_watermark_resized_;
 };
 
 }  // namespace video_recorder
