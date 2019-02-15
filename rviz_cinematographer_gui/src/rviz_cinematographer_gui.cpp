@@ -16,7 +16,7 @@ RvizCinematographerGUI::RvizCinematographerGUI()
   : rqt_gui_cpp::Plugin()
     , widget_(0)
     , current_marker_name_("")
-    , recorder_destructed_(false)
+    , recorder_running_(true)
 {
   //cam_pose_.orientation.w = 1.0;
 
@@ -106,7 +106,18 @@ void RvizCinematographerGUI::initPlugin(qt_gui_cpp::PluginContext& context)
   record_finished_sub_ = ph.subscribe("/video_recorder/record_finished", 1, &RvizCinematographerGUI::recordFinishedCallback, this);
   delete_marker_sub_ = ph.subscribe("/rviz/delete", 1, &RvizCinematographerGUI::removeCurrentMarker, this);
 
-  video_recorder_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&RvizCinematographerGUI::videoRecorderThread, this)));
+  bool start_recorder = true;
+  std::string start_recorder_param = "start_recorder";
+  if(getFullParamName(ph, start_recorder_param))
+    ph.getParam(start_recorder_param, start_recorder);
+  
+  if(start_recorder)
+    video_recorder_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&RvizCinematographerGUI::videoRecorderThread, this)));
+  else
+  {
+    recorder_running_ = false;
+    ROS_WARN("Video recorder was not started.");
+  }
 }
 
 void RvizCinematographerGUI::shutdownPlugin()
@@ -125,7 +136,7 @@ void RvizCinematographerGUI::shutdownPlugin()
   usleep(1000); // sleep for a millisecond to give the publisher some time
   view_poses_array_pub_.shutdown();
 
-	if(!recorder_destructed_)
+	if(recorder_running_)
 	{
 		ignoreResult(system("rosnode kill video_recorder_nodelet"));
   	video_recorder_thread_->join();
@@ -1380,7 +1391,11 @@ void RvizCinematographerGUI::markersToSplinedPoses(const MarkerList& markers,
 void RvizCinematographerGUI::videoRecorderThread()
 {
   ignoreResult(system("roslaunch video_recorder video_recorder.launch"));
-  recorder_destructed_ = true;
+  
+  // as soon as video_recorder is killed, clean up and kill gui as well
+  recorder_running_ = false;
+  shutdownPlugin();
+  kill(getpid(), SIGKILL);
 }
 
 } // namespace

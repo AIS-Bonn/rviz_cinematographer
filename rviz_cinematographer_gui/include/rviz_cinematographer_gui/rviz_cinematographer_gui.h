@@ -12,6 +12,7 @@
 #include <sstream>
 #include <string>
 #include <unistd.h>
+#include <signal.h>
 
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -424,7 +425,7 @@ private:
   MarkerList markers_;
   
   /** @brief True if recorder was destructed. */
-  bool recorder_destructed_;
+  bool recorder_running_;
 };
 
 } // namespace
