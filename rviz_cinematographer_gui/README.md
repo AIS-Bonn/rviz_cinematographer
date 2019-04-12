@@ -49,9 +49,9 @@ More details to recording videos are provided [below](README.md#recording-parame
 
 ![rviz_cinematographer_gui](readme/rviz_cinematographer_gui.png)
 
-Remark:  
+**Remark:  
 Rviz doesn't allow to alter the view using the mouse buttons or wheel when hovering over an interactive marker.  
-To not get stuck, it's helpful to hold the right-click and move the mouse to zoom out.
+To not get stuck, it's helpful to hold the right-click and move the mouse to zoom out.**
 
 ### Tabs
 
