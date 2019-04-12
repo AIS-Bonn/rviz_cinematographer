@@ -3,7 +3,7 @@
     <!-- Start RViz separately, because the rqt rviz plugin can't handle published trajectories. -->
     <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find rviz_cinematographer_gui)/launch/rviz_cinematographer_gui.rviz"/>
 
-    <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" output="screen" args="-s rviz_cinematographer_gui/RvizCinematographerGUI">
+    <node name="rviz_cinematographer_gui" pkg="rqt_gui" type="rqt_gui" output="screen" args="-s rviz_cinematographer_gui/RvizCinematographerGUI">
         <rosparam command="load" file="$(find rviz_cinematographer_gui)/trajectories/example_trajectory.yaml"/>
         <param name="start_recorder" value="false"/>
     </node>

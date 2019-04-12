@@ -26,7 +26,7 @@ RvizCinematographerGUI::RvizCinematographerGUI()
 
 void RvizCinematographerGUI::initPlugin(qt_gui_cpp::PluginContext& context)
 {
-  ros::NodeHandle ph("~");
+  ros::NodeHandle ph("/rviz_cinematographer_gui");
   camera_trajectory_pub_ = ph.advertise<rviz_cinematographer_msgs::CameraTrajectory>("/rviz/camera_trajectory", 1);
   view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1, true);
   record_params_pub_ = ph.advertise<rviz_cinematographer_msgs::Record>("/rviz/record", 1);
@@ -76,8 +76,8 @@ void RvizCinematographerGUI::initPlugin(qt_gui_cpp::PluginContext& context)
   menu_handler_.insert("Add marker before", boost::bind(&RvizCinematographerGUI::addMarkerBefore, this, _1));
 
   // set up markers
-  std::string poses_param_name = "poses";
-  if(getFullParamName(ph, poses_param_name))
+  std::string poses_param_name = "rviz_cinematographer_camera_poses";
+  if(ph.hasParam(poses_param_name))
   {
     loadParams(ph, poses_param_name);
   }
@@ -107,9 +107,7 @@ void RvizCinematographerGUI::initPlugin(qt_gui_cpp::PluginContext& context)
   delete_marker_sub_ = ph.subscribe("/rviz/delete", 1, &RvizCinematographerGUI::removeCurrentMarker, this);
 
   bool start_recorder = true;
-  std::string start_recorder_param = "start_recorder";
-  if(getFullParamName(ph, start_recorder_param))
-    ph.getParam(start_recorder_param, start_recorder);
+  ph.getParam("start_recorder", start_recorder);
   
   if(start_recorder)
     video_recorder_thread_ = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&RvizCinematographerGUI::videoRecorderThread, this)));
@@ -206,7 +204,7 @@ void RvizCinematographerGUI::safeTrajectoryToFile(const std::string& file_path)
 {
   std::ofstream file;
   file.open(file_path, std::ofstream::trunc);
-  file << "poses:\n";
+  file << "rviz_cinematographer_camera_poses:\n";
   for(const auto& marker : markers_)
   {
     file << std::fixed << std::setprecision(6);
@@ -645,7 +643,7 @@ void RvizCinematographerGUI::loadTrajectoryFromFile()
     YAML::Node trajectory = YAML::LoadFile(file_name.toStdString());
     int count = 0;
     markers_.clear();
-    for(const auto& pose : trajectory["poses"])
+    for(const auto& pose : trajectory["rviz_cinematographer_camera_poses"])
     {
       visualization_msgs::InteractiveMarker wp_marker = makeMarker();
       wp_marker.controls[0].markers[0].color.r = 1.f;
