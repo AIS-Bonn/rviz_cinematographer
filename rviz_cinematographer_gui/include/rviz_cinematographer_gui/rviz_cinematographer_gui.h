@@ -222,9 +222,10 @@ private:
   /**
    * @brief Moves rviz camera to marker pose by publishing a CameraTrajectory message.
    *
-   * @param[in] marker_name     name of marker.
+   * @param[in] marker_name         name of marker.
+   * @param[in] transition_time     (optional) provide time needed to get to marker - default: transition_time of marker.
    */
-  void moveCamToMarker(const std::string& marker_name);
+  void moveCamToMarker(const std::string& marker_name, double transition_time=-1.0);
 
   /**
    * @brief Updates members using pose of currently moved interactive marker.

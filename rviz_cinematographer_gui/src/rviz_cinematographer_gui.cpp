@@ -876,7 +876,7 @@ void RvizCinematographerGUI::moveCamToCurrent()
   if(ui_.record_radio_button->isChecked())
     publishRecordParams();
 
-  moveCamToMarker(current_marker_name_);
+  moveCamToMarker(current_marker_name_, 0.5);
 }
 
 void RvizCinematographerGUI::moveCamToFirst()
@@ -1073,7 +1073,7 @@ void RvizCinematographerGUI::moveCamToLast()
   camera_trajectory_pub_.publish(cam_trajectory);
 }
 
-void RvizCinematographerGUI::moveCamToMarker(const std::string& marker_name)
+void RvizCinematographerGUI::moveCamToMarker(const std::string& marker_name, double transition_time)
 {
   RvizCinematographerGUI::TimedMarker marker = getMarkerByName(marker_name);
 
@@ -1082,7 +1082,7 @@ void RvizCinematographerGUI::moveCamToMarker(const std::string& marker_name)
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
 
   rviz_cinematographer_msgs::CameraMovement cp = makeCameraMovement();
-  cp.transition_time = ros::Duration(marker.transition_time);
+  cp.transition_time = transition_time < 0.0 ? ros::Duration(marker.transition_time) : ros::Duration(transition_time);
   cp.interpolation_speed = rviz_cinematographer_msgs::CameraMovement::WAVE;
 
   if(!ui_.use_up_of_world_check_box->isChecked())
