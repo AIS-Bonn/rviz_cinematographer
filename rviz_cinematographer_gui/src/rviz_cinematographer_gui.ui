@@ -277,6 +277,9 @@
          <property name="layoutDirection">
           <enum>Qt::RightToLeft</enum>
          </property>
+         <property name="styleSheet">
+          <string notr="true"/>
+         </property>
          <property name="text">
           <string>&amp;Record</string>
          </property>
@@ -294,6 +297,44 @@
           </size>
          </property>
         </spacer>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
+       </property>
+       <item>
+        <widget class="QLabel" name="label_4">
+         <property name="font">
+          <font>
+           <pointsize>10</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>  Frame :  </string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="frame_line_edit">
+         <property name="toolTip">
+          <string>Frame of the markers.</string>
+         </property>
+         <property name="text">
+          <string>base_link</string>
+         </property>
+         <property name="frame">
+          <bool>true</bool>
+         </property>
+         <property name="placeholderText">
+          <string/>
+         </property>
+         <property name="clearButtonEnabled">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
@@ -328,7 +369,7 @@
           <string/>
          </property>
          <property name="currentIndex">
-          <number>0</number>
+          <number>3</number>
          </property>
          <widget class="QWidget" name="page">
           <property name="geometry">
@@ -336,7 +377,7 @@
             <x>0</x>
             <y>0</y>
             <width>481</width>
-            <height>560</height>
+            <height>537</height>
            </rect>
           </property>
           <attribute name="label">
@@ -634,8 +675,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>281</width>
-            <height>302</height>
+            <width>481</width>
+            <height>510</height>
            </rect>
           </property>
           <attribute name="label">
@@ -648,18 +689,16 @@
            <item>
             <layout class="QVBoxLayout" name="verticalLayout_7">
              <item>
-              <widget class="QCheckBox" name="use_up_of_world_check_box">
-               <property name="toolTip">
-                <string>If checked, camera can't roll. Uncheck for fancy movements. </string>
-               </property>
-               <property name="layoutDirection">
-                <enum>Qt::RightToLeft</enum>
+              <widget class="QLabel" name="label_3">
+               <property name="font">
+                <font>
+                 <pointsize>12</pointsize>
+                 <weight>50</weight>
+                 <bold>false</bold>
+                </font>
                </property>
                <property name="text">
-                <string>Use Up of World</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
+                <string>Smoothness:</string>
                </property>
               </widget>
              </item>
@@ -696,31 +735,6 @@
               </widget>
              </item>
              <item>
-              <widget class="QDoubleSpinBox" name="smoothness_spin_box">
-               <property name="toolTip">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The distance between the eye point and the focus point of the camera. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="layoutDirection">
-                <enum>Qt::LeftToRight</enum>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-               <property name="prefix">
-                <string>Distance to Focus Point : </string>
-               </property>
-               <property name="decimals">
-                <number>0</number>
-               </property>
-               <property name="minimum">
-                <double>1.000000000000000</double>
-               </property>
-               <property name="value">
-                <double>20.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item>
               <widget class="QDoubleSpinBox" name="publish_rate_spin_box">
                <property name="toolTip">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Rate that specifies how often the pose is published while the camera is moved with the GUI buttons. Max of 30 Hz is due to rviz update function that is called maximally at this rate. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -748,6 +762,18 @@
                </property>
                <property name="value">
                 <double>10.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_8">
+               <property name="font">
+                <font>
+                 <pointsize>12</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Markers:</string>
                </property>
               </widget>
              </item>
@@ -827,42 +853,70 @@
               </layout>
              </item>
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_4">
-               <property name="sizeConstraint">
-                <enum>QLayout::SetDefaultConstraint</enum>
+              <widget class="QCheckBox" name="show_interactive_marker_controls_check_box">
+               <property name="layoutDirection">
+                <enum>Qt::RightToLeft</enum>
                </property>
-               <item>
-                <widget class="QLabel" name="label_4">
-                 <property name="font">
-                  <font>
-                   <pointsize>10</pointsize>
-                  </font>
-                 </property>
-                 <property name="text">
-                  <string>  Frame :  </string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLineEdit" name="frame_line_edit">
-                 <property name="toolTip">
-                  <string>Frame of the markers.</string>
-                 </property>
-                 <property name="text">
-                  <string>base_link</string>
-                 </property>
-                 <property name="frame">
-                  <bool>true</bool>
-                 </property>
-                 <property name="placeholderText">
-                  <string/>
-                 </property>
-                 <property name="clearButtonEnabled">
-                  <bool>true</bool>
-                 </property>
-                </widget>
-               </item>
-              </layout>
+               <property name="text">
+                <string>Show Interactive Marker Controls</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_10">
+               <property name="font">
+                <font>
+                 <pointsize>12</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Various:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="use_up_of_world_check_box">
+               <property name="toolTip">
+                <string>If checked, camera can't roll. Uncheck for fancy movements. </string>
+               </property>
+               <property name="layoutDirection">
+                <enum>Qt::RightToLeft</enum>
+               </property>
+               <property name="text">
+                <string>Use Up of World</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="smoothness_spin_box">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The distance between the eye point and the focus point of the camera. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               </property>
+               <property name="layoutDirection">
+                <enum>Qt::LeftToRight</enum>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               </property>
+               <property name="prefix">
+                <string>Distance to Focus Point : </string>
+               </property>
+               <property name="decimals">
+                <number>0</number>
+               </property>
+               <property name="minimum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="value">
+                <double>20.000000000000000</double>
+               </property>
+              </widget>
              </item>
              <item>
               <spacer name="verticalSpacer">
@@ -886,8 +940,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>248</width>
-            <height>212</height>
+            <width>481</width>
+            <height>510</height>
            </rect>
           </property>
           <attribute name="label">
@@ -1031,8 +1085,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>207</width>
-            <height>60</height>
+            <width>481</width>
+            <height>510</height>
            </rect>
           </property>
           <attribute name="label">
@@ -1163,6 +1217,7 @@
   <tabstop>move_to_next_button</tabstop>
   <tabstop>move_to_last_button</tabstop>
   <tabstop>record_radio_button</tabstop>
+  <tabstop>frame_line_edit</tabstop>
   <tabstop>append_cam_pose</tabstop>
   <tabstop>set_pose_to_cam_button</tabstop>
   <tabstop>translation_x_spin_box</tabstop>
@@ -1173,14 +1228,14 @@
   <tabstop>rotation_z_spin_box</tabstop>
   <tabstop>rotation_w_spin_box</tabstop>
   <tabstop>transition_time_spin_box</tabstop>
-  <tabstop>use_up_of_world_check_box</tabstop>
   <tabstop>splines_check_box</tabstop>
   <tabstop>smooth_velocity_check_box</tabstop>
-  <tabstop>smoothness_spin_box</tabstop>
   <tabstop>publish_rate_spin_box</tabstop>
   <tabstop>marker_size_increase</tabstop>
   <tabstop>marker_size_decrease</tabstop>
-  <tabstop>frame_line_edit</tabstop>
+  <tabstop>show_interactive_marker_controls_check_box</tabstop>
+  <tabstop>use_up_of_world_check_box</tabstop>
+  <tabstop>smoothness_spin_box</tabstop>
   <tabstop>video_output_path_line_edit</tabstop>
   <tabstop>video_output_path_tool_button</tabstop>
   <tabstop>video_fps_spin_box</tabstop>

@@ -150,6 +150,8 @@ public slots:
   void increaseMarkerScale();
   /** @brief Decrease the scale of the markers.*/
   void decreaseMarkerScale();
+  /** @brief Show/Hide interactive marker controls.*/
+  void showInteractiveMarkerControls();
   /** @brief Loads a series of markers from a file.*/
   void loadTrajectoryFromFile();
   /** @brief Saves poses and transition times of interactive markers to a file.*/

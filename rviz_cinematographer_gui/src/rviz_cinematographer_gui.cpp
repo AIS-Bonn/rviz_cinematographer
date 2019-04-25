@@ -61,6 +61,7 @@ void RvizCinematographerGUI::initPlugin(qt_gui_cpp::PluginContext& context)
   connect(ui_.splines_check_box, SIGNAL(stateChanged(int)), this, SLOT(updateTrajectory()));
   connect(ui_.marker_size_increase, SIGNAL(clicked(bool)), this, SLOT(increaseMarkerScale()));
   connect(ui_.marker_size_decrease, SIGNAL(clicked(bool)), this, SLOT(decreaseMarkerScale()));
+  connect(ui_.show_interactive_marker_controls_check_box, SIGNAL(stateChanged(int)), this, SLOT(showInteractiveMarkerControls()));
 
   connect(ui_.video_output_path_tool_button, SIGNAL(clicked(bool)), this, SLOT(setVideoOutputPath()));
 
@@ -603,6 +604,16 @@ void RvizCinematographerGUI::increaseMarkerScale()
 void RvizCinematographerGUI::decreaseMarkerScale()
 {
   updateMarkerScales(0.9f);
+}
+
+void RvizCinematographerGUI::showInteractiveMarkerControls()
+{
+  bool show_controls = ui_.show_interactive_marker_controls_check_box->isChecked();
+  for(auto& marker : markers_)
+    for(auto& control : marker.marker.controls)
+      control.interaction_mode = show_controls ? visualization_msgs::InteractiveMarkerControl::MOVE_ROTATE : visualization_msgs::InteractiveMarkerControl::BUTTON;
+
+  updateServer(markers_);
 }
 
 void RvizCinematographerGUI::updateMarkerScale(TimedMarker& marker, float scale_factor)
