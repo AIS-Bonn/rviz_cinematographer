@@ -90,8 +90,8 @@ CinematographerViewController::CinematographerViewController()
   distance_property_        = new FloatProperty("Distance", getDistanceFromCameraToFocalPoint(), "The distance between the camera position and the focus point.", this);
   distance_property_->setMin(0.01);
 
-  default_transition_time_property_ = new FloatProperty("Transition Time", 0.5,
-                                                        "The default time to use for camera transitions.", this);
+  default_transition_duration_property_ = new FloatProperty("Transition Duration", 0.5,
+                                                        "The default duration to use for camera transitions.", this);
   camera_trajectory_topic_property_ = new RosTopicProperty("Trajectory Topic", "/rviz/camera_trajectory",
                                                            QString::fromStdString(
                                                              ros::message_traits::datatype<rviz_cinematographer_msgs::CameraTrajectory>()),
@@ -489,19 +489,19 @@ void CinematographerViewController::transitionFrom(ViewController* previous_view
     beginNewTransition(new_eye,
                        new_focus,
                        new_up,
-                       ros::Duration(default_transition_time_property_->getFloat()));
+                       ros::Duration(default_transition_duration_property_->getFloat()));
   }
 }
 
 void CinematographerViewController::beginNewTransition(const Ogre::Vector3& eye,
                                                        const Ogre::Vector3& focus,
                                                        const Ogre::Vector3& up,
-                                                       ros::Duration transition_time,
+                                                       ros::Duration transition_duration,
                                                        uint8_t interpolation_speed)
 {
   // if jump was requested, perform as usual but prevent division by zero
-  if(ros::Duration(transition_time).isZero())
-    transition_time = ros::Duration(0.001);
+  if(ros::Duration(transition_duration).isZero())
+    transition_duration = ros::Duration(0.001);
 
   // if the buffer is empty we set the first element in it to the current camera pose
   if(cam_movements_buffer_.empty())
@@ -518,7 +518,7 @@ void CinematographerViewController::beginNewTransition(const Ogre::Vector3& eye,
   if(cam_movements_buffer_.full())
     cam_movements_buffer_.set_capacity(cam_movements_buffer_.capacity() + 20);
 
-  cam_movements_buffer_.push_back(std::move(OgreCameraMovement(eye, focus, up, transition_time, interpolation_speed)));
+  cam_movements_buffer_.push_back(std::move(OgreCameraMovement(eye, focus, up, transition_duration, interpolation_speed)));
 
   animate_ = true;
 }
@@ -571,7 +571,7 @@ void CinematographerViewController::cameraTrajectoryCallback(const rviz_cinemato
     Ogre::Vector3 eye = vectorFromMsg(cam_movement.eye.point);
     Ogre::Vector3 focus = vectorFromMsg(cam_movement.focus.point);
     Ogre::Vector3 up = vectorFromMsg(cam_movement.up.vector);
-    beginNewTransition(eye, focus, up, cam_movement.transition_time, cam_movement.interpolation_speed);
+    beginNewTransition(eye, focus, up, cam_movement.transition_duration, cam_movement.interpolation_speed);
   }
 }
 
@@ -610,7 +610,7 @@ void CinematographerViewController::lookAt(const Ogre::Vector3& point)
   beginNewTransition(eye_point_property_->getVector(),
                      new_point,
                      up_vector_property_->getVector(),
-                     ros::Duration(default_transition_time_property_->getFloat()));
+                     ros::Duration(default_transition_duration_property_->getFloat()));
 }
 
 void CinematographerViewController::publishOdometry(const Ogre::Vector3& position,
@@ -666,13 +666,13 @@ void CinematographerViewController::update(float dt, float ros_dt)
     double relative_progress_in_time = 0.0;
     if(render_frame_by_frame_)
     {
-      relative_progress_in_time = recorded_frames_counter_ / (target_fps_ * goal->transition_time.toSec());
+      relative_progress_in_time = recorded_frames_counter_ / (target_fps_ * goal->transition_duration.toSec());
       recorded_frames_counter_++;
     }
     else
     {
-      ros::WallDuration time_from_start = ros::WallTime::now() - transition_start_time_;
-      relative_progress_in_time = time_from_start.toSec() / goal->transition_time.toSec();
+      ros::WallDuration duration_from_start = ros::WallTime::now() - transition_start_time_;
+      relative_progress_in_time = duration_from_start.toSec() / goal->transition_duration.toSec();
     }
 
     // make sure we get all the way there before turning off
@@ -720,8 +720,8 @@ void CinematographerViewController::update(float dt, float ros_dt)
       {
         // reset animate to perform the next movement
         animate_ = true;
-        // update the transition start time with the time the transition should have taken
-        transition_start_time_ += ros::WallDuration(cam_movements_buffer_.front().transition_time.toSec());
+        // update the transition start time with the duration the transition should have taken
+        transition_start_time_ += ros::WallDuration(cam_movements_buffer_.front().transition_duration.toSec());
       }
       else
       {

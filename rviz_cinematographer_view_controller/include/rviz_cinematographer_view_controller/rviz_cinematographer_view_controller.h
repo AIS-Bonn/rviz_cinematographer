@@ -105,12 +105,12 @@ public:
     OgreCameraMovement(const Ogre::Vector3& eye,
                        const Ogre::Vector3& focus,
                        const Ogre::Vector3& up,
-                       const ros::Duration& transition_time,
+                       const ros::Duration& transition_duration,
                        const uint8_t interpolation_speed)
       : eye(eye)
         , focus(focus)
         , up(up)
-        , transition_time(transition_time)
+        , transition_duration(transition_duration)
         , interpolation_speed(interpolation_speed)
     {
     }
@@ -119,7 +119,7 @@ public:
     Ogre::Vector3 focus;
     Ogre::Vector3 up;
 
-    ros::Duration transition_time;
+    ros::Duration transition_duration;
     uint8_t interpolation_speed;
   };
 
@@ -291,13 +291,13 @@ protected:  //methods
    * @param[in] eye                     position of camera
    * @param[in] focus                   focus point of camera
    * @param[in] up                      vector of camera pointing up
-   * @param[in] transition_time         time needed of transition
+   * @param[in] transition_duration     duration needed for transition
    * @param[in] interpolation_speed     the interpolation speed profile
    */
   void beginNewTransition(const Ogre::Vector3& eye,
                           const Ogre::Vector3& focus,
                           const Ogre::Vector3& up,
-                          ros::Duration transition_time,
+                          ros::Duration transition_duration,
                           uint8_t interpolation_speed = rviz_cinematographer_msgs::CameraMovement::WAVE);
 
   /** @brief Cancels any currently active camera movement. */
@@ -349,7 +349,7 @@ protected:    //members
   rviz::VectorProperty* eye_point_property_;              ///< The position of the camera.
   rviz::VectorProperty* focus_point_property_;            ///< The point around which the camera "orbits".
   rviz::VectorProperty* up_vector_property_;              ///< The up vector for the camera.
-  rviz::FloatProperty* default_transition_time_property_; ///< A default time for any animation requests.
+  rviz::FloatProperty* default_transition_duration_property_; ///< A default time for any animation requests.
 
   rviz::RosTopicProperty* camera_trajectory_topic_property_;
 
