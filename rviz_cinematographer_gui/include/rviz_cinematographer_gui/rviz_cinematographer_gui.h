@@ -350,9 +350,11 @@ private:
    *
    * @param[in] pose                pose
    * @param[in] transition_duration transition duration
+   * @param[in] wait_duration       wait duration
    */
   void updatePoseInGUI(const geometry_msgs::Pose& pose,
-                       double transition_duration = 0.5);
+                       double transition_duration = 0.5,
+                       double wait_duration = 0.0);
 
   /**
    * @brief Sets the value of the spin_box to the value without triggering a signal.
@@ -403,11 +405,13 @@ private:
    *
    * @param[in]     markers                     markers defining trajectory.
    * @param[out]    transition_durations        transition durations between spline points.
+   * @param[out]    wait_durations              wait durations at spline points.
    * @param[out]    total_transition_duration   sum of all transition durations.
    */
-  void computeTransitionDurations(const MarkerList& markers,
-                              std::vector<double>& transition_durations,
-                              double& total_transition_duration);
+  void computeDurations(const MarkerList& markers,
+                        std::vector<double>& transition_durations,
+                        std::vector<double>& wait_durations,
+                        double& total_transition_duration);
 
   /**
    * @brief Convert spline to CameraTrajectory.
@@ -416,6 +420,7 @@ private:
    * @param[in]     focus_spline                spline of camera focus points.
    * @param[in]     up_spline                   spline of camera up positions.
    * @param[in]     transition_durations        transition duration between spline points.
+   * @param[in]     wait_durations              wait duration at spline points.
    * @param[in]     total_transition_duration   overall transition duration.
    * @param[out]    trajectory                  resulting camera trajectory.
    */
@@ -423,6 +428,7 @@ private:
                              const UniformCRSpline<Vector3>& focus_spline,
                              const UniformCRSpline<Vector3>& up_spline,
                              const std::vector<double>& transition_durations,
+                             const std::vector<double>& wait_durations,
                              const double total_transition_duration, 
                              rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory);
 

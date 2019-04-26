@@ -28,6 +28,8 @@ Panels:
     SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
+Toolbars:
+  toolButtonStyle: 2
 Visualization Manager:
   Class: ""
   Displays:
@@ -112,7 +114,10 @@ Visualization Manager:
     - Class: rviz/FocusCamera
     - Class: rviz/Measure
     - Class: rviz/SetInitialPose
+      Theta std deviation: 0.2617993950843811
       Topic: /initialpose
+      X std deviation: 0.5
+      Y std deviation: 0.5
     - Class: rviz/SetGoal
       Topic: /move_base_simple/goal
     - Class: rviz/PublishPoint
@@ -123,33 +128,35 @@ Visualization Manager:
     Current:
       Class: rviz_cinematographer_view_controller/Cinematographer
       Control Mode: Orbit
-      Distance: 142.0646514892578
+      Distance: 79.31166076660156
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Eye:
-        X: -70.16866302490234
-        Y: -71.1375503540039
-        Z: 101.63214874267578
+        X: -32.081790924072266
+        Y: -50.35028839111328
+        Z: 58.29265213012695
       Focus:
-        X: 13.7786865234375
-        Y: 2.8122482299804688
-        Z: 14.072822570800781
+        X: 10.547896385192871
+        Y: 1.0929632186889648
+        Z: 15.553437232971191
       Invert Z Axis: false
       Maintain Vertical Axis: true
       Mouse Enabled: true
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Target Frame: <Fixed Frame>
+      Target Frame: base_link
       Trajectory Topic: /rviz/camera_trajectory
-      Transition Time: 0.5
+      Transition Duration: 0.5
       Up:
         X: 0
         Y: 0
         Z: 1
       Value: Cinematographer (rviz_cinematographer_view_controller)
+      Window Height: 868
+      Window Width: 1368
     Saved: ~
 Window Geometry:
   "&Displays":
@@ -167,5 +174,5 @@ Window Geometry:
   Tool Properties:
     collapsed: false
   Width: 2162
-  X: 491
+  X: 493
   Y: 0
