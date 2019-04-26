@@ -65,23 +65,23 @@ class RvizCinematographerGUI : public rqt_gui_cpp::Plugin
 
 Q_OBJECT
 public:
-  struct InteractiveMarkerWithTime
+  struct InteractiveMarkerWithDurations
   {
-    InteractiveMarkerWithTime(visualization_msgs::InteractiveMarker&& input_marker,
-                              const double transition_time,
-                              const double wait_time = 0.0)
+    InteractiveMarkerWithDurations(visualization_msgs::InteractiveMarker&& input_marker,
+                              const double transition_duration,
+                              const double wait_duration = 0.0)
       : marker(input_marker)
-        , transition_time(transition_time)
-        , wait_time(wait_time)
+        , transition_duration(transition_duration)
+        , wait_duration(wait_duration)
     {
     }
 
     visualization_msgs::InteractiveMarker marker;
-    double transition_time;
-    double wait_time;
+    double transition_duration;
+    double wait_duration;
   };
 
-  typedef InteractiveMarkerWithTime TimedMarker;
+  typedef InteractiveMarkerWithDurations TimedMarker;
   typedef std::list<TimedMarker> MarkerList;
 
 
@@ -158,7 +158,7 @@ public slots:
   void showInteractiveMarkerControls();
   /** @brief Loads a series of markers from a file.*/
   void loadTrajectoryFromFile();
-  /** @brief Saves poses and transition times of interactive markers to a file.*/
+  /** @brief Saves poses and transition durations of interactive markers to a file.*/
   void saveTrajectoryToFile();
   /** @brief Opens file explorer to specify the path of the recorded video.*/
   void setVideoOutputPath();
@@ -230,10 +230,10 @@ private:
    * @brief Moves rviz camera to marker pose by publishing a CameraTrajectory message.
    *
    * @param[in] marker_name         name of marker.
-   * @param[in] transition_time     (optional) provide time needed to get to marker - default: transition_time of marker.
+   * @param[in] transition_duration     (optional) provide time needed to get to marker - default: transition_duration of marker.
    */
   void moveCamToMarker(const std::string& marker_name,
-                       double transition_time = -1.0);
+                       double transition_duration = -1.0);
 
   /**
    * @brief Updates members using pose of currently moved interactive marker.
@@ -253,7 +253,7 @@ private:
                            const geometry_msgs::Quaternion& quat);
 
   /**
-   * @brief Safes poses and times of markers to yaml file.
+   * @brief Safes poses and durations of markers to yaml file.
    *
    * @param[in] file_path   path to the file.
    */
@@ -323,7 +323,7 @@ private:
    * @param[in] marker_name name of marker.
    * @return marker with marker_name.
    */
-  InteractiveMarkerWithTime& getMarkerByName(const std::string& marker_name);
+  InteractiveMarkerWithDurations& getMarkerByName(const std::string& marker_name);
 
   /**
    * @brief Sets the #current_marker_ to the provided input.
@@ -348,11 +348,11 @@ private:
   /**
    * @brief Sets the pose in the GUI to the provided input values.
    *
-   * @param[in] pose            pose
-   * @param[in] transition_time transition time
+   * @param[in] pose                pose
+   * @param[in] transition_duration transition duration
    */
   void updatePoseInGUI(const geometry_msgs::Pose& pose,
-                       double transition_time = 0.5);
+                       double transition_duration = 0.5);
 
   /**
    * @brief Sets the value of the spin_box to the value without triggering a signal.
@@ -399,31 +399,31 @@ private:
                      std::vector<Vector3>& input_up_directions);
 
   /**
-   * @brief Computes transition times for each step within the spline.
+   * @brief Computes transition durations for each step within the spline.
    *
-   * @param[in]     markers                 markers defining trajectory.
-   * @param[out]    transition_times        transition times between spline points.
-   * @param[out]    total_transition_time   sum of all transition times.
+   * @param[in]     markers                     markers defining trajectory.
+   * @param[out]    transition_durations        transition durations between spline points.
+   * @param[out]    total_transition_duration   sum of all transition durations.
    */
-  void computeTransitionTimes(const MarkerList& markers,
-                              std::vector<double>& transition_times,
-                              double& total_transition_time);
+  void computeTransitionDurations(const MarkerList& markers,
+                              std::vector<double>& transition_durations,
+                              double& total_transition_duration);
 
   /**
    * @brief Convert spline to CameraTrajectory.
    *
-   * @param[in]     eye_spline              spline of camera positions.
-   * @param[in]     focus_spline            spline of camera focus points.
-   * @param[in]     up_spline               spline of camera up positions.
-   * @param[in]     transition_times        transition time between spline points.
-   * @param[in]     total_transition_time   overall transition time.
-   * @param[out]    trajectory              resulting camera trajectory.
+   * @param[in]     eye_spline                  spline of camera positions.
+   * @param[in]     focus_spline                spline of camera focus points.
+   * @param[in]     up_spline                   spline of camera up positions.
+   * @param[in]     transition_durations        transition duration between spline points.
+   * @param[in]     total_transition_duration   overall transition duration.
+   * @param[out]    trajectory                  resulting camera trajectory.
    */
   void splineToCamTrajectory(const UniformCRSpline<Vector3>& eye_spline,
                              const UniformCRSpline<Vector3>& focus_spline,
                              const UniformCRSpline<Vector3>& up_spline,
-                             const std::vector<double>& transition_times,
-                             const double total_transition_time, 
+                             const std::vector<double>& transition_durations,
+                             const double total_transition_duration, 
                              rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory);
 
   /** @brief Call service to record current trajectory. */
