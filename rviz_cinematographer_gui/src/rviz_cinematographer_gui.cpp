@@ -930,10 +930,7 @@ void RvizCinematographerGUI::moveCamToFirst()
     // and the last one a second time
     markers.push_back(*(markers_.begin()));
 
-    markersToSplinedCamTrajectory(markers,
-                                  cam_trajectory,
-                                  ui_.publish_rate_spin_box->value(),
-                                  ui_.smooth_velocity_check_box->isChecked());
+    markersToSplinedCamTrajectory(markers, cam_trajectory);
   }
   else
   {
@@ -1047,10 +1044,7 @@ void RvizCinematographerGUI::moveCamToLast()
     // and the last one a second time
     markers.push_back(*(std::prev(markers_.end())));
 
-    markersToSplinedCamTrajectory(markers,
-                                  cam_trajectory,
-                                  ui_.publish_rate_spin_box->value(),
-                                  ui_.smooth_velocity_check_box->isChecked());
+    markersToSplinedCamTrajectory(markers, cam_trajectory);
   }
   else
   {
@@ -1190,7 +1184,7 @@ void RvizCinematographerGUI::updateCurrentMarker()
 }
 
 tf::Vector3 RvizCinematographerGUI::rotateVector(const tf::Vector3& vector,
-                                           const geometry_msgs::Quaternion& quat)
+                                                 const geometry_msgs::Quaternion& quat)
 {
   tf::Quaternion rotation;
   tf::quaternionMsgToTF(quat, rotation);
@@ -1198,19 +1192,35 @@ tf::Vector3 RvizCinematographerGUI::rotateVector(const tf::Vector3& vector,
 }
 
 void RvizCinematographerGUI::markersToSplinedCamTrajectory(const MarkerList& markers,
-                                                     rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory,
-                                                     double frequency,
-                                                     bool smooth_velocity)
+                                                     rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory)
 {
-  // put all markers positions into a vector. First and last double.
-  double total_transition_time = 0.0;
   std::vector<Vector3> input_eye_positions;
   std::vector<Vector3> input_focus_positions;
   std::vector<Vector3> input_up_directions;
+  prepareSpline(markers, input_eye_positions, input_focus_positions, input_up_directions);
+
+  // Generate splines
+  UniformCRSpline<Vector3> eye_spline(input_eye_positions);
+  UniformCRSpline<Vector3> focus_spline(input_focus_positions);
+  UniformCRSpline<Vector3> up_spline(input_up_directions);
+
   std::vector<double> transition_times;
+  double total_transition_time = 0.0;
+  computeTransitionTimes(markers, transition_times, total_transition_time);
+
+  splineToCamTrajectory(input_eye_positions,
+                        input_focus_positions, 
+                        input_up_directions, 
+                        transition_times, 
+                        total_transition_time,
+                        trajectory);
+}
+
+void RvizCinematographerGUI::prepareSpline(const MarkerList& markers, std::vector<Vector3>& input_eye_positions,
+                                           std::vector<Vector3>& input_focus_positions,
+                                           std::vector<Vector3>& input_up_directions)
+{
   Vector3 position;
-  bool first = true;
-  std::string prev_marker_name;
   for(const auto& marker : markers)
   {
     position[0] = static_cast<float>(marker.marker.pose.position.x);
@@ -1240,8 +1250,20 @@ void RvizCinematographerGUI::markersToSplinedCamTrajectory(const MarkerList& mar
       position[2] = 1;
     }
     input_up_directions.push_back(position);
+  }
+}
 
+void RvizCinematographerGUI::computeTransitionTimes(const MarkerList& markers,
+                                                    std::vector<double>& transition_times,
+                                                    double& total_transition_time)
+{
+  const double frequency = ui_.publish_rate_spin_box->value();
+  const bool smooth_velocity = ui_.smooth_velocity_check_box->isChecked();
 
+  bool first = true;
+  std::string prev_marker_name;
+  for(const auto& marker : markers)
+  {
     // first because - when moving from marker A to B we only consider the transition time of B
     // check for equal names because - UniformCRSpline needs to be fed with start marker two times (end as well)
     // this case needs to be handled to prevent errors
@@ -1256,17 +1278,24 @@ void RvizCinematographerGUI::markersToSplinedCamTrajectory(const MarkerList& mar
     first = false;
     prev_marker_name = marker.marker.name;
   }
+}
 
-  UniformCRSpline<Vector3> eye_spline(input_eye_positions);
-  UniformCRSpline<Vector3> focus_spline(input_focus_positions);
-  UniformCRSpline<Vector3> up_spline(input_up_directions);
-
+void RvizCinematographerGUI::splineToCamTrajectory(const UniformCRSpline<Vector3>& eye_spline,
+                                                   const UniformCRSpline<Vector3>& focus_spline,
+                                                   const UniformCRSpline<Vector3>& up_spline,
+                                                   const std::vector<double>& transition_times,
+                                                   const double total_transition_time,
+                                                   rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory)
+{
+  const double frequency = ui_.publish_rate_spin_box->value();
+  const bool smooth_velocity = ui_.smooth_velocity_check_box->isChecked();
+  
   // rate to sample from spline and get points
   rviz_cinematographer_msgs::CameraMovement cam_movement = makeCameraMovement();
   double rate = 1.0 / frequency;
   float max_t = eye_spline.getMaxT();
   double total_length = eye_spline.totalLength();
-  first = true;
+  bool first = true;
   bool last_run = false;
   for(double t = 0.f; t <= max_t;)
   {
@@ -1323,9 +1352,9 @@ void RvizCinematographerGUI::markersToSplinedCamTrajectory(const MarkerList& mar
 }
 
 void RvizCinematographerGUI::markersToSplinedPoses(const MarkerList& markers,
-                                             std::vector<geometry_msgs::Pose>& spline_poses,
-                                             double frequency,
-                                             bool duplicate_ends)
+                                                   std::vector<geometry_msgs::Pose>& spline_poses,
+                                                   double frequency,
+                                                   bool duplicate_ends)
 {
   // put all markers positions into a vector. First and last double.
   std::vector<Vector3> spline_points;

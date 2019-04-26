@@ -67,14 +67,18 @@ Q_OBJECT
 public:
   struct InteractiveMarkerWithTime
   {
-    InteractiveMarkerWithTime(visualization_msgs::InteractiveMarker&& input_marker, const double time)
+    InteractiveMarkerWithTime(visualization_msgs::InteractiveMarker&& input_marker,
+                              const double transition_time,
+                              const double wait_time = 0.0)
       : marker(input_marker)
-        , transition_time(time)
+        , transition_time(transition_time)
+        , wait_time(wait_time)
     {
     }
 
     visualization_msgs::InteractiveMarker marker;
     double transition_time;
+    double wait_time;
   };
 
   typedef InteractiveMarkerWithTime TimedMarker;
@@ -188,7 +192,8 @@ private:
    * @param[in, out]    marker          marker that is updated
    * @param[in]         scale_factor    factor used to update the marker scale
    */
-  void updateMarkerScale(TimedMarker& marker, float scale_factor);
+  void updateMarkerScale(TimedMarker& marker,
+                         float scale_factor);
 
   /** @brief Updates the scales of the markers.
    *
@@ -227,7 +232,8 @@ private:
    * @param[in] marker_name         name of marker.
    * @param[in] transition_time     (optional) provide time needed to get to marker - default: transition_time of marker.
    */
-  void moveCamToMarker(const std::string& marker_name, double transition_time=-1.0);
+  void moveCamToMarker(const std::string& marker_name,
+                       double transition_time = -1.0);
 
   /**
    * @brief Updates members using pose of currently moved interactive marker.
@@ -354,7 +360,8 @@ private:
    * @param[in,out] spin_box    the updated spin box.
    * @param[in]     value       the value the spin box is set to.
    */
-  void setValueQuietly(QDoubleSpinBox* spin_box, double value);
+  void setValueQuietly(QDoubleSpinBox* spin_box,
+                       double value);
 
   /**
    * @brief Interpolate markers using a spline and safe that spline in spline_poses.
@@ -374,13 +381,50 @@ private:
    *
    * @param[in]     markers         markers to be interpolated.
    * @param[out]    trajectory      resulting trajectory.
-   * @param[in]     frequency       resolution - number of spline points between each marker pair.
-   * @param[in]     smooth_velocity smoothes to velocity of the camera movement.
    */
   void markersToSplinedCamTrajectory(const MarkerList& markers,
-                                     rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory,
-                                     double frequency,
-                                     bool smooth_velocity = true);
+                                     rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory);
+
+  /**
+   * @brief Generates trajectories for eye positions, focus positions and up directories, needed for spline generation.
+   *
+   * @param[in]     markers                   markers defining trajectory.
+   * @param[out]    input_eye_positions       camera positions at trajectory points.
+   * @param[out]    input_focus_positions     positions of camera focus at trajectory points.
+   * @param[out]    input_up_directions       cameras up directions at trajectory points.
+   */
+  void prepareSpline(const MarkerList& markers,
+                     std::vector<Vector3>& input_eye_positions,
+                     std::vector<Vector3>& input_focus_positions,
+                     std::vector<Vector3>& input_up_directions);
+
+  /**
+   * @brief Computes transition times for each step within the spline.
+   *
+   * @param[in]     markers                 markers defining trajectory.
+   * @param[out]    transition_times        transition times between spline points.
+   * @param[out]    total_transition_time   sum of all transition times.
+   */
+  void computeTransitionTimes(const MarkerList& markers,
+                              std::vector<double>& transition_times,
+                              double& total_transition_time);
+
+  /**
+   * @brief Convert spline to CameraTrajectory.
+   *
+   * @param[in]     eye_spline              spline of camera positions.
+   * @param[in]     focus_spline            spline of camera focus points.
+   * @param[in]     up_spline               spline of camera up positions.
+   * @param[in]     transition_times        transition time between spline points.
+   * @param[in]     total_transition_time   overall transition time.
+   * @param[out]    trajectory              resulting camera trajectory.
+   */
+  void splineToCamTrajectory(const UniformCRSpline<Vector3>& eye_spline,
+                             const UniformCRSpline<Vector3>& focus_spline,
+                             const UniformCRSpline<Vector3>& up_spline,
+                             const std::vector<double>& transition_times,
+                             const double total_transition_time, 
+                             rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory);
 
   /** @brief Call service to record current trajectory. */
   void publishRecordParams();
@@ -412,7 +456,7 @@ private:
 
   /** @brief Starts video recorder nodelet. */
   boost::shared_ptr<boost::thread> video_recorder_thread_;
-  
+
   /** @brief Connects markers to callbacks. */
   interactive_markers::MenuHandler menu_handler_;
   /** @brief Stores markers - needed for #menu_handler. */
@@ -426,7 +470,7 @@ private:
 
   /** @brief Currently maintained list of TimedMarkers. */
   MarkerList markers_;
-  
+
   /** @brief True if recorder was destructed. */
   bool recorder_running_;
 };
