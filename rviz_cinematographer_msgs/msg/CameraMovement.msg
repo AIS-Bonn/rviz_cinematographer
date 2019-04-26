@@ -7,7 +7,7 @@ uint8 WAVE      = 3 # RISING and DECLINING concatenated in one movement.
 
 # Defines how long the transition should take.
 # A negative value will disable the pose command altogether.
-duration transition_time
+duration transition_duration
 
 # The frame-relative point for the camera.
 geometry_msgs/PointStamped eye
