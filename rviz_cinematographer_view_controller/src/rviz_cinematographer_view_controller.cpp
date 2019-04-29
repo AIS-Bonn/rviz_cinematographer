@@ -90,7 +90,7 @@ CinematographerViewController::CinematographerViewController()
   distance_property_        = new FloatProperty("Distance", getDistanceFromCameraToFocalPoint(), "The distance between the camera position and the focus point.", this);
   distance_property_->setMin(0.01);
 
-  default_transition_duration_property_ = new FloatProperty("Transition Duration", 0.5,
+  default_transition_duration_property_ = new FloatProperty("Transition Duration in seconds", 0.5,
                                                         "The default duration to use for camera transitions.", this);
   camera_trajectory_topic_property_ = new RosTopicProperty("Trajectory Topic", "/rviz/camera_trajectory",
                                                            QString::fromStdString(
@@ -98,6 +98,8 @@ CinematographerViewController::CinematographerViewController()
                                                            "Topic for CameraTrajectory messages", this,
                                                            SLOT(updateTopics()));
 
+  transition_velocity_property_        = new FloatProperty("Transition Velocity in m/s", 0, "The current velocity of the animated camera.", this);
+  
   window_width_property_        = new FloatProperty("Window Width", 1000, "The width of the rviz visualization window in pixels.", this);
   window_height_property_       = new FloatProperty("Window Height", 1000, "The height of the rviz visualization window in pixels.", this);
   
@@ -689,8 +691,11 @@ void CinematographerViewController::update(float dt, float ros_dt)
     Ogre::Vector3 new_focus = start->focus + relative_progress_in_space * (goal->focus - start->focus);
     Ogre::Vector3 new_up = start->up + relative_progress_in_space * (goal->up - start->up);
 
+    Ogre::Vector3 velocity = (new_position - eye_point_property_->getVector()) / ros_dt;
+    transition_velocity_property_->setFloat(velocity.normalise());
+
     if(odometry_pub_.getNumSubscribers() != 0)
-      publishOdometry(new_position, (new_position - eye_point_property_->getVector()) / ros_dt);
+      publishOdometry(new_position, velocity);
 
     disconnectPositionProperties();
     eye_point_property_->setVector(new_position);
@@ -741,6 +746,8 @@ void CinematographerViewController::update(float dt, float ros_dt)
       }
     }
   }
+  else
+    transition_velocity_property_->setFloat(0.f);
 
   updateCamera();
   
