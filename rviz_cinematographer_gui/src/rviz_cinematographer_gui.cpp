@@ -1381,8 +1381,12 @@ void RvizCinematographerGUI::splineToCamTrajectory(const UniformCRSpline<Vector3
     }
     // else is not necessary - up is already set to default in makeCameraMovement
 
-    cam_movement.interpolation_speed = (first) ? RISING_INTERPOLATION_SPEED
-                                               : FULL_INTERPOLATION_SPEED;
+    bool accelerate = false;
+    if(!trajectory->trajectory.empty())
+      accelerate = trajectory->trajectory.back().interpolation_speed == DECLINING_INTERPOLATION_SPEED;
+    
+    cam_movement.interpolation_speed = (first || accelerate) ? RISING_INTERPOLATION_SPEED
+                                                             : FULL_INTERPOLATION_SPEED;
 
     // decline at end of trajectory and when reaching next position and velocity is not smoothed 
     if((!smooth_velocity && current_transition_id != previous_transition_id) || last_run)
@@ -1399,14 +1403,20 @@ void RvizCinematographerGUI::splineToCamTrajectory(const UniformCRSpline<Vector3
 
     cam_movement.transition_duration = ros::Duration(transition_duration);
 
-    trajectory->trajectory.push_back(cam_movement);
 
     // recreate movement/marker id to wait after transition if waiting time specified
     current_transition_id = (int)std::floor(t + 0.00001); // magic number needed due to arithmetic imprecision with doubles
     if(!smooth_velocity && current_transition_id != previous_transition_id &&
        wait_durations[previous_transition_id] > 0.01)
     {
+      cam_movement.interpolation_speed = DECLINING_INTERPOLATION_SPEED;
+      trajectory->trajectory.push_back(cam_movement);
+
       cam_movement.transition_duration = ros::Duration(wait_durations[previous_transition_id]);
+      trajectory->trajectory.push_back(cam_movement);
+    }
+    else
+    {
       trajectory->trajectory.push_back(cam_movement);
     }
     previous_transition_id = current_transition_id;
