@@ -68,8 +68,8 @@ public:
   struct InteractiveMarkerWithDurations
   {
     InteractiveMarkerWithDurations(visualization_msgs::InteractiveMarker&& input_marker,
-                              const double transition_duration,
-                              const double wait_duration = 0.0)
+                                   const double transition_duration,
+                                   const double wait_duration = 0.0)
       : marker(input_marker)
         , transition_duration(transition_duration)
         , wait_duration(wait_duration)
@@ -83,6 +83,15 @@ public:
 
   typedef InteractiveMarkerWithDurations TimedMarker;
   typedef std::list<TimedMarker> MarkerList;
+  typedef typename MarkerList::iterator MarkerIterator;
+
+  enum
+  {
+    RISING_INTERPOLATION_SPEED = rviz_cinematographer_msgs::CameraMovement::RISING,
+    DECLINING_INTERPOLATION_SPEED = rviz_cinematographer_msgs::CameraMovement::DECLINING,
+    FULL_INTERPOLATION_SPEED = rviz_cinematographer_msgs::CameraMovement::FULL,
+    WAVE_INTERPOLATION_SPEED = rviz_cinematographer_msgs::CameraMovement::WAVE,
+  };
 
 
   /** @brief Constructor. */
@@ -216,6 +225,22 @@ private:
    */
   void rvizCamToMarkerOrientation(const geometry_msgs::Pose& rviz_cam_pose,
                                   geometry_msgs::Pose& marker_pose);
+
+  /**
+   * @brief Creates cam movement to goal marker and appends this to the trajectory. 
+   *
+   * Default interpolation behaviour: Increase speed up to next marker, stay at full speed until next-to-last marker 
+   * reached, decrease speed then 
+   * Special Cases: - Omit full speed if halting directly after the next marker 
+   *                - Increase and decrease in one motion (wave) if halting at next marker  
+   *
+   * @param[in]         goal_marker_iter   defines where to extend the trajectory to.
+   * @param[in,out]     cam_trajectory     trajectory that is extended.
+   * @param[in]         last_marker_iter   iterator to last marker of marker list.
+   */
+  void appendMarkerToTrajectory(const MarkerIterator& goal_marker_iter,
+                                rviz_cinematographer_msgs::CameraTrajectoryPtr& cam_trajectory,
+                                const MarkerIterator& last_marker_iter);
 
   /**
    * @brief Fills a CameraMovement message with the values of a TimedMarker.
@@ -429,7 +454,7 @@ private:
                              const UniformCRSpline<Vector3>& up_spline,
                              const std::vector<double>& transition_durations,
                              const std::vector<double>& wait_durations,
-                             const double total_transition_duration, 
+                             const double total_transition_duration,
                              rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory);
 
   /** @brief Call service to record current trajectory. */
