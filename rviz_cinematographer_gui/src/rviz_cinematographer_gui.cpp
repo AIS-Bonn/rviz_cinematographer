@@ -972,6 +972,14 @@ void RvizCinematographerGUI::moveCamToFirst()
       }
 
       cam_trajectory->trajectory.push_back(cam_movement);
+
+      // if camera should wait, another static "movement" to the same pose is added  
+      if(previous->wait_duration > 0.01)
+      {
+        cam_movement.transition_duration = ros::Duration(previous->wait_duration);
+        cam_trajectory->trajectory.push_back(cam_movement);
+      }
+      
       first = false;
     }
     while(previous != markers_.begin());
@@ -1085,6 +1093,14 @@ void RvizCinematographerGUI::moveCamToLast()
       }
 
       cam_trajectory->trajectory.push_back(cam_movement);
+      
+      // if camera should wait, another static "movement" to the same pose is added  
+      if(next->wait_duration > 0.01)
+      {
+        cam_movement.transition_duration = ros::Duration(next->wait_duration);
+        cam_trajectory->trajectory.push_back(cam_movement);
+      }
+      
       first = false;
     }
   }
@@ -1372,10 +1388,9 @@ void RvizCinematographerGUI::splineToCamTrajectory(const UniformCRSpline<Vector3
 
     trajectory->trajectory.push_back(cam_movement);
 
-    // TODO: clean up + other todos 
+    // recreate movement/marker id to wait after transition if waiting time specified
     current_transition_id = (int)std::floor(t + 0.00001); // magic number needed due to arithmetic imprecision with doubles
-    if(!smooth_velocity && current_transition_id != previous_transition_id &&
-       wait_durations[previous_transition_id] > 0.01)
+    if(!smooth_velocity && current_transition_id != previous_transition_id && wait_durations[previous_transition_id] > 0.01)
     {
       cam_movement.transition_duration = ros::Duration(wait_durations[previous_transition_id]);
       trajectory->trajectory.push_back(cam_movement);
