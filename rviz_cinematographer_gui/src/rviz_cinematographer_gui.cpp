@@ -1373,7 +1373,9 @@ void RvizCinematographerGUI::splineToCamTrajectory(const UniformCRSpline<Vector3
     cam_movement.interpolation_speed = (first) ? rviz_cinematographer_msgs::CameraMovement::RISING
                                                : rviz_cinematographer_msgs::CameraMovement::FULL;
 
-    //TODO: decline at end of trajectory and when reaching next position and velocity is not smoothed 
+    // decline at end of trajectory and when reaching next position and velocity is not smoothed 
+    if((!smooth_velocity && current_transition_id != previous_transition_id) || last_run)
+      cam_movement.interpolation_speed = rviz_cinematographer_msgs::CameraMovement::DECLINING;
     
     double transition_duration = 0.0;
     if(smooth_velocity)
