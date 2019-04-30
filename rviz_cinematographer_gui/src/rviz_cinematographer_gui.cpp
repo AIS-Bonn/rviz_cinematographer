@@ -148,7 +148,7 @@ void RvizCinematographerGUI::shutdownPlugin()
   camera_trajectory_pub_.shutdown();
 
   view_poses_array_pub_.publish(path);
-  usleep(1000); // sleep for a millisecond to give the publisher some time
+  usleep(100000); // sleep for a 100 milliseconds to give the publisher some time
   view_poses_array_pub_.shutdown();
 
   if(recorder_running_)
@@ -290,7 +290,7 @@ void RvizCinematographerGUI::addMarkerBefore(const visualization_msgs::Interacti
       new_marker.pose.position.x -= 0.5;
     }
     clicked_element = markers_.insert(clicked_element,
-                                      TimedMarker(std::move(new_marker), clicked_element->transition_duration));
+                                      TimedMarker(std::move(new_marker), clicked_element->transition_duration, clicked_element->wait_duration));
   }
 
   current_marker_name_ = feedback->marker_name;
@@ -298,7 +298,8 @@ void RvizCinematographerGUI::addMarkerBefore(const visualization_msgs::Interacti
   // update server with updated member markers
   server_->clear();
   updateServer(markers_);
-
+  
+  updatePoseInGUI(clicked_element->marker.pose, clicked_element->transition_duration, clicked_element->wait_duration);
   updateTrajectory();
 }
 
@@ -319,7 +320,7 @@ void RvizCinematographerGUI::addMarkerHere(const visualization_msgs::Interactive
     new_marker.controls[0].markers[0].color.r = 0.f;
     new_marker.controls[0].markers[0].color.g = 1.f;
 
-    markers_.insert(clicked_element, TimedMarker(std::move(new_marker), clicked_element->transition_duration));
+    markers_.insert(clicked_element, TimedMarker(std::move(new_marker), clicked_element->transition_duration, clicked_element->wait_duration));
   }
 
   current_marker_name_ = feedback->marker_name;
@@ -327,7 +328,8 @@ void RvizCinematographerGUI::addMarkerHere(const visualization_msgs::Interactive
   // update server with updated member markers
   server_->clear();
   updateServer(markers_);
-
+  
+  updatePoseInGUI(clicked_element->marker.pose, clicked_element->transition_duration, clicked_element->wait_duration);
   updateTrajectory();
 }
 
@@ -380,7 +382,7 @@ void RvizCinematographerGUI::addMarkerBehind(const visualization_msgs::Interacti
       new_marker.pose.position.x -= 0.5;
     }
     clicked_element = markers_.insert(std::next(clicked_element),
-                                      TimedMarker(std::move(new_marker), clicked_element->transition_duration));
+                                      TimedMarker(std::move(new_marker), clicked_element->transition_duration, clicked_element->wait_duration));
   }
 
   // name of the new marker will be the one of the clicked marker incremented by 1
@@ -389,7 +391,8 @@ void RvizCinematographerGUI::addMarkerBehind(const visualization_msgs::Interacti
   // update server with updated member markers
   server_->clear();
   updateServer(markers_);
-
+  
+  updatePoseInGUI(clicked_element->marker.pose, clicked_element->transition_duration, clicked_element->wait_duration);
   updateTrajectory();
 }
 
