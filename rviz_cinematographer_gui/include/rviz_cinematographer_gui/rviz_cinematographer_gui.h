@@ -504,6 +504,12 @@ private:
 
   /** @brief Returns index of marker with marker_name. */
   int getMarkerId(const std::string& marker_name){return std::stoi(marker_name) - 1;};
+
+  /** @brief Clicks the button.
+   * 
+   * Detour is necessary because the time table has to be updated which is only possible from the main thread
+   */
+  void clickButton(QPushButton* button){button->click();};
   
   /** @brief Ui object - connection to GUI. */
   Ui::rviz_cinematographer_gui ui_;

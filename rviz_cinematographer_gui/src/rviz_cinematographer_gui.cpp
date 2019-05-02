@@ -314,7 +314,8 @@ void RvizCinematographerGUI::addMarkerBefore()
 
 void RvizCinematographerGUI::addMarkerBeforeClicked(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
-  addMarkerBefore(feedback->marker_name);
+  setCurrentFromTo(getMarkerByName(current_marker_name_), getMarkerByName(feedback->marker_name));
+  clickButton(ui_.add_before_push_button);
 }
 
 void RvizCinematographerGUI::addMarkerBefore(const std::string& current_marker_name)
@@ -388,7 +389,8 @@ void RvizCinematographerGUI::addMarkerHere()
 
 void RvizCinematographerGUI::addMarkerAtClicked(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
-  addMarkerHere(feedback->marker_name);
+  setCurrentFromTo(getMarkerByName(current_marker_name_), getMarkerByName(feedback->marker_name));
+  clickButton(ui_.add_here_push_button);
 }
 
 void RvizCinematographerGUI::addMarkerHere(const std::string& current_marker_name)
@@ -430,7 +432,8 @@ void RvizCinematographerGUI::addMarkerBehind()
 
 void RvizCinematographerGUI::addMarkerBehindClicked(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
-  addMarkerBehind(feedback->marker_name);
+  setCurrentFromTo(getMarkerByName(current_marker_name_), getMarkerByName(feedback->marker_name));
+  clickButton(ui_.add_after_push_button);
 }
 
 void RvizCinematographerGUI::addMarkerBehind(const std::string& current_marker_name)
@@ -532,13 +535,13 @@ void RvizCinematographerGUI::removeCurrentMarker()
 
 void RvizCinematographerGUI::removeCurrentMarker(const std_msgs::EmptyConstPtr& empty)
 {
-  // detour is necessary because the time table has to be updated which is only possible from the main thread 
-  ui_.delete_push_button->click();
+  clickButton(ui_.delete_push_button);
 }
 
 void RvizCinematographerGUI::removeClickedMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
 {
-  removeMarker(feedback->marker_name);
+  setCurrentFromTo(getMarkerByName(current_marker_name_), getMarkerByName(feedback->marker_name));
+  clickButton(ui_.delete_push_button);
 }
 
 void RvizCinematographerGUI::removeMarker(const std::string& marker_name)
