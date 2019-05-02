@@ -47,6 +47,10 @@ Left-click on a marker to select the clicked as the active marker.
 Activate the *Record* to record a video of the next camera movement initiated by the five buttons above.  
 More details to recording videos are provided [below](README.md#recording-parameters). 
 
+Press the *Append at Cam Pose* button to extend the existing trajectory.  
+The button press adds another marker at the current pose of the rviz camera to the end of the trajectory.  
+This way it's esy to create a trajectory quickly by moving to camera to interesting poses and appending new markers.  
+
 ![rviz_cinematographer_gui](readme/rviz_cinematographer_gui.png)
 
 **Remark:  
@@ -57,12 +61,28 @@ To not get stuck, it's helpful to hold the right-click and move the mouse to zoo
 
 In the following, the functionalities organized in the tabs are explained in detail. 
 
+##### Timing:
+
+After creating your trajectory, you would want to specify how fast the camera is moving from one marker to the other.  
+This can be done in the *Timing* tab.  
+The table shows in its first column the duration it takes to move the camera from the previous marker to the next.  
+The values in the second column denote the duration the camera waits after reaching the pose of a marker.  
+
+![tab_timing](readme/tab_timing.png)
+
+Using the buttons below the table you can add additional markers before, at or after the currently selected marker.  
+  
+Another option to edit the number of markers defining the trajectory is to right-click on an interactive marker.
+
+![trajectory_editor_right_click](readme/trajectory_editor_right_click.png)
+
+Use *Delete* on your keyboard to remove the active marker. 
+
 ##### Edit Pose:
 
 This tab can be used to edit the marker poses of the trajectory.  
-The easiest way to edit a trajectory is by moving the camera within rviz to the pose you like and pressing the *Append at Cam Pose*-button.
-This adds a marker at the selected pose to the end of the trajectory.  
-Changing the pose of the active marker can be done similarly by pressing the *Set to Cam Pose*-button.  
+The easiest way to edit a marker pose is by moving the camera within rviz to the pose you like and pressing the *Set to Cam Pose*-button.  
+This sets the pose of the active marker to the selected pose.   
 
 Alternatively, the pose of and the transition time to the active marker can be tuned using the spin boxes. 
 
@@ -70,27 +90,19 @@ The third option is to manipulate the interactive markers directly using your mo
 
 ![tab_edit_pose](readme/tab_edit_pose.png)
 
-###### Adding and Removing Markers:
-
-To edit the number of markers defining the trajectory right-click on an interactive marker.
-
-![trajectory_editor_right_click](readme/trajectory_editor_right_click.png)
-
-Use *Delete* on your keyboard to remove the active marker.  
-
 ---
 
 ##### Trajectory Parameters:
 
 | Parameter | Functionality |
 | -------- | -------- |
-| Use Up of World   | If disabled, the camera is not allowed to perform roll motions |
 | Spline | If enabled, interpolates poses using a spline |
 | Smooth Cam Velocity | Combine with spline to use trajectories' total transition time to move with a smooth velocity to first or last marker | 
-| Distance to Focus Point | The distance between the eye point and the focus point of the camera |
 | Publishing Rate | Smoothness of spline |
 | Marker Size | In- or decrease the markers' size |
-| Frame |  The frame_id of the interactive markers |
+| Show Interactive Marker Controls | Display the rings around a marker to edit the marker pose |
+| Use Up of World   | If disabled, the camera is not allowed to perform roll motions |
+| Distance to Focus Point | The distance between the eye point and the focus point of the camera |
 
 ![trajectory_editor_parameters](readme/tab_trajectory_parameters.png)
 
@@ -132,7 +144,8 @@ Click on "Plugins -> Visualization -> Rviz Cinematographer".
 Now you have to add the *InteractiveMarkers* and the *Path* displays.  
 Make sure the frame specified in the Rviz Cinematographer plugin is present in your tf tree, otherwise you will not be able to see the markers. 
 
-Additionally you have to select the rviz_cinematographer_view_controller in the Rviz *Views* in order to be able to move the camera using the plugin.
+Additionally you have to select the rviz_cinematographer_view_controller in the Rviz *Views* in order to be able to move the camera using the plugin.  
+In this view useful information is displayed e.g. the window width and height defining the video size in pixels.  
 
 ![rviz_views](readme/rviz_view.png)
 
