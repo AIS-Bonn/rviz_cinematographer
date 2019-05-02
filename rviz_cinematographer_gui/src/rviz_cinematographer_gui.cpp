@@ -76,10 +76,10 @@ void RvizCinematographerGUI::initPlugin(qt_gui_cpp::PluginContext& context)
   // add widget to the user interface
   context.addWidget(widget_);
 
-  menu_handler_.insert("Remove marker", boost::bind(&RvizCinematographerGUI::removeClickedMarker, this, _1));
-  menu_handler_.insert("Add marker after", boost::bind(&RvizCinematographerGUI::addMarkerBehindClicked, this, _1));
-  menu_handler_.insert("Add marker here", boost::bind(&RvizCinematographerGUI::addMarkerAtClicked, this, _1));
   menu_handler_.insert("Add marker before", boost::bind(&RvizCinematographerGUI::addMarkerBeforeClicked, this, _1));
+  menu_handler_.insert("Add marker here", boost::bind(&RvizCinematographerGUI::addMarkerAtClicked, this, _1));
+  menu_handler_.insert("Add marker after", boost::bind(&RvizCinematographerGUI::addMarkerBehindClicked, this, _1));
+  menu_handler_.insert("Remove marker", boost::bind(&RvizCinematographerGUI::removeClickedMarker, this, _1));
 
   // set up markers
   std::string poses_param_name = "rviz_cinematographer_camera_poses";
