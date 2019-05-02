@@ -151,6 +151,10 @@ public slots:
   void moveCamToLast();
   /** @brief Update selected marker with values from GUI.*/
   void updateCurrentMarker();
+  /** @brief Updates marker durations on change in table with values from table.*/
+  void updateMarker();
+  /** @brief Updates which marker is labeled as the currently active marker.*/
+  void updateWhoIsCurrentMarker(int marker_id);
   /** @brief Appends the current pose of the rviz camera to the trajectory.*/
   void appendCamPoseToTrajectory();
   /** @brief Sets selected pose to the current pose of the rviz camera.*/
@@ -171,7 +175,17 @@ public slots:
   void saveTrajectoryToFile();
   /** @brief Opens file explorer to specify the path of the recorded video.*/
   void setVideoOutputPath();
-
+  /** @brief Adds a marker between the currently selected marker and the one before in the trajectory.*/
+  void addMarkerBefore();
+  /** @brief Adds a marker at the pose of the selected marker.*/
+  void addMarkerHere();
+  /** @brief Adds a marker between the selected marker and the next one in the trajectory.*/
+  void addMarkerBehind();
+  /** @brief Removes the current marker.*/
+  void removeCurrentMarker();
+  /** @brief Fill time table with values from markers.*/
+  void refillTable();
+  
 private:
   /**
    * @brief Creates a CameraMovement hull.
@@ -195,6 +209,11 @@ private:
    * @brief Colorize all markers in red.
    */
   void colorizeMarkersRed();
+
+  /**
+    * @brief Create and fill time table.
+    */
+  void setUpTimeTable();
 
   /** @brief Updates the scale of the provided marker.
    *
@@ -289,21 +308,42 @@ private:
    *
    * @param[in] feedback    feedback from selected marker.
    */
-  void addMarkerBefore(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+  void addMarkerBeforeClicked(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
 
   /**
-   * @brief Adds a marker at the pose of the selected marker - useful to define pauses.
+   * @brief Adds a marker between the currently selected marker and the one before in the trajectory.
+   *
+   * @param[in] current_marker_name    name of currently selected marker.
+   */
+  void addMarkerBefore(const std::string& current_marker_name);
+
+  /**
+   * @brief Adds a marker at the pose of the selected marker.
    *
    * @param[in] feedback    feedback from selected marker.
    */
-  void addMarkerHere(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+  void addMarkerAtClicked(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+  
+  /**
+   * @brief Adds a marker at the pose of the selected marker.
+   *
+   * @param[in] current_marker_name    name of currently selected marker.
+   */
+  void addMarkerHere(const std::string& current_marker_name);
 
   /**
    * @brief Adds a marker between the selected marker and the next one in the trajectory.
    *
    * @param[in] feedback    feedback from selected marker.
    */
-  void addMarkerBehind(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+  void addMarkerBehindClicked(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+
+  /**
+   * @brief Adds a marker between the selected marker and the next one in the trajectory.
+   *
+   * @param[in] current_marker_name    name of currently selected marker.
+   */
+  void addMarkerBehind(const std::string& current_marker_name);
 
   /**
    * @brief Removes the selected marker.
@@ -311,7 +351,7 @@ private:
    * @param[in] feedback    feedback from selected marker.
    */
   void removeClickedMarker(const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
-
+  
   /**
    * @brief Removes the marker called marker_name.
    *
@@ -371,15 +411,11 @@ private:
                         TimedMarker& new_current);
 
   /**
-   * @brief Sets the pose in the GUI to the provided input values.
+   * @brief Sets the pose and durations in the GUI to the provided input values.
    *
-   * @param[in] pose                pose
-   * @param[in] transition_duration transition duration
-   * @param[in] wait_duration       wait duration
+   * @param[in] current_marker      currently active marker providing values for GUI
    */
-  void updatePoseInGUI(const geometry_msgs::Pose& pose,
-                       double transition_duration = 0.5,
-                       double wait_duration = 0.0);
+  void updateGUIValues(const TimedMarker& current_marker);
 
   /**
    * @brief Sets the value of the spin_box to the value without triggering a signal.
@@ -466,6 +502,9 @@ private:
   /** @brief Starts video recorder nodelet. */
   void videoRecorderThread();
 
+  /** @brief Returns index of marker with marker_name. */
+  int getMarkerId(const std::string& marker_name){return std::stoi(marker_name) - 1;};
+  
   /** @brief Ui object - connection to GUI. */
   Ui::rviz_cinematographer_gui ui_;
   /** @brief Widget. */
