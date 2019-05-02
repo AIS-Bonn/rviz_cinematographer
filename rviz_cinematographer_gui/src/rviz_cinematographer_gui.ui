@@ -278,7 +278,30 @@
           <enum>Qt::RightToLeft</enum>
          </property>
          <property name="styleSheet">
-          <string notr="true"/>
+          <string notr="true">QRadioButton::indicator {
+    width:                  10px;
+    height:                 10px;
+    border-radius:          7px;
+}
+
+QRadioButton::indicator:checked {
+    background-color:       red;
+    border:                 2px solid red;
+}
+
+QRadioButton::indicator:hover:unchecked {
+    background-color:       white;
+    border:                 2px solid black;
+}
+
+QRadioButton::indicator:hover:checked {
+    background-color:       red;
+    border:                 2px solid black;
+}
+
+QRadioButton::indicator:unchecked {
+    border:                 2px solid black;
+}</string>
          </property>
          <property name="text">
           <string>&amp;Record</string>
@@ -301,9 +324,9 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <layout class="QHBoxLayout" name="horizontalLayout_11">
        <item>
-        <spacer name="horizontalSpacer_2">
+        <spacer name="horizontalSpacer_12">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -324,7 +347,7 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Append a marker to the trajectory at the current pose of the rviz camera.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Append a marker to the end of the trajectory at the current pose of the rviz camera.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="text">
           <string> Append at Cam Pose </string>
@@ -332,23 +355,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="set_pose_to_cam_button">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the selected marker's pose to the current pose of the rviz camera.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="text">
-          <string>   Set to Cam Pose   </string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer_9">
+        <spacer name="horizontalSpacer_13">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -363,50 +370,18 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_4">
-       <property name="sizeConstraint">
-        <enum>QLayout::SetDefaultConstraint</enum>
-       </property>
-       <item>
-        <widget class="QLabel" name="label_4">
-         <property name="font">
-          <font>
-           <pointsize>10</pointsize>
-          </font>
-         </property>
-         <property name="text">
-          <string>  Frame :  </string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="frame_line_edit">
-         <property name="toolTip">
-          <string>Frame of the markers.</string>
-         </property>
-         <property name="text">
-          <string>base_link</string>
-         </property>
-         <property name="frame">
-          <bool>true</bool>
-         </property>
-         <property name="placeholderText">
-          <string/>
-         </property>
-         <property name="clearButtonEnabled">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
       <layout class="QVBoxLayout" name="verticalLayout_6">
        <property name="sizeConstraint">
         <enum>QLayout::SetMinimumSize</enum>
        </property>
        <item>
         <widget class="Line" name="line_3">
+         <property name="styleSheet">
+          <string notr="true">QFrame {
+border-style: solid;
+border: 4px solid gray;
+}</string>
+         </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -414,6 +389,36 @@
        </item>
        <item>
         <widget class="Line" name="line">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="baseSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QFrame {
+border-style: solid;
+border: 4px solid gray;
+}</string>
+         </property>
+         <property name="lineWidth">
+          <number>3</number>
+         </property>
+         <property name="midLineWidth">
+          <number>3</number>
+         </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -439,7 +444,7 @@
             <x>0</x>
             <y>0</y>
             <width>481</width>
-            <height>482</height>
+            <height>486</height>
            </rect>
           </property>
           <attribute name="label">
@@ -534,7 +539,7 @@
             <x>0</x>
             <y>0</y>
             <width>481</width>
-            <height>482</height>
+            <height>486</height>
            </rect>
           </property>
           <attribute name="label">
@@ -719,6 +724,52 @@
               </widget>
              </item>
              <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_2">
+               <item>
+                <spacer name="horizontalSpacer_2">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QPushButton" name="set_pose_to_cam_button">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="toolTip">
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the selected marker's pose to the current pose of the rviz camera.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 </property>
+                 <property name="text">
+                  <string>     Set to Cam Pose     </string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_9">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
               <spacer name="verticalSpacer_5">
                <property name="orientation">
                 <enum>Qt::Vertical</enum>
@@ -741,7 +792,7 @@
             <x>0</x>
             <y>0</y>
             <width>481</width>
-            <height>482</height>
+            <height>486</height>
            </rect>
           </property>
           <attribute name="label">
@@ -1009,7 +1060,7 @@
             <x>0</x>
             <y>0</y>
             <width>481</width>
-            <height>482</height>
+            <height>486</height>
            </rect>
           </property>
           <attribute name="label">
@@ -1154,7 +1205,7 @@
             <x>0</x>
             <y>0</y>
             <width>481</width>
-            <height>482</height>
+            <height>486</height>
            </rect>
           </property>
           <attribute name="label">
@@ -1245,10 +1296,54 @@
        </item>
        <item>
         <widget class="Line" name="line_2">
+         <property name="styleSheet">
+          <string notr="true">QFrame {
+border-style: solid;
+border: 4px solid gray;
+}</string>
+         </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
         </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <property name="sizeConstraint">
+          <enum>QLayout::SetDefaultConstraint</enum>
+         </property>
+         <item>
+          <widget class="QLabel" name="label_4">
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>  Frame :  </string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="frame_line_edit">
+           <property name="toolTip">
+            <string>Frame of the markers.</string>
+           </property>
+           <property name="text">
+            <string>base_link</string>
+           </property>
+           <property name="frame">
+            <bool>true</bool>
+           </property>
+           <property name="placeholderText">
+            <string/>
+           </property>
+           <property name="clearButtonEnabled">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <widget class="QLabel" name="messages_label">
@@ -1292,7 +1387,6 @@
   <tabstop>move_to_last_button</tabstop>
   <tabstop>record_radio_button</tabstop>
   <tabstop>frame_line_edit</tabstop>
-  <tabstop>append_cam_pose</tabstop>
   <tabstop>set_pose_to_cam_button</tabstop>
   <tabstop>translation_x_spin_box</tabstop>
   <tabstop>translation_y_spin_box</tabstop>
