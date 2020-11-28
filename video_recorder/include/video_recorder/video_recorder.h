@@ -25,7 +25,8 @@
 
 #include <boost/thread.hpp>
 
-#include <cv.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/videoio/videoio.hpp>
 
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
