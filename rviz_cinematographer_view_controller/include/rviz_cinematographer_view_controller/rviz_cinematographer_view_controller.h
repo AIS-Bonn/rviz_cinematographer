@@ -73,8 +73,6 @@
 
 #include <boost/circular_buffer.hpp>
 
-#include <cv.hpp>
-
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 
