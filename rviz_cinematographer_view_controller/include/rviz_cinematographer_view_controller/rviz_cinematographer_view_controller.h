@@ -261,12 +261,16 @@ protected:  //methods
    * @param[in] ct_ptr  incoming CameraTrajectory msg.
    */
   void cameraTrajectoryCallback(const view_controller_msgs::CameraTrajectoryConstPtr& ct_ptr);
-
-  /** @brief Transforms the camera movement into the attached frame.
+  
+  /** @brief Transforms the camera defined by eye, focus and up into the attached frame.
    *
-   * @param[in,out] cm  camera movement that should be transformed into attached frame.
+   * @param[in,out] eye     position of the camera.
+   * @param[in,out] focus   focus point of the camera.
+   * @param[in,out] up      vector pointing up from the camera.
    */
-  void transformCameraMovementToAttachedFrame(rviz_cinematographer_msgs::CameraMovement& cm);
+  void transformCameraToAttachedFrame(geometry_msgs::PointStamped& eye,
+                                      geometry_msgs::PointStamped& focus,
+                                      geometry_msgs::Vector3Stamped& up);
 
   /** @brief Set eye, focus and up property from provided source_camera.
    *
