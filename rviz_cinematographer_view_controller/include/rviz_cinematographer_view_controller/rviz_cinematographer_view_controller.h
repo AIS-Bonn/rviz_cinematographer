@@ -54,8 +54,8 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 
-#include <rviz_cinematographer_msgs/CameraMovement.h>
-#include <rviz_cinematographer_msgs/CameraTrajectory.h>
+#include <view_controller_msgs/CameraMovement.h>
+#include <view_controller_msgs/CameraTrajectory.h>
 
 #include <std_msgs/Empty.h>
 #include <std_msgs/Bool.h>
@@ -260,7 +260,7 @@ protected:  //methods
    *
    * @param[in] ct_ptr  incoming CameraTrajectory msg.
    */
-  void cameraTrajectoryCallback(const rviz_cinematographer_msgs::CameraTrajectoryConstPtr& ct_ptr);
+  void cameraTrajectoryCallback(const view_controller_msgs::CameraTrajectoryConstPtr& ct_ptr);
 
   /** @brief Transforms the camera movement into the attached frame.
    *
@@ -286,7 +286,7 @@ protected:  //methods
                           const Ogre::Vector3& focus,
                           const Ogre::Vector3& up,
                           ros::Duration transition_duration,
-                          uint8_t interpolation_speed = rviz_cinematographer_msgs::CameraMovement::WAVE);
+                          uint8_t interpolation_speed = view_controller_msgs::CameraMovement::WAVE);
 
   /** @brief Cancels any currently active camera movement. */
   void cancelTransition();

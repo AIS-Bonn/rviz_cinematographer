@@ -93,7 +93,7 @@ CinematographerViewController::CinematographerViewController()
                                                         "The default duration to use for camera transitions.", this);
   camera_trajectory_topic_property_ = new RosTopicProperty("Trajectory Topic", "/rviz/camera_trajectory",
                                                            QString::fromStdString(
-                                                             ros::message_traits::datatype<rviz_cinematographer_msgs::CameraTrajectory>()),
+                                                             ros::message_traits::datatype<view_controller_msgs::CameraTrajectory>()),
                                                            "Topic for CameraTrajectory messages", this,
                                                            SLOT(updateTopics()));
 
@@ -127,7 +127,7 @@ void CinematographerViewController::setWaitDuration(const std_msgs::Duration::Co
 
 void CinematographerViewController::updateTopics()
 {
-  trajectory_sub_ = nh_.subscribe<rviz_cinematographer_msgs::CameraTrajectory>
+  trajectory_sub_ = nh_.subscribe<view_controller_msgs::CameraTrajectory>
                          (camera_trajectory_topic_property_->getStdString(), 1,
                           boost::bind(&CinematographerViewController::cameraTrajectoryCallback, this, _1));
 }
@@ -526,9 +526,9 @@ void CinematographerViewController::cancelTransition()
   }
 }
 
-void CinematographerViewController::cameraTrajectoryCallback(const rviz_cinematographer_msgs::CameraTrajectoryConstPtr& ct_ptr)
+void CinematographerViewController::cameraTrajectoryCallback(const view_controller_msgs::CameraTrajectoryConstPtr& ct_ptr)
 {
-  rviz_cinematographer_msgs::CameraTrajectory ct = *ct_ptr;
+  view_controller_msgs::CameraTrajectory ct = *ct_ptr;
 
   if(ct.trajectory.empty())
     return;
@@ -536,12 +536,12 @@ void CinematographerViewController::cameraTrajectoryCallback(const rviz_cinemato
   // Handle control parameters
   mouse_enabled_property_->setBool(!ct.interaction_disabled);
   fixed_up_property_->setBool(!ct.allow_free_yaw_axis);
-  if(ct.mouse_interaction_mode != rviz_cinematographer_msgs::CameraTrajectory::NO_CHANGE)
+  if(ct.mouse_interaction_mode != view_controller_msgs::CameraTrajectory::NO_CHANGE)
   {
     std::string name = "";
-    if(ct.mouse_interaction_mode == rviz_cinematographer_msgs::CameraTrajectory::ORBIT)
+    if(ct.mouse_interaction_mode == view_controller_msgs::CameraTrajectory::ORBIT)
       name = MODE_ORBIT;
-    else if(ct.mouse_interaction_mode == rviz_cinematographer_msgs::CameraTrajectory::FPS)
+    else if(ct.mouse_interaction_mode == view_controller_msgs::CameraTrajectory::FPS)
       name = MODE_FPS;
     interaction_mode_property_->setStdString(name);
   }
@@ -613,13 +613,13 @@ float CinematographerViewController::computeRelativeProgressInSpace(double relat
 {
   switch(interpolation_speed)
   {
-    case rviz_cinematographer_msgs::CameraMovement::RISING:
+    case view_controller_msgs::CameraMovement::RISING:
       return 1.f - static_cast<float>(cos(relative_progress_in_time * M_PI_2));
-    case rviz_cinematographer_msgs::CameraMovement::DECLINING:
+    case view_controller_msgs::CameraMovement::DECLINING:
       return static_cast<float>(-cos(relative_progress_in_time * M_PI_2 + M_PI_2));
-    case rviz_cinematographer_msgs::CameraMovement::FULL:
+    case view_controller_msgs::CameraMovement::FULL:
       return static_cast<float>(relative_progress_in_time);
-    case rviz_cinematographer_msgs::CameraMovement::WAVE:
+    case view_controller_msgs::CameraMovement::WAVE:
     default:
       return 0.5f * (1.f - static_cast<float>(cos(relative_progress_in_time * M_PI)));
   }

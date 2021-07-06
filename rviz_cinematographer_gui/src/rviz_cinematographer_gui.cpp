@@ -27,7 +27,7 @@ RvizCinematographerGUI::RvizCinematographerGUI()
 void RvizCinematographerGUI::initPlugin(qt_gui_cpp::PluginContext& context)
 {
   ros::NodeHandle ph("/rviz_cinematographer_gui");
-  camera_trajectory_pub_ = ph.advertise<rviz_cinematographer_msgs::CameraTrajectory>("/rviz/camera_trajectory", 1);
+  camera_trajectory_pub_ = ph.advertise<view_controller_msgs::CameraTrajectory>("/rviz/camera_trajectory", 1);
   view_poses_array_pub_ = ph.advertise<nav_msgs::Path>("/transformed_path", 1, true);
   record_params_pub_ = ph.advertise<rviz_cinematographer_msgs::Record>("/rviz/record", 1);
 
@@ -916,9 +916,9 @@ void RvizCinematographerGUI::setVideoOutputPath()
   ui_.video_output_path_line_edit->setText(QString::fromStdString(file_path));
 }
 
-rviz_cinematographer_msgs::CameraMovement RvizCinematographerGUI::makeCameraMovement()
+view_controller_msgs::CameraMovement RvizCinematographerGUI::makeCameraMovement()
 {
-  rviz_cinematographer_msgs::CameraMovement cm;
+  view_controller_msgs::CameraMovement cm;
   cm.eye.header.stamp = ros::Time::now();
   cm.eye.header.frame_id = ui_.frame_line_edit->text().toStdString();
   cm.interpolation_speed = WAVE_INTERPOLATION_SPEED;
@@ -982,10 +982,10 @@ void RvizCinematographerGUI::colorizeMarkersRed()
 }
 
 void RvizCinematographerGUI::appendMarkerToTrajectory(const MarkerIterator& goal_marker_iter,
-                                                      rviz_cinematographer_msgs::CameraTrajectoryPtr& cam_trajectory,
+                                                      view_controller_msgs::CameraTrajectoryPtr& cam_trajectory,
                                                       const MarkerIterator& last_marker_iter)
 {
-  rviz_cinematographer_msgs::CameraMovement cam_movement;
+  view_controller_msgs::CameraMovement cam_movement;
   convertMarkerToCamMovement(*goal_marker_iter, cam_movement);
 
   bool first_marker = cam_trajectory->trajectory.empty();
@@ -1032,7 +1032,7 @@ void RvizCinematographerGUI::appendMarkerToTrajectory(const MarkerIterator& goal
 }
 
 void RvizCinematographerGUI::convertMarkerToCamMovement(const TimedMarker& marker,
-                                                        rviz_cinematographer_msgs::CameraMovement& cam_movement)
+                                                        view_controller_msgs::CameraMovement& cam_movement)
 {
   cam_movement = makeCameraMovement();
   cam_movement.transition_duration = ros::Duration(marker.transition_duration);
@@ -1107,7 +1107,7 @@ void RvizCinematographerGUI::moveCamToFirst()
       break;
 
   // fill Camera Trajectory msg with markers and times
-  rviz_cinematographer_msgs::CameraTrajectoryPtr cam_trajectory(new rviz_cinematographer_msgs::CameraTrajectory());
+  view_controller_msgs::CameraTrajectoryPtr cam_trajectory(new view_controller_msgs::CameraTrajectory());
   cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
   if(is_recording_requested)
@@ -1214,7 +1214,7 @@ void RvizCinematographerGUI::moveCamToLast()
       break;
 
   // fill Camera Trajectory msg with markers and times
-  rviz_cinematographer_msgs::CameraTrajectoryPtr cam_trajectory(new rviz_cinematographer_msgs::CameraTrajectory());
+  view_controller_msgs::CameraTrajectoryPtr cam_trajectory(new view_controller_msgs::CameraTrajectory());
   cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
   if(is_recording_requested)
@@ -1265,7 +1265,7 @@ void RvizCinematographerGUI::moveCamToMarker(const std::string& marker_name,
 {
   RvizCinematographerGUI::TimedMarker marker = getMarkerByName(marker_name);
 
-  rviz_cinematographer_msgs::CameraTrajectoryPtr cam_trajectory(new rviz_cinematographer_msgs::CameraTrajectory());
+  view_controller_msgs::CameraTrajectoryPtr cam_trajectory(new view_controller_msgs::CameraTrajectory());
   cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
   if(ui_.record_radio_button->isChecked())
@@ -1274,7 +1274,7 @@ void RvizCinematographerGUI::moveCamToMarker(const std::string& marker_name,
     cam_trajectory->frames_per_second = getFramesPerSecond();
   }
   
-  rviz_cinematographer_msgs::CameraMovement cam_movement = makeCameraMovement();
+  view_controller_msgs::CameraMovement cam_movement = makeCameraMovement();
   cam_movement.transition_duration =
     transition_duration < 0.0 ? ros::Duration(marker.transition_duration) : ros::Duration(transition_duration);
   cam_movement.interpolation_speed = WAVE_INTERPOLATION_SPEED;
@@ -1453,7 +1453,7 @@ tf::Vector3 RvizCinematographerGUI::rotateVector(const tf::Vector3& vector,
 }
 
 void RvizCinematographerGUI::markersToSplinedCamTrajectory(const MarkerList& markers,
-                                                           rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory)
+                                                           view_controller_msgs::CameraTrajectoryPtr trajectory)
 {
   std::vector<Vector3> input_eye_positions;
   std::vector<Vector3> input_focus_positions;
@@ -1554,13 +1554,13 @@ void RvizCinematographerGUI::splineToCamTrajectory(const UniformCRSpline<Vector3
                                                    const std::vector<double>& transition_durations,
                                                    const std::vector<double>& wait_durations,
                                                    const double total_transition_duration,
-                                                   rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory)
+                                                   view_controller_msgs::CameraTrajectoryPtr trajectory)
 {
   const double frequency = ui_.publish_rate_spin_box->value();
   const bool smooth_velocity = ui_.smooth_velocity_check_box->isChecked();
 
   // rate to sample from spline and get points
-  rviz_cinematographer_msgs::CameraMovement cam_movement = makeCameraMovement();
+  view_controller_msgs::CameraMovement cam_movement = makeCameraMovement();
   double rate = 1.0 / frequency;
   float max_t = eye_spline.getMaxT();
   double total_length = eye_spline.totalLength();

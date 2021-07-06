@@ -18,6 +18,7 @@
   <depend>rviz_cinematographer_msgs</depend>
   <depend>rviz_cinematographer_view_controller</depend>
   <depend>video_recorder</depend>
+  <depend>view_controller_msgs</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

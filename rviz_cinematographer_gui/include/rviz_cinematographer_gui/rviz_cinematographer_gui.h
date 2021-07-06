@@ -23,9 +23,11 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseArray.h>
 
-#include <rviz_cinematographer_msgs/CameraMovement.h>
-#include <rviz_cinematographer_msgs/CameraTrajectory.h>
 #include <rviz_cinematographer_msgs/Record.h>
+
+#include <view_controller_msgs/CameraMovement.h>
+#include <view_controller_msgs/CameraPlacement.h>
+#include <view_controller_msgs/CameraTrajectory.h>
 
 #include <std_msgs/Empty.h>
 #include <std_msgs/Bool.h>
@@ -87,10 +89,10 @@ public:
 
   enum
   {
-    RISING_INTERPOLATION_SPEED = rviz_cinematographer_msgs::CameraMovement::RISING,
-    DECLINING_INTERPOLATION_SPEED = rviz_cinematographer_msgs::CameraMovement::DECLINING,
-    FULL_INTERPOLATION_SPEED = rviz_cinematographer_msgs::CameraMovement::FULL,
-    WAVE_INTERPOLATION_SPEED = rviz_cinematographer_msgs::CameraMovement::WAVE,
+    RISING_INTERPOLATION_SPEED = view_controller_msgs::CameraMovement::RISING,
+    DECLINING_INTERPOLATION_SPEED = view_controller_msgs::CameraMovement::DECLINING,
+    FULL_INTERPOLATION_SPEED = view_controller_msgs::CameraMovement::FULL,
+    WAVE_INTERPOLATION_SPEED = view_controller_msgs::CameraMovement::WAVE,
   };
 
 
@@ -191,7 +193,7 @@ private:
    * @brief Creates a CameraMovement hull.
    * @return CameraMovement.
    */
-  rviz_cinematographer_msgs::CameraMovement makeCameraMovement();
+  view_controller_msgs::CameraMovement makeCameraMovement();
 
   /**
    * @brief Creates an InteractiveMarker hull.
@@ -258,7 +260,7 @@ private:
    * @param[in]         last_marker_iter   iterator to last marker of marker list.
    */
   void appendMarkerToTrajectory(const MarkerIterator& goal_marker_iter,
-                                rviz_cinematographer_msgs::CameraTrajectoryPtr& cam_trajectory,
+                                view_controller_msgs::CameraTrajectoryPtr& cam_trajectory,
                                 const MarkerIterator& last_marker_iter);
 
   /**
@@ -268,7 +270,7 @@ private:
    * @param[out]    cam_movement    message.
    */
   void convertMarkerToCamMovement(const TimedMarker& marker,
-                                  rviz_cinematographer_msgs::CameraMovement& cam_movement);
+                                  view_controller_msgs::CameraMovement& cam_movement);
 
   /**
    * @brief Moves rviz camera to marker pose by publishing a CameraTrajectory message.
@@ -446,7 +448,7 @@ private:
    * @param[out]    trajectory      resulting trajectory.
    */
   void markersToSplinedCamTrajectory(const MarkerList& markers,
-                                     rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory);
+                                     view_controller_msgs::CameraTrajectoryPtr trajectory);
 
   /**
    * @brief Generates trajectories for eye positions, focus positions and up directories, needed for spline generation.
@@ -491,7 +493,7 @@ private:
                              const std::vector<double>& transition_durations,
                              const std::vector<double>& wait_durations,
                              const double total_transition_duration,
-                             rviz_cinematographer_msgs::CameraTrajectoryPtr trajectory);
+                             view_controller_msgs::CameraTrajectoryPtr trajectory);
 
   /** @brief Call service to record current trajectory. */
   void publishRecordParams();

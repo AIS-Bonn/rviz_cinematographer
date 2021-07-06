@@ -4,27 +4,24 @@ project(rviz_cinematographer_msgs)
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 set(MSG_DEPS
-   std_msgs
-   geometry_msgs
+  std_msgs
 )
 
 find_package(catkin REQUIRED COMPONENTS
-   ${MSG_DEPS}
+  ${MSG_DEPS}
 	message_generation
 	genmsg
 )
 
 add_message_files(
-   DIRECTORY msg 
-	 FILES
-   CameraMovement.msg
-   CameraTrajectory.msg
-   Record.msg
+  DIRECTORY msg 
+	FILES
+  Record.msg
 )
 
 generate_messages(
 	DEPENDENCIES
-   ${MSG_DEPS}
+  ${MSG_DEPS}
 )
 
 catkin_package(

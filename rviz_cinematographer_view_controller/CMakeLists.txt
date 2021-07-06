@@ -22,7 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   rviz
   pluginlib
   std_msgs
-  rviz_cinematographer_msgs
+  view_controller_msgs
    cv_bridge
    image_geometry
    image_transport
@@ -39,7 +39,7 @@ set(QT_INCLUDE_DIRS
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS rviz_cinematographer_msgs)
+  CATKIN_DEPENDS view_controller_msgs)
 
 qt5_wrap_cpp(MOC_FILES
   include/${PROJECT_NAME}/rviz_cinematographer_view_controller.h
