@@ -496,6 +496,12 @@ private:
   /** @brief Call service to record current trajectory. */
   void publishRecordParams();
 
+  /** @brief Get frames per second requested by user. 
+   * 
+   * Capping requested FPS to 60 if uncompressed video is requested because video codec is only able to handle 60 FPS.
+   */
+  int8_t getFramesPerSecond();
+  
   /** @brief Listen to the message that the recording is over. */
   void recordFinishedCallback(const std_msgs::Bool::ConstPtr& record_finished);
 
