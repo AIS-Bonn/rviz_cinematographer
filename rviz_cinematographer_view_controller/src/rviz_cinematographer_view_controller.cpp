@@ -91,6 +91,11 @@ CinematographerViewController::CinematographerViewController()
 
   default_transition_duration_property_ = new FloatProperty("Transition Duration in seconds", 0.5,
                                                         "The default duration to use for camera transitions.", this);
+  camera_placement_topic_property_ = new RosTopicProperty("Placement Topic", "/rviz/camera_placement",
+                                                          QString::fromStdString(
+                                                            ros::message_traits::datatype<view_controller_msgs::CameraPlacement>() ),
+                                                          "Topic for CameraPlacement messages", this, SLOT(updateTopics()));
+  
   camera_trajectory_topic_property_ = new RosTopicProperty("Trajectory Topic", "/rviz/camera_trajectory",
                                                            QString::fromStdString(
                                                              ros::message_traits::datatype<view_controller_msgs::CameraTrajectory>()),
@@ -127,6 +132,9 @@ void CinematographerViewController::setWaitDuration(const std_msgs::Duration::Co
 
 void CinematographerViewController::updateTopics()
 {
+  placement_sub_ = nh_.subscribe<view_controller_msgs::CameraPlacement>
+                         (camera_placement_topic_property_->getStdString(), 1,
+                          boost::bind(&CinematographerViewController::cameraPlacementCallback, this, _1));
   trajectory_sub_ = nh_.subscribe<view_controller_msgs::CameraTrajectory>
                          (camera_trajectory_topic_property_->getStdString(), 1,
                           boost::bind(&CinematographerViewController::cameraTrajectoryCallback, this, _1));
@@ -523,6 +531,44 @@ void CinematographerViewController::cancelTransition()
     finished_rendering_trajectory.data = 1;  // set to true, but std_msgs::Bool is uint8 internally
     finished_rendering_trajectory_pub_.publish(finished_rendering_trajectory);
     render_frame_by_frame_ = false;
+  }
+}
+
+void CinematographerViewController::cameraPlacementCallback(const view_controller_msgs::CameraPlacementConstPtr& cp_ptr)
+{
+  view_controller_msgs::CameraPlacement cp = *cp_ptr;
+
+  // Handle control parameters
+  mouse_enabled_property_->setBool( !cp.interaction_disabled );
+  fixed_up_property_->setBool( !cp.allow_free_yaw_axis );
+  if(cp.mouse_interaction_mode != cp.NO_CHANGE)
+  {
+    std::string name = "";
+    if(cp.mouse_interaction_mode == cp.ORBIT) name = MODE_ORBIT;
+    else if(cp.mouse_interaction_mode == cp.FPS) name = MODE_FPS;
+    interaction_mode_property_->setStdString(name);
+  }
+
+  if(cp.target_frame != "")
+  {
+    attached_frame_property_->setStdString(cp.target_frame);
+    updateAttachedFrame();
+  }
+
+  if(cp.time_from_start.toSec() >= 0)
+  {
+    // DIFF: transforming camera points instead of whole message
+    ROS_DEBUG_STREAM("Received a camera placement request! \n" << cp);
+    transformCameraToAttachedFrame(cp.eye,
+                                   cp.focus,
+                                   cp.up);
+    ROS_DEBUG_STREAM("After transform, we have \n" << cp);
+
+    Ogre::Vector3 eye = vectorFromMsg(cp.eye.point);
+    Ogre::Vector3 focus = vectorFromMsg(cp.focus.point);
+    Ogre::Vector3 up = vectorFromMsg(cp.up.vector);
+
+    beginNewTransition(eye, focus, up, cp.time_from_start);
   }
 }
 

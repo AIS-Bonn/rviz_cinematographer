@@ -55,6 +55,7 @@
 #include <ros/package.h>
 
 #include <view_controller_msgs/CameraMovement.h>
+#include <view_controller_msgs/CameraPlacement.h>
 #include <view_controller_msgs/CameraTrajectory.h>
 
 #include <std_msgs/Empty.h>
@@ -256,6 +257,12 @@ protected:  //methods
   /** @brief Update the position of the attached_scene_node_ in the current frame. */
   void updateAttachedSceneNode();
 
+  /** @brief Initiate camera motion from incoming CameraPlacement.
+   *
+   * @param[in] cp_ptr  incoming CameraPlacement msg.
+   */
+  void cameraPlacementCallback(const view_controller_msgs::CameraPlacementConstPtr& cp_ptr);
+  
   /** @brief Initiate camera motion from incoming CameraTrajectory.
    *
    * @param[in] ct_ptr  incoming CameraTrajectory msg.
@@ -337,6 +344,7 @@ protected:    //members
   rviz::VectorProperty* up_vector_property_;              ///< The up vector for the camera.
   rviz::FloatProperty* default_transition_duration_property_; ///< A default time for any animation requests.
 
+  rviz::RosTopicProperty* camera_placement_topic_property_;
   rviz::RosTopicProperty* camera_trajectory_topic_property_;
 
   rviz::FloatProperty* transition_velocity_property_;     ///< The current velocity of the animated camera.
@@ -360,6 +368,7 @@ protected:    //members
 
   QCursor interaction_disabled_cursor_;         ///< A cursor for indicating mouse interaction is disabled.
 
+  ros::Subscriber placement_sub_;
   ros::Subscriber trajectory_sub_;
   ros::Subscriber wait_duration_sub_;
 
