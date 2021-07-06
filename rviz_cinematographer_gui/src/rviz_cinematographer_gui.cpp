@@ -1061,9 +1061,13 @@ void RvizCinematographerGUI::publishRecordParams()
   rviz_cinematographer_msgs::Record record_params;
   record_params.do_record = true;
   record_params.path_to_output = ui_.video_output_path_line_edit->text().toStdString();
-  record_params.frames_per_second = ui_.video_fps_spin_box->value();
   record_params.compress = ui_.video_compressed_check_box->isChecked();
   record_params.add_watermark = ui_.watermark_check_box->isChecked();
+
+  // Capping requested to 60 if uncompressed video requested because video codec is only able to handle 60 FPS
+  int max_fps = record_params.compress == 0 ? 60 : 120;
+  record_params.frames_per_second = std::max(1, std::min(max_fps, (int)ui_.video_fps_spin_box->value()));
+  
   record_params_pub_.publish(record_params);
 }
 
