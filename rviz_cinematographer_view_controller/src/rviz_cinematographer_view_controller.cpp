@@ -69,8 +69,7 @@ CinematographerViewController::CinematographerViewController()
     , render_frame_by_frame_(false)
     , target_fps_(60)
     , recorded_frames_counter_(0)
-    , do_wait_(false)
-    , wait_duration_(-1.f)
+    , wait_duration_(0.0)
 {
   interaction_disabled_cursor_ = makeIconCursor("package://rviz/icons/forbidden.svg");
 
@@ -132,10 +131,10 @@ void CinematographerViewController::setRecord(const rviz_cinematographer_msgs::R
   target_fps_ = std::max(1, std::min(max_fps, (int)record_params->frames_per_second));
 }
 
-void CinematographerViewController::setWaitDuration(const std_msgs::Duration::ConstPtr& wait_duration)
+void CinematographerViewController::setWaitDuration(const std_msgs::Duration::ConstPtr& wait_duration_msg)
 {
-  wait_duration_ = static_cast<float>(wait_duration->data.toSec());
-  do_wait_ = true;
+  wait_duration_.sec = wait_duration_msg->data.sec;
+  wait_duration_.nsec = wait_duration_msg->data.nsec;
 }
 
 void CinematographerViewController::updateTopics()
@@ -732,11 +731,10 @@ void CinematographerViewController::update(float dt, float ros_dt)
 void CinematographerViewController::publishViewImage()
 {
   // wait for specified duration - e.g. if recorder is not fast enough
-  if(do_wait_)
+  if(!wait_duration_.isZero())
   {
-    ros::WallRate r(1.f / wait_duration_);
-    r.sleep();
-    do_wait_ = false;
+    wait_duration_.sleep();
+    wait_duration_.fromSec(0.0);
   }
 
   unsigned int height = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight();

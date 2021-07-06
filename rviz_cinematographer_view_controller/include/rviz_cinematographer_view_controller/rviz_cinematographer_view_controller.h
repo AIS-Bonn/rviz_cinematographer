@@ -306,9 +306,9 @@ protected:  //methods
 
   /** @brief Sets the duration the rendering has to wait for.
    *
-   * @params[in] wait_duration  duration to wait for.
+   * @params[in] wait_duration_msg  duration to wait for.
    */
-  void setWaitDuration(const std_msgs::Duration::ConstPtr& wait_duration);
+  void setWaitDuration(const std_msgs::Duration::ConstPtr& wait_duration_msg);
 
   Ogre::Vector3 fixedFrameToAttachedLocal(const Ogre::Vector3& v) { return reference_orientation_.Inverse() * (v - reference_position_); }
   Ogre::Vector3 attachedLocalToFixedFrame(const Ogre::Vector3& v) { return reference_position_ + (reference_orientation_ * v); }
@@ -376,8 +376,7 @@ protected:    //members
   int target_fps_;
   int recorded_frames_counter_;
 
-  bool do_wait_;
-  float wait_duration_;
+  ros::WallDuration wait_duration_;
 };
 
 }  // namespace rviz_cinematographer_view_controller

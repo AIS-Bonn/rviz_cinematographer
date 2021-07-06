@@ -112,7 +112,8 @@ void VideoRecorderNodelet::imageCallback(const sensor_msgs::ImageConstPtr& input
     // publish that input has to wait until some images are processed 
     ros::WallDuration wait_duration = process_one_image_duration_ * (max_queue_size_ - (max_queue_size_ / 5));
     std_msgs::Duration wait_duration_msg;
-    wait_duration_msg.data.fromSec(wait_duration.toSec());
+    wait_duration_msg.data.sec = wait_duration.sec;
+    wait_duration_msg.data.nsec = wait_duration.nsec;
     wait_pub_.publish(wait_duration_msg);
   }
 }
