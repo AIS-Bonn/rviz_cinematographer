@@ -57,10 +57,10 @@
 #include <rviz_cinematographer_msgs/CameraMovement.h>
 #include <rviz_cinematographer_msgs/CameraTrajectory.h>
 #include <rviz_cinematographer_msgs/Record.h>
-#include <rviz_cinematographer_msgs/Wait.h>
 
 #include <std_msgs/Empty.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Duration.h>
 
 #include <OGRE/OgreVector3.h>
 #include <OGRE/OgreQuaternion.h>
@@ -308,7 +308,7 @@ protected:  //methods
    *
    * @params[in] wait_duration  duration to wait for.
    */
-  void setWaitDuration(const rviz_cinematographer_msgs::Wait::ConstPtr& wait_duration);
+  void setWaitDuration(const std_msgs::Duration::ConstPtr& wait_duration);
 
   Ogre::Vector3 fixedFrameToAttachedLocal(const Ogre::Vector3& v) { return reference_orientation_.Inverse() * (v - reference_position_); }
   Ogre::Vector3 attachedLocalToFixedFrame(const Ogre::Vector3& v) { return reference_position_ + (reference_orientation_ * v); }

@@ -18,11 +18,11 @@
 #include <ros/package.h>
 
 #include <rviz_cinematographer_msgs/Record.h>
-#include <rviz_cinematographer_msgs/Wait.h>
 
 #include <sensor_msgs/Image.h>
 
 #include <std_msgs/Bool.h>
+#include <std_msgs/Duration.h>
 
 #include <boost/thread.hpp>
 

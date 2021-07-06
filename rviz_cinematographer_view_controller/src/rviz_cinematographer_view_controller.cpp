@@ -132,9 +132,9 @@ void CinematographerViewController::setRecord(const rviz_cinematographer_msgs::R
   target_fps_ = std::max(1, std::min(max_fps, (int)record_params->frames_per_second));
 }
 
-void CinematographerViewController::setWaitDuration(const rviz_cinematographer_msgs::Wait::ConstPtr& wait_duration)
+void CinematographerViewController::setWaitDuration(const std_msgs::Duration::ConstPtr& wait_duration)
 {
-  wait_duration_ = wait_duration->seconds;
+  wait_duration_ = static_cast<float>(wait_duration->data.toSec());
   do_wait_ = true;
 }
 

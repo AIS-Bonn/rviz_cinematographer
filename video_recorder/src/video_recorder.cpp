@@ -25,7 +25,7 @@ VideoRecorderNodelet::VideoRecorderNodelet()
 void VideoRecorderNodelet::onInit()
 {
   record_finished_pub_ = nh_.advertise<std_msgs::Bool>("/video_recorder/record_finished", 1);
-  wait_pub_ = nh_.advertise<rviz_cinematographer_msgs::Wait>("/video_recorder/wait_duration", 1);
+  wait_pub_ = nh_.advertise<std_msgs::Duration>("/video_recorder/wait_duration", 1);
 
   record_params_sub_ = nh_.subscribe("/rviz/record", 1, &VideoRecorderNodelet::recordParamsCallback, this);
   rendering_finished_sub_ = nh_.subscribe("/rviz/finished_rendering_trajectory", 1,
@@ -111,8 +111,8 @@ void VideoRecorderNodelet::imageCallback(const sensor_msgs::ImageConstPtr& input
     NODELET_DEBUG("Max queue size exceeded. Sending wait message.");
     // publish that input has to wait until some images are processed 
     ros::WallDuration wait_duration = process_one_image_duration_ * (max_queue_size_ - (max_queue_size_ / 5));
-    rviz_cinematographer_msgs::Wait wait_duration_msg;
-    wait_duration_msg.seconds = static_cast<float>(wait_duration.toSec());
+    std_msgs::Duration wait_duration_msg;
+    wait_duration_msg.data.fromSec(wait_duration.toSec());
     wait_pub_.publish(wait_duration_msg);
   }
 }
