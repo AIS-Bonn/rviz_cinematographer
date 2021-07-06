@@ -18,10 +18,11 @@
 #include <ros/package.h>
 
 #include <rviz_cinematographer_msgs/Record.h>
-#include <rviz_cinematographer_msgs/Finished.h>
 #include <rviz_cinematographer_msgs/Wait.h>
 
 #include <sensor_msgs/Image.h>
+
+#include <std_msgs/Bool.h>
 
 #include <boost/thread.hpp>
 
@@ -59,7 +60,7 @@ protected:
    *
    * @params[in] rendering_finished  true if image stream ended.
    */
-  void renderingFinishedCallback(const rviz_cinematographer_msgs::Finished::ConstPtr& rendering_finished);
+  void renderingFinishedCallback(const std_msgs::Bool::ConstPtr& rendering_finished);
 
   /** @brief Stores subscribed images in queue and publishes a message if queue is too large.
    * 

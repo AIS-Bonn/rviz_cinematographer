@@ -24,7 +24,7 @@ VideoRecorderNodelet::VideoRecorderNodelet()
 
 void VideoRecorderNodelet::onInit()
 {
-  record_finished_pub_ = nh_.advertise<rviz_cinematographer_msgs::Finished>("/video_recorder/record_finished", 1);
+  record_finished_pub_ = nh_.advertise<std_msgs::Bool>("/video_recorder/record_finished", 1);
   wait_pub_ = nh_.advertise<rviz_cinematographer_msgs::Wait>("/video_recorder/wait_duration", 1);
 
   record_params_sub_ = nh_.subscribe("/rviz/record", 1, &VideoRecorderNodelet::recordParamsCallback, this);
@@ -72,10 +72,10 @@ void VideoRecorderNodelet::recordParamsCallback(const rviz_cinematographer_msgs:
 }
 
 void
-VideoRecorderNodelet::renderingFinishedCallback(const rviz_cinematographer_msgs::Finished::ConstPtr& rendering_finished)
+VideoRecorderNodelet::renderingFinishedCallback(const std_msgs::Bool::ConstPtr& rendering_finished)
 {
   ros::Rate r(30); // 30Hz
-  if(rendering_finished->is_finished)
+  if(rendering_finished->data > 0)
   {
     // wait until images in queue are processed 
     while(!image_queue_.empty())
@@ -85,8 +85,8 @@ VideoRecorderNodelet::renderingFinishedCallback(const rviz_cinematographer_msgs:
       output_video_.release();
 
     // publish that recording is finished 
-    rviz_cinematographer_msgs::Finished record_finished;
-    record_finished.is_finished = true;
+    std_msgs::Bool record_finished;
+    record_finished.data = 1;  // set to true, but std_msgs::Bool is uint8 internally
     record_finished_pub_.publish(record_finished);
   }
 }

@@ -1068,9 +1068,9 @@ void RvizCinematographerGUI::publishRecordParams()
 }
 
 void
-RvizCinematographerGUI::recordFinishedCallback(const rviz_cinematographer_msgs::Finished::ConstPtr& record_finished)
+RvizCinematographerGUI::recordFinishedCallback(const std_msgs::Bool::ConstPtr& record_finished)
 {
-  if(record_finished->is_finished > 0)
+  if(record_finished->data > 0)
     ui_.record_radio_button->setChecked(false);
 }
 

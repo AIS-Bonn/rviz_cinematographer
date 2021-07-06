@@ -57,9 +57,10 @@
 #include <rviz_cinematographer_msgs/CameraMovement.h>
 #include <rviz_cinematographer_msgs/CameraTrajectory.h>
 #include <rviz_cinematographer_msgs/Record.h>
-#include <rviz_cinematographer_msgs/Finished.h>
 #include <rviz_cinematographer_msgs/Wait.h>
+
 #include <std_msgs/Empty.h>
+#include <std_msgs/Bool.h>
 
 #include <OGRE/OgreVector3.h>
 #include <OGRE/OgreQuaternion.h>

@@ -20,7 +20,6 @@ add_message_files(
    CameraMovement.msg
    CameraTrajectory.msg
    Record.msg
-   Finished.msg
    Wait.msg
 )
 

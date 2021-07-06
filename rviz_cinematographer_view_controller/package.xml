@@ -14,6 +14,7 @@
   <depend>cmake_modules</depend>
   <depend>rviz</depend>
   <depend>pluginlib</depend>
+  <depend>std_msgs</depend>
   <depend>rviz_cinematographer_msgs</depend>
   <depend>cv_bridge</depend>
   <depend>image_geometry</depend>

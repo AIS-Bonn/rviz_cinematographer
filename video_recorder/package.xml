@@ -17,6 +17,7 @@
   <depend>image_geometry</depend>
   <depend>image_transport</depend>
   <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
   <depend>rviz_cinematographer_msgs</depend>
 
   <!-- The export tag contains other, unspecified, tags -->

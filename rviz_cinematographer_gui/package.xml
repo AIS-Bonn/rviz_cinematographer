@@ -10,6 +10,7 @@
   <depend>eigen</depend>
   <depend>interactive_markers</depend>
   <depend>nav_msgs</depend>
+  <depend>std_msgs</depend>
   <depend>roscpp</depend>
   <depend>rqt_gui</depend>
   <depend>rqt_gui_cpp</depend>

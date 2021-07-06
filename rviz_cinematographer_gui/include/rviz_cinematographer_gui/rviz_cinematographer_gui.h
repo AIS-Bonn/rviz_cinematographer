@@ -26,9 +26,9 @@
 #include <rviz_cinematographer_msgs/CameraMovement.h>
 #include <rviz_cinematographer_msgs/CameraTrajectory.h>
 #include <rviz_cinematographer_msgs/Record.h>
-#include <rviz_cinematographer_msgs/Finished.h>
 
 #include <std_msgs/Empty.h>
+#include <std_msgs/Bool.h>
 
 #include <nav_msgs/Path.h>
 
@@ -497,7 +497,7 @@ private:
   void publishRecordParams();
 
   /** @brief Listen to the message that the recording is over. */
-  void recordFinishedCallback(const rviz_cinematographer_msgs::Finished::ConstPtr& record_finished);
+  void recordFinishedCallback(const std_msgs::Bool::ConstPtr& record_finished);
 
   /** @brief Starts video recorder nodelet. */
   void videoRecorderThread();

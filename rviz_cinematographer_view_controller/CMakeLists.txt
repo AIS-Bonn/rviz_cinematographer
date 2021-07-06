@@ -21,6 +21,7 @@ find_package(OpenGL REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   rviz
   pluginlib
+  std_msgs
   rviz_cinematographer_msgs
    cv_bridge
    image_geometry

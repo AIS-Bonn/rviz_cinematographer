@@ -105,7 +105,7 @@ CinematographerViewController::CinematographerViewController()
   
   // TODO: latch?
   placement_pub_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
-  finished_rendering_trajectory_pub_ = nh_.advertise<rviz_cinematographer_msgs::Finished>("/rviz/finished_rendering_trajectory", 1);
+  finished_rendering_trajectory_pub_ = nh_.advertise<std_msgs::Bool>("/rviz/finished_rendering_trajectory", 1);
   delete_pub_ = nh_.advertise<std_msgs::Empty>("/rviz/delete", 1);
 
   image_transport::ImageTransport it(nh_);
@@ -532,9 +532,9 @@ void CinematographerViewController::cancelTransition()
 
   if(render_frame_by_frame_)
   {
-    rviz_cinematographer_msgs::Finished finished;
-    finished.is_finished = true;
-    finished_rendering_trajectory_pub_.publish(finished);
+    std_msgs::Bool finished_rendering_trajectory;
+    finished_rendering_trajectory.data = 1;  // set to true, but std_msgs::Bool is uint8 internally
+    finished_rendering_trajectory_pub_.publish(finished_rendering_trajectory);
     render_frame_by_frame_ = false;
   }
 }
@@ -710,11 +710,11 @@ void CinematographerViewController::update(float dt, float ros_dt)
         // publish that the rendering is finished 
         if(render_frame_by_frame_)
         {
-          rviz_cinematographer_msgs::Finished finished;
-          finished.is_finished = true;
+          std_msgs::Bool finished_rendering_trajectory;
+          finished_rendering_trajectory.data = 1;  // set to true, but std_msgs::Bool is uint8 internally
           // wait a little so last image is send before this "finished"-message 
           ros::WallRate r(1); r.sleep();
-          finished_rendering_trajectory_pub_.publish(finished);
+          finished_rendering_trajectory_pub_.publish(finished_rendering_trajectory);
           render_frame_by_frame_ = false;
         }
       }
