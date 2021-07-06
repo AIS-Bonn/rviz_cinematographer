@@ -105,7 +105,6 @@ CinematographerViewController::CinematographerViewController()
   
   // TODO: latch?
   placement_pub_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
-  odometry_pub_ = nh_.advertise<nav_msgs::Odometry>("/rviz/trajectory_odometry", 1);
   finished_rendering_trajectory_pub_ = nh_.advertise<rviz_cinematographer_msgs::Finished>("/rviz/finished_rendering_trajectory", 1);
   delete_pub_ = nh_.advertise<std_msgs::Empty>("/rviz/delete", 1);
 
@@ -615,28 +614,6 @@ void CinematographerViewController::lookAt(const Ogre::Vector3& point)
                      ros::Duration(default_transition_duration_property_->getFloat()));
 }
 
-void CinematographerViewController::publishOdometry(const Ogre::Vector3& position,
-                                                    const Ogre::Vector3& velocity)
-{
-  nav_msgs::Odometry odometry;
-  odometry.header.frame_id = attached_frame_property_->getFrameStd();
-  odometry.header.stamp = ros::Time::now();
-  odometry.pose.pose.position.x = position.x;
-  odometry.pose.pose.position.y = position.y;
-  odometry.pose.pose.position.z = position.z;
-  odometry.twist.twist.linear.x = velocity.x; //This is allo velocity and therefore not ROS convention!
-  odometry.twist.twist.linear.y = velocity.y; //This is allo velocity and therefore not ROS convention!
-  odometry.twist.twist.linear.z = velocity.z; //This is allo velocity and therefore not ROS convention!
-
-  Ogre::Quaternion cam_orientation = camera_->getOrientation();
-  Ogre::Quaternion rot_around_y_pos_90_deg(0.707f, 0.0f, 0.707f, 0.0f);
-  cam_orientation = cam_orientation * rot_around_y_pos_90_deg;
-  odometry.pose.pose.orientation.x = cam_orientation.x;
-  odometry.pose.pose.orientation.y = cam_orientation.y;
-  odometry.pose.pose.orientation.z = cam_orientation.z;
-  odometry.pose.pose.orientation.w = cam_orientation.w;
-  odometry_pub_.publish(odometry);
-}
 
 float CinematographerViewController::computeRelativeProgressInSpace(double relative_progress_in_time,
                                                                     uint8_t interpolation_speed)
@@ -693,9 +670,6 @@ void CinematographerViewController::update(float dt, float ros_dt)
 
     Ogre::Vector3 velocity = (new_position - eye_point_property_->getVector()) / ros_dt;
     transition_velocity_property_->setFloat(velocity.normalise());
-
-    if(odometry_pub_.getNumSubscribers() != 0)
-      publishOdometry(new_position, velocity);
 
     disconnectPositionProperties();
     eye_point_property_->setVector(new_position);

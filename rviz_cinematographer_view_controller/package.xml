@@ -15,7 +15,6 @@
   <depend>rviz</depend>
   <depend>pluginlib</depend>
   <depend>rviz_cinematographer_msgs</depend>
-  <depend>nav_msgs</depend>
   <depend>cv_bridge</depend>
   <depend>image_geometry</depend>
   <depend>image_transport</depend>

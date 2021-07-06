@@ -61,8 +61,6 @@
 #include <rviz_cinematographer_msgs/Wait.h>
 #include <std_msgs/Empty.h>
 
-#include <nav_msgs/Odometry.h>
-
 #include <OGRE/OgreVector3.h>
 #include <OGRE/OgreQuaternion.h>
 #include <OGRE/OgreRenderWindow.h>
@@ -186,14 +184,6 @@ public:
    * @param[in] point   new focus point.
    */
   void lookAt(const Ogre::Vector3& point) override;
-
-  /** @brief Publishes the current camera pose as an Odometry msg.
-   *
-   * @param[in] position    position of to be published odometry msg.
-   * @param[in] velocity    velocity of to be published odometry msg.
-   */
-  void publishOdometry(const Ogre::Vector3& position,
-                       const Ogre::Vector3& velocity);
 
   /** @brief Resets the camera parameters to a sane value. */
   void reset() override;
@@ -377,7 +367,6 @@ protected:    //members
   ros::Subscriber wait_duration_sub_;
 
   ros::Publisher placement_pub_;
-  ros::Publisher odometry_pub_;
   ros::Publisher finished_rendering_trajectory_pub_;
   ros::Publisher delete_pub_;
   image_transport::Publisher image_pub_;
