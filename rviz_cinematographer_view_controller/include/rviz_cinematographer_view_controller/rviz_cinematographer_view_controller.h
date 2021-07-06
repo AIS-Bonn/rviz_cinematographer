@@ -56,7 +56,6 @@
 
 #include <rviz_cinematographer_msgs/CameraMovement.h>
 #include <rviz_cinematographer_msgs/CameraTrajectory.h>
-#include <rviz_cinematographer_msgs/Record.h>
 
 #include <std_msgs/Empty.h>
 #include <std_msgs/Bool.h>
@@ -298,12 +297,6 @@ protected:  //methods
   /** @brief Publishes the camera pose. */
   void publishCameraPose();
 
-  /** @brief Sets parameters requested with service call.
-   *
-   * @params[in] record_params  specifies that a record should be made and the parameters that should be used.
-   */
-  void setRecord(const rviz_cinematographer_msgs::Record::ConstPtr& record_params);
-
   /** @brief Sets the duration the rendering has to wait for.
    *
    * @params[in] wait_duration_msg  duration to wait for.
@@ -364,7 +357,6 @@ protected:    //members
   QCursor interaction_disabled_cursor_;         ///< A cursor for indicating mouse interaction is disabled.
 
   ros::Subscriber trajectory_sub_;
-  ros::Subscriber record_params_sub_;
   ros::Subscriber wait_duration_sub_;
 
   ros::Publisher placement_pub_;

@@ -110,7 +110,6 @@ CinematographerViewController::CinematographerViewController()
   image_transport::ImageTransport it(nh_);
   image_pub_ = it.advertise("/rviz/view_image", 1);
 
-  record_params_sub_ = nh_.subscribe("/rviz/record", 1, &CinematographerViewController::setRecord, this);
   wait_duration_sub_ = nh_.subscribe("/video_recorder/wait_duration", 1,
                                      &CinematographerViewController::setWaitDuration, this);
 }
@@ -118,12 +117,6 @@ CinematographerViewController::CinematographerViewController()
 CinematographerViewController::~CinematographerViewController()
 {
   context_->getSceneManager()->destroySceneNode(attached_scene_node_);
-}
-
-void CinematographerViewController::setRecord(const rviz_cinematographer_msgs::Record::ConstPtr& record_params)
-{
-  render_frame_by_frame_ = record_params->do_record > 0;
-  target_fps_ = static_cast<int>(record_params->frames_per_second);
 }
 
 void CinematographerViewController::setWaitDuration(const std_msgs::Duration::ConstPtr& wait_duration_msg)
@@ -553,6 +546,12 @@ void CinematographerViewController::cameraTrajectoryCallback(const rviz_cinemato
     interaction_mode_property_->setStdString(name);
   }
 
+  if(ct.render_frame_by_frame > 0)
+  {
+    render_frame_by_frame_ = true;
+    target_fps_ = static_cast<int>(ct.frames_per_second);
+  }
+  
   for(auto& cam_movement : ct.trajectory)
   {
     transformCameraMovementToAttachedFrame(cam_movement);

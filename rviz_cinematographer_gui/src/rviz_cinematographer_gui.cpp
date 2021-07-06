@@ -1096,7 +1096,8 @@ void RvizCinematographerGUI::moveCamToFirst()
   if(markers_.begin()->marker.name == current_marker_name_)
     return;
 
-  if(ui_.record_radio_button->isChecked())
+  bool is_recording_requested = ui_.record_radio_button->isChecked();
+  if(is_recording_requested)
     publishRecordParams();
 
   // find current marker
@@ -1109,6 +1110,11 @@ void RvizCinematographerGUI::moveCamToFirst()
   rviz_cinematographer_msgs::CameraTrajectoryPtr cam_trajectory(new rviz_cinematographer_msgs::CameraTrajectory());
   cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
+  if(is_recording_requested)
+  {
+    cam_trajectory->render_frame_by_frame = 1;
+    cam_trajectory->frames_per_second = getFramesPerSecond();
+  }
 
   if(ui_.splines_check_box->isChecked())
   {
@@ -1197,7 +1203,8 @@ void RvizCinematographerGUI::moveCamToLast()
   if(std::prev(markers_.end())->marker.name == current_marker_name_)
     return;
 
-  if(ui_.record_radio_button->isChecked())
+  bool is_recording_requested = ui_.record_radio_button->isChecked();
+  if(is_recording_requested)
     publishRecordParams();
 
   // find current marker
@@ -1210,7 +1217,12 @@ void RvizCinematographerGUI::moveCamToLast()
   rviz_cinematographer_msgs::CameraTrajectoryPtr cam_trajectory(new rviz_cinematographer_msgs::CameraTrajectory());
   cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
-
+  if(is_recording_requested)
+  {
+    cam_trajectory->render_frame_by_frame = 1;
+    cam_trajectory->frames_per_second = getFramesPerSecond();
+  }
+  
   if(ui_.splines_check_box->isChecked())
   {
     MarkerList markers;
@@ -1256,7 +1268,12 @@ void RvizCinematographerGUI::moveCamToMarker(const std::string& marker_name,
   rviz_cinematographer_msgs::CameraTrajectoryPtr cam_trajectory(new rviz_cinematographer_msgs::CameraTrajectory());
   cam_trajectory->target_frame = ui_.frame_line_edit->text().toStdString();
   cam_trajectory->allow_free_yaw_axis = !ui_.use_up_of_world_check_box->isChecked();
-
+  if(ui_.record_radio_button->isChecked())
+  {
+    cam_trajectory->render_frame_by_frame = 1;
+    cam_trajectory->frames_per_second = getFramesPerSecond();
+  }
+  
   rviz_cinematographer_msgs::CameraMovement cam_movement = makeCameraMovement();
   cam_movement.transition_duration =
     transition_duration < 0.0 ? ros::Duration(marker.transition_duration) : ros::Duration(transition_duration);

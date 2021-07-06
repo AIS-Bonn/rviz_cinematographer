@@ -19,3 +19,14 @@ uint8 FPS   = 2 # Activates the FPS-style controller
 # (defaults to false so that interaction is enabled)
 bool interaction_disabled
 
+# If false, the duration of the animated trajectory is equal to the time passed in the real world using ros::WallTime.
+#  This can lead to an inconsistent frame rate of the published camera view images if your computer is not fast enough.
+# If true, the trajectory is rendered frame by frame. This leads to:
+#  -> a consistent frame rate of the published camera view images,
+#  -> a video with the desired trajectory duration when composed of camera view images,
+#  -> BUT the trajectory might be slower in real time, if your computer is not fast enough. 
+# (deafults to false)
+bool render_frame_by_frame
+
+# Desired frames per second when rendering frame by frame 
+int8 frames_per_second
