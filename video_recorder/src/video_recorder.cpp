@@ -25,7 +25,7 @@ VideoRecorderNodelet::VideoRecorderNodelet()
 void VideoRecorderNodelet::onInit()
 {
   record_finished_pub_ = nh_.advertise<std_msgs::Bool>("/video_recorder/record_finished", 1);
-  wait_pub_ = nh_.advertise<std_msgs::Duration>("/video_recorder/wait_duration", 1);
+  pause_duration_pub_ = nh_.advertise<std_msgs::Duration>("/rviz/pause_animation_duration", 1);
 
   record_params_sub_ = nh_.subscribe("/rviz/record", 1, &VideoRecorderNodelet::recordParamsCallback, this);
   rendering_finished_sub_ = nh_.subscribe("/rviz/finished_animation", 1,
@@ -108,13 +108,13 @@ void VideoRecorderNodelet::imageCallback(const sensor_msgs::ImageConstPtr& input
 
   if((int)image_queue_.size() >= max_queue_size_)
   {
-    NODELET_DEBUG("Max queue size exceeded. Sending wait message.");
-    // publish that input has to wait until some images are processed 
-    ros::WallDuration wait_duration = process_one_image_duration_ * (max_queue_size_ - (max_queue_size_ / 5));
-    std_msgs::Duration wait_duration_msg;
-    wait_duration_msg.data.sec = wait_duration.sec;
-    wait_duration_msg.data.nsec = wait_duration.nsec;
-    wait_pub_.publish(wait_duration_msg);
+    NODELET_DEBUG("Max queue size exceeded. Sending message to wait.");
+    // publish that image generator has to wait until some images are processed 
+    ros::WallDuration pause_duration = process_one_image_duration_ * (max_queue_size_ - (max_queue_size_ / 5));
+    std_msgs::Duration pause_duration_msg;
+    pause_duration_msg.data.sec = pause_duration.sec;
+    pause_duration_msg.data.nsec = pause_duration.nsec;
+    pause_duration_pub_.publish(pause_duration_msg);
   }
 }
 

@@ -69,7 +69,7 @@ CinematographerViewController::CinematographerViewController()
     , render_frame_by_frame_(false)
     , target_fps_(60)
     , recorded_frames_counter_(0)
-    , wait_duration_(0.0)
+    , pause_animation_duration_(0.0)
 {
   interaction_disabled_cursor_ = makeIconCursor("package://rviz/icons/forbidden.svg");
 
@@ -108,8 +108,8 @@ CinematographerViewController::CinematographerViewController()
   window_height_property_       = new FloatProperty("Window Height", 1000, "The height of the rviz visualization window in pixels.", this);
 
   initializePublishers();
-  wait_duration_sub_ = nh_.subscribe("/video_recorder/wait_duration", 1,
-                                     &CinematographerViewController::setWaitDuration, this);
+  pause_animation_duration_sub_ = nh_.subscribe("/rviz/pause_animation_duration", 1,
+                                                &CinematographerViewController::pauseAnimationCallback, this);
 }
 
 CinematographerViewController::~CinematographerViewController()
@@ -127,10 +127,10 @@ void CinematographerViewController::initializePublishers()
   image_pub_ = it.advertise("/rviz/view_image", 1);
 }
 
-void CinematographerViewController::setWaitDuration(const std_msgs::Duration::ConstPtr& wait_duration_msg)
+void CinematographerViewController::pauseAnimationCallback(const std_msgs::Duration::ConstPtr& pause_duration_msg)
 {
-  wait_duration_.sec = wait_duration_msg->data.sec;
-  wait_duration_.nsec = wait_duration_msg->data.nsec;
+  pause_animation_duration_.sec = pause_duration_msg->data.sec;
+  pause_animation_duration_.nsec = pause_duration_msg->data.nsec;
 }
 
 void CinematographerViewController::updateTopics()
@@ -778,10 +778,10 @@ void CinematographerViewController::update(float dt, float ros_dt)
 void CinematographerViewController::publishViewImage()
 {
   // wait for specified duration - e.g. if recorder is not fast enough
-  if(!wait_duration_.isZero())
+  if(!pause_animation_duration_.isZero())
   {
-    wait_duration_.sleep();
-    wait_duration_.fromSec(0.0);
+    pause_animation_duration_.sleep();
+    pause_animation_duration_.fromSec(0.0);
   }
 
   unsigned int height = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight();

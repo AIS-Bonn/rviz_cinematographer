@@ -103,7 +103,7 @@ protected:
   boost::shared_ptr<boost::thread> process_images_thread_;
 
   ros::Publisher record_finished_pub_;
-  ros::Publisher wait_pub_;
+  ros::Publisher pause_duration_pub_;
 
   cv::VideoWriter output_video_;
   std::string path_to_output_;

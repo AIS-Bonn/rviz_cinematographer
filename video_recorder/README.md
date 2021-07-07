@@ -25,7 +25,8 @@ Subscribes to images and starts to generate a video on receiving a *record*-mess
    **Type** : std_msgs::Bool  
    **Purpose** : If true, indicates that the input stream was fully processed.  
 
-2. **Topic** : /video_recorder/wait_duration  
+2. **Topic** : /rviz/pause_animation_duration  
    **Type** : std_msgs::Duration  
    **Purpose** : The approximate time it takes to process most of the queue buffering the input images.    
    Is send if processing the images takes more time than generating and queueing.  
+   Animation pauses for specified duration.  

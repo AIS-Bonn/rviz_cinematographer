@@ -310,11 +310,11 @@ protected:  //methods
   /** @brief Publishes the camera pose. */
   void publishCameraPose();
 
-  /** @brief Sets the duration the rendering has to wait for.
+  /** @brief Sets the duration the rendering has to wait for during the next update cycle.
    *
-   * @params[in] wait_duration_msg  duration to wait for.
+   * @params[in] pause_duration_msg  duration to wait for.
    */
-  void setWaitDuration(const std_msgs::Duration::ConstPtr& wait_duration_msg);
+  void pauseAnimationCallback(const std_msgs::Duration::ConstPtr& pause_duration_msg);
 
   Ogre::Vector3 fixedFrameToAttachedLocal(const Ogre::Vector3& v) { return reference_orientation_.Inverse() * (v - reference_position_); }
   Ogre::Vector3 attachedLocalToFixedFrame(const Ogre::Vector3& v) { return reference_position_ + (reference_orientation_ * v); }
@@ -372,7 +372,7 @@ protected:    //members
 
   ros::Subscriber placement_sub_;
   ros::Subscriber trajectory_sub_;
-  ros::Subscriber wait_duration_sub_;
+  ros::Subscriber pause_animation_duration_sub_;
 
   ros::Publisher current_camera_pose_pub_;
   ros::Publisher finished_animation_pub_;
@@ -383,7 +383,7 @@ protected:    //members
   int target_fps_;
   int recorded_frames_counter_;
 
-  ros::WallDuration wait_duration_;
+  ros::WallDuration pause_animation_duration_;
 };
 
 }  // namespace rviz_cinematographer_view_controller
