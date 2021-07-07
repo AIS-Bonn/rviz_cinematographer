@@ -28,7 +28,7 @@ void VideoRecorderNodelet::onInit()
   wait_pub_ = nh_.advertise<std_msgs::Duration>("/video_recorder/wait_duration", 1);
 
   record_params_sub_ = nh_.subscribe("/rviz/record", 1, &VideoRecorderNodelet::recordParamsCallback, this);
-  rendering_finished_sub_ = nh_.subscribe("/rviz/finished_rendering_trajectory", 1,
+  rendering_finished_sub_ = nh_.subscribe("/rviz/finished_animation", 1,
                                           &VideoRecorderNodelet::renderingFinishedCallback, this);
 
   image_transport::ImageTransport it(nh_);

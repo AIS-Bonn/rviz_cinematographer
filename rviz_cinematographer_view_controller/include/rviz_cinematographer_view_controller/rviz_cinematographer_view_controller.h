@@ -373,7 +373,7 @@ protected:    //members
   ros::Subscriber wait_duration_sub_;
 
   ros::Publisher current_camera_pose_pub_;
-  ros::Publisher finished_rendering_trajectory_pub_;
+  ros::Publisher finished_animation_pub_;
   ros::Publisher delete_pub_;
   image_transport::Publisher image_pub_;
 
