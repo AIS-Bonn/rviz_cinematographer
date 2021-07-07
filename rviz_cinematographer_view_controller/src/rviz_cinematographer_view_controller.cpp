@@ -108,7 +108,7 @@ CinematographerViewController::CinematographerViewController()
   window_height_property_       = new FloatProperty("Window Height", 1000, "The height of the rviz visualization window in pixels.", this);
   
   // TODO: latch?
-  placement_pub_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
+  current_camera_pose_pub_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
   finished_rendering_trajectory_pub_ = nh_.advertise<std_msgs::Bool>("/rviz/finished_rendering_trajectory", 1);
   delete_pub_ = nh_.advertise<std_msgs::Empty>("/rviz/delete", 1);
 
@@ -829,7 +829,7 @@ void CinematographerViewController::publishCameraPose()
   cam_pose.orientation.x = camera_->getOrientation().x;
   cam_pose.orientation.y = camera_->getOrientation().y;
   cam_pose.orientation.z = camera_->getOrientation().z;
-  placement_pub_.publish(cam_pose);
+  current_camera_pose_pub_.publish(cam_pose);
 }
 
 void CinematographerViewController::yaw_pitch_roll(float yaw, float pitch, float roll)
