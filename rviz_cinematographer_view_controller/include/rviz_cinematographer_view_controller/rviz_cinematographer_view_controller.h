@@ -125,6 +125,8 @@ public:
   CinematographerViewController();
   virtual ~CinematographerViewController();
 
+  void initializePublishers();
+  
   /** @brief Do subclass-specific initialization. Called by
    * ViewController::initialize after context_ and camera_ are set.
    *

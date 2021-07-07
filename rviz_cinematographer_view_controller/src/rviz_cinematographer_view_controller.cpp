@@ -106,15 +106,8 @@ CinematographerViewController::CinematographerViewController()
   
   window_width_property_        = new FloatProperty("Window Width", 1000, "The width of the rviz visualization window in pixels.", this);
   window_height_property_       = new FloatProperty("Window Height", 1000, "The height of the rviz visualization window in pixels.", this);
-  
-  // TODO: latch?
-  current_camera_pose_pub_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
-  finished_animation_pub_ = nh_.advertise<std_msgs::Bool>("/rviz/finished_animation", 1);
-  delete_pub_ = nh_.advertise<std_msgs::Empty>("/rviz/delete", 1);
 
-  image_transport::ImageTransport it(nh_);
-  image_pub_ = it.advertise("/rviz/view_image", 1);
-
+  initializePublishers();
   wait_duration_sub_ = nh_.subscribe("/video_recorder/wait_duration", 1,
                                      &CinematographerViewController::setWaitDuration, this);
 }
@@ -122,6 +115,16 @@ CinematographerViewController::CinematographerViewController()
 CinematographerViewController::~CinematographerViewController()
 {
   context_->getSceneManager()->destroySceneNode(attached_scene_node_);
+}
+
+void CinematographerViewController::initializePublishers()
+{
+  current_camera_pose_pub_ = nh_.advertise<geometry_msgs::Pose>("/rviz/current_camera_pose", 1);
+  finished_animation_pub_ = nh_.advertise<std_msgs::Bool>("/rviz/finished_animation", 1);
+  delete_pub_ = nh_.advertise<std_msgs::Empty>("/rviz/delete", 1);
+
+  image_transport::ImageTransport it(nh_);
+  image_pub_ = it.advertise("/rviz/view_image", 1);
 }
 
 void CinematographerViewController::setWaitDuration(const std_msgs::Duration::ConstPtr& wait_duration_msg)
