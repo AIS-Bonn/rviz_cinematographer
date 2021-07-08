@@ -384,8 +384,6 @@ protected:    //members
 
   rviz::RosTopicProperty* camera_placement_topic_property_;
   rviz::RosTopicProperty* camera_trajectory_topic_property_;
-
-  rviz::FloatProperty* transition_velocity_property_;     ///< The current velocity of the animated camera.
   
   rviz::FloatProperty* window_width_property_;            ///< The width of the rviz visualization window in pixels.
   rviz::FloatProperty* window_height_property_;           ///< The height of the rviz visualization window in pixels.
