@@ -501,6 +501,9 @@ void CinematographerViewController::beginNewTransition(const Ogre::Vector3& eye,
   
   if(transition_duration.toSec() < 0.0)
     return;
+  
+  // convert positional jumps to very fast movements to prevent numerical problems 
+  if(transition_duration.isZero())
     transition_duration = ros::Duration(0.001);
 
   // if the buffer is empty we set the first element in it to the current camera pose
