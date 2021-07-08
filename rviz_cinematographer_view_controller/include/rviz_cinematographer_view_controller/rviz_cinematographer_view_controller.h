@@ -326,10 +326,27 @@ protected:  //methods
 
   /** @brief Convert the relative progress in time to the corresponding relative progress in space wrt. the interpolation speed profile.
    *
-   * @params[in] relative_progress_in_time  the relative progress in time.
+   * Example: 
+   *   The camera has to move from point A to point B in a duration D. 
+   *   The camera should accelerate slowly and arrive at full speed - RISING speed profile. 
+   *   At exactly half of the duration D the camera wouldn't be right in the middle between A and B, because it needed 
+   *   time to accelerate. 
+   *   This method converts the relative progress in time specified by a number between zero and one, to the relative
+   *   progress in space as a number between zero and one. 
+   *   
+   * Interpolation speed profiles:
+   * RISING    = 0 # Speed of the camera rises smoothly - resembles the first quarter of a sinus wave.
+   * DECLINING = 1 # Speed of the camera declines smoothly - resembles the second quarter of a sinus wave.
+   * FULL      = 2 # Camera is always at full speed - depending on transition_duration.
+   * WAVE      = 3 # RISING and DECLINING concatenated in one movement.
+   * 
+   * @params[in] relative_progress_in_time  the relative progress in time, between 0 and 1.
    * @params[in] interpolation_speed        speed profile.
+   * 
+   * @returns relative progress in space as a float between 0 and 1.
    */
-  float computeRelativeProgressInSpace(double relative_progress_in_time, uint8_t interpolation_speed);
+  float computeRelativeProgressInSpace(double relative_progress_in_time, 
+                                       uint8_t interpolation_speed);
 
   /** @brief Publish the rendered image that is visible to the user in rviz. */
   void publishViewImage();
