@@ -788,7 +788,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
 
 void CinematographerViewController::pauseAnimationOnRequest()
 {
-  if(!pause_animation_duration_.isZero())
+  if(pause_animation_duration_.toSec() > 0.0)
   {
     pause_animation_duration_.sleep();
     transition_start_time_ += pause_animation_duration_;
