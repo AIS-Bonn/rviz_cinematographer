@@ -324,6 +324,17 @@ protected:  //methods
   /** @brief Return the distance between camera and focal point. */
   float getDistanceFromCameraToFocalPoint();
 
+  /** @brief Computes the fraction of time we already used for the current movement. 
+   * 
+   * If we are rendering frame by frame we compute the passed time counting the frames we already rendered.
+   * Dividing by the total number of frames we want to render for the current transition results in the progress.
+   * 
+   * @params[in] transition_duration    total duration of the current movement.
+   * 
+   * @returns Relative progress in time as a float between 0 and 1.
+   */
+  double computeRelativeProgressInTime(const ros::Duration& transition_duration);
+  
   /** @brief Convert the relative progress in time to the corresponding relative progress in space wrt. the interpolation speed profile.
    *
    * Example: 

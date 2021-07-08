@@ -699,18 +699,8 @@ void CinematographerViewController::update(float dt, float ros_dt)
     auto start = cam_movements_buffer_.begin();
     auto goal = ++(cam_movements_buffer_.begin());
 
-    double relative_progress_in_time = 0.0;
-    if(render_frame_by_frame_)
-    {
-      relative_progress_in_time = rendered_frames_counter_ / (target_fps_ * goal->transition_duration.toSec());
-      rendered_frames_counter_++;
-    }
-    else
-    {
-      ros::WallDuration duration_from_start = ros::WallTime::now() - transition_start_time_;
-      relative_progress_in_time = duration_from_start.toSec() / goal->transition_duration.toSec();
-    }
-
+    double relative_progress_in_time = computeRelativeProgressInTime(goal->transition_duration);
+    
     // make sure we get all the way there before turning off
     if(relative_progress_in_time >= 1.0)
     {
@@ -794,6 +784,22 @@ void CinematographerViewController::pauseAnimationOnRequest()
     transition_start_time_ += pause_animation_duration_;
     pause_animation_duration_.fromSec(0.0);
   }
+}
+
+double CinematographerViewController::computeRelativeProgressInTime(const ros::Duration& transition_duration)
+{
+  double relative_progress_in_time = 0.0;
+  if(render_frame_by_frame_)
+  {
+    relative_progress_in_time = rendered_frames_counter_ / (target_fps_ * transition_duration.toSec());
+    rendered_frames_counter_++;
+  }
+  else
+  {
+    ros::WallDuration duration_from_start = ros::WallTime::now() - transition_start_time_;
+    relative_progress_in_time = duration_from_start.toSec() / transition_duration.toSec();
+  }
+  return relative_progress_in_time;
 }
 
 void CinematographerViewController::publishViewImage()
