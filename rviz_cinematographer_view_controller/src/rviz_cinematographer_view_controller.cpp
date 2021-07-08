@@ -744,21 +744,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
       }
       else
       {
-        // clean up
-        cam_movements_buffer_.clear();
-
-        // publish that the rendering is finished 
-        if(render_frame_by_frame_)
-        {
-          std_msgs::Bool finished_animation;
-          finished_animation.data = 1;  // set to true, but std_msgs::Bool is uint8 internally
-          // wait a little so last image is send before this "finished"-message 
-//          ros::WallRate r(1); r.sleep();
-          finished_animation_pub_.publish(finished_animation);
-          render_frame_by_frame_ = false;
-        }
-
-        animate_ = false;
+        cancelTransition();
       }
     }
   }
