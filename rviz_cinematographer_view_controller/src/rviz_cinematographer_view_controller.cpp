@@ -685,6 +685,8 @@ void CinematographerViewController::update(float dt, float ros_dt)
   // there has to be at least two positions in the buffer - start and goal
   if(animate_ && cam_movements_buffer_.size() > 1)
   {
+    pauseAnimationOnRequest();
+    
     auto start = cam_movements_buffer_.begin();
     auto goal = ++(cam_movements_buffer_.begin());
 
@@ -775,15 +777,18 @@ void CinematographerViewController::update(float dt, float ros_dt)
   window_height_property_->setFloat(context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight());
 }
 
-void CinematographerViewController::publishViewImage()
+void CinematographerViewController::pauseAnimationOnRequest()
 {
-  // wait for specified duration - e.g. if recorder is not fast enough
   if(!pause_animation_duration_.isZero())
   {
     pause_animation_duration_.sleep();
+    transition_start_time_ += pause_animation_duration_;
     pause_animation_duration_.fromSec(0.0);
   }
+}
 
+void CinematographerViewController::publishViewImage()
+{
   unsigned int height = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight();
   unsigned int width = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth();
 

@@ -240,6 +240,8 @@ protected:  //methods
    */
   void update(float dt, float ros_dt) override;
 
+  void pauseAnimationOnRequest();
+  
   /** @brief Connects the signals/slots for position properties. */
   void connectPositionProperties();
 
