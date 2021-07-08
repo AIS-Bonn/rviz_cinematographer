@@ -700,10 +700,11 @@ void CinematographerViewController::update(float dt, float ros_dt)
     double relative_progress_in_time = computeRelativeProgressInTime(goal->transition_duration);
     
     // make sure we get all the way there before turning off
+    bool finished_current_movement = false;
     if(relative_progress_in_time >= 1.0)
     {
       relative_progress_in_time = 1.0;
-      animate_ = false;
+      finished_current_movement = true;
     }
 
     float relative_progress_in_space = computeRelativeProgressInSpace(relative_progress_in_time,
@@ -729,8 +730,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
     if(render_frame_by_frame_ && image_pub_.getNumSubscribers() > 0)
       publishViewImage();
 
-    // if current movement is over
-    if(!animate_)
+    if(finished_current_movement)
     {
       // delete current start element in buffer
       cam_movements_buffer_.pop_front();
@@ -739,8 +739,6 @@ void CinematographerViewController::update(float dt, float ros_dt)
       // if there are still movements to perform
       if(cam_movements_buffer_.size() > 1)
       {
-        // reset animate to perform the next movement
-        animate_ = true;
         // update the transition start time with the duration the transition should have taken
         transition_start_time_ += ros::WallDuration(cam_movements_buffer_.front().transition_duration.toSec());
       }
@@ -759,6 +757,8 @@ void CinematographerViewController::update(float dt, float ros_dt)
           finished_animation_pub_.publish(finished_animation);
           render_frame_by_frame_ = false;
         }
+
+        animate_ = false;
       }
     }
   }
