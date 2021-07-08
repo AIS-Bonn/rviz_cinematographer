@@ -11,8 +11,7 @@ namespace video_recorder
 {
 
 VideoRecorderNodelet::VideoRecorderNodelet()
-  : nh_("")
-    , max_queue_size_(50)
+  : max_queue_size_(50)
     , path_to_output_("")
     , codec_(cv::VideoWriter::fourcc('D', 'I', 'V', 'X'))
     , target_fps_(60)
@@ -24,6 +23,8 @@ VideoRecorderNodelet::VideoRecorderNodelet()
 
 void VideoRecorderNodelet::onInit()
 {
+  nh_ = getMTPrivateNodeHandle();
+  
   record_finished_pub_ = nh_.advertise<std_msgs::Bool>("/video_recorder/record_finished", 1);
   pause_duration_pub_ = nh_.advertise<std_msgs::Duration>("/rviz/pause_animation_duration", 1);
 
@@ -77,6 +78,9 @@ VideoRecorderNodelet::renderingFinishedCallback(const std_msgs::Bool::ConstPtr& 
   ros::Rate r(30); // 30Hz
   if(rendering_finished->data > 0)
   {
+    // wait for a second in case there are incoming images being transmitted by the network
+    ros::WallDuration d(1); d.sleep();
+    
     // wait until images in queue are processed 
     while(!image_queue_.empty())
       r.sleep();
