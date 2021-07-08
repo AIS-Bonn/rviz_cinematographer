@@ -383,7 +383,7 @@ protected:    //members
 
   bool render_frame_by_frame_;
   int target_fps_;
-  int recorded_frames_counter_;
+  int rendered_frames_counter_;
 
   ros::WallDuration pause_animation_duration_;
 };

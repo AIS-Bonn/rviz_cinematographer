@@ -69,7 +69,7 @@ CinematographerViewController::CinematographerViewController()
     , dragging_(false)
     , render_frame_by_frame_(false)
     , target_fps_(60)
-    , recorded_frames_counter_(0)
+    , rendered_frames_counter_(0)
     , pause_animation_duration_(0.0)
 {
   interaction_disabled_cursor_ = makeIconCursor("package://rviz/icons/forbidden.svg");
@@ -524,7 +524,7 @@ void CinematographerViewController::cancelTransition()
 {
   animate_ = false;
   cam_movements_buffer_.clear();
-  recorded_frames_counter_ = 0;
+  rendered_frames_counter_ = 0;
 
   if(render_frame_by_frame_)
   {
@@ -691,8 +691,8 @@ void CinematographerViewController::update(float dt, float ros_dt)
     double relative_progress_in_time = 0.0;
     if(render_frame_by_frame_)
     {
-      relative_progress_in_time = recorded_frames_counter_ / (target_fps_ * goal->transition_duration.toSec());
-      recorded_frames_counter_++;
+      relative_progress_in_time = rendered_frames_counter_ / (target_fps_ * goal->transition_duration.toSec());
+      rendered_frames_counter_++;
     }
     else
     {
@@ -738,7 +738,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
     {
       // delete current start element in buffer
       cam_movements_buffer_.pop_front();
-      recorded_frames_counter_ = 0;
+      rendered_frames_counter_ = 0;
 
       // if there are still movements to perform
       if(cam_movements_buffer_.size() > 1)
