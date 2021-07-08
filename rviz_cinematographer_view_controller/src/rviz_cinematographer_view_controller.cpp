@@ -496,8 +496,6 @@ void CinematographerViewController::beginNewTransition(const Ogre::Vector3& eye,
                                                        ros::Duration transition_duration,
                                                        uint8_t interpolation_speed)
 {
-  // if jump was requested, perform as usual but prevent division by zero
-  if(ros::Duration(transition_duration).isZero())
   
   if(transition_duration.toSec() < 0.0)
     return;
