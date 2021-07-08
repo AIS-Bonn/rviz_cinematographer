@@ -605,20 +605,27 @@ void CinematographerViewController::cameraTrajectoryCallback(const view_controll
   
   for(auto& cam_movement : ct.trajectory)
   {
-    if(ct.target_frame != "")
+    if(cam_movement.transition_duration.toSec() >= 0.0)
     {
-      attached_frame_property_->setStdString(ct.target_frame);
-      updateAttachedFrame();
+      if(ct.target_frame != "")
+      {
+        attached_frame_property_->setStdString(ct.target_frame);
+        updateAttachedFrame();
+      }
+
+      transformCameraToAttachedFrame(cam_movement.eye,
+                                     cam_movement.focus,
+                                     cam_movement.up);
+
+      Ogre::Vector3 eye = vectorFromMsg(cam_movement.eye.point);
+      Ogre::Vector3 focus = vectorFromMsg(cam_movement.focus.point);
+      Ogre::Vector3 up = vectorFromMsg(cam_movement.up.vector);
+      beginNewTransition(eye, focus, up, cam_movement.transition_duration, cam_movement.interpolation_speed);
     }
-
-    transformCameraToAttachedFrame(cam_movement.eye,
-                                   cam_movement.focus,
-                                   cam_movement.up);
-
-    Ogre::Vector3 eye = vectorFromMsg(cam_movement.eye.point);
-    Ogre::Vector3 focus = vectorFromMsg(cam_movement.focus.point);
-    Ogre::Vector3 up = vectorFromMsg(cam_movement.up.vector);
-    beginNewTransition(eye, focus, up, cam_movement.transition_duration, cam_movement.interpolation_speed);
+    else
+    {
+      ROS_WARN("Transition duration of camera movement is below zero. Skipping that movement.");
+    }
   }
 }
 
