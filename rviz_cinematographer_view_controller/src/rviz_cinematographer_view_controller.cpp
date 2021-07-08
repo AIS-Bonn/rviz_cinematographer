@@ -65,6 +65,7 @@ static inline geometry_msgs::Vector3 vectorOgreToMsg(const Ogre::Vector3& o)
 CinematographerViewController::CinematographerViewController()
   : nh_("")
     , animate_(false)
+    , cam_movements_buffer_(100)
     , dragging_(false)
     , render_frame_by_frame_(false)
     , target_fps_(60)
@@ -157,9 +158,6 @@ void CinematographerViewController::onInitialize()
   focal_shape_->setColor(1.0f, 1.0f, 0.0f, 0.5f);
   focal_shape_->getRootNode()->setVisible(false);
 
-  const unsigned long buffer_capacity = 100;
-  cam_movements_buffer_ = BufferCamMovements(buffer_capacity);
-  
   window_width_property_->setFloat(context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth());
   window_height_property_->setFloat(context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight());
 }
