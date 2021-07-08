@@ -351,6 +351,12 @@ protected:  //methods
   /** @brief Publish the rendered image that is visible to the user in rviz. */
   void publishViewImage();
 
+  /** @brief Get the current image rviz is showing as an Ogre::PixelBox. */
+  void getViewImage(std::shared_ptr<Ogre::PixelBox>& pixel_box);
+
+  void convertImage(std::shared_ptr<Ogre::PixelBox> input_image,
+                    sensor_msgs::ImagePtr output_image);
+  
 protected:    //members
 
   ros::NodeHandle nh_;

@@ -798,33 +798,49 @@ void CinematographerViewController::pauseAnimationOnRequest()
 
 void CinematographerViewController::publishViewImage()
 {
-  unsigned int height = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight();
-  unsigned int width = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth();
+  std::shared_ptr<Ogre::PixelBox> pixel_box = std::make_shared<Ogre::PixelBox>();
+  getViewImage(pixel_box);
 
-  // create a PixelBox of the needed size to store the rendered image
-  Ogre::PixelFormat format = Ogre::PF_BYTE_BGR;
-  auto outBytesPerPixel = Ogre::PixelUtil::getNumElemBytes(format);
-  auto data = new unsigned char[width * height * outBytesPerPixel];
-  Ogre::Box extents(0, 0, width, height);
-  Ogre::PixelBox pb(extents, format, data);
-  context_->getViewManager()->getRenderPanel()->getRenderWindow()->copyContentsToMemory(pb, Ogre::RenderTarget::FB_AUTO);
+  sensor_msgs::ImagePtr image_msg = sensor_msgs::ImagePtr(new sensor_msgs::Image());
+  convertImage(pixel_box, image_msg);
 
-  // convert the image in the PixelBox to a sensor_msgs::Image and publish
-  sensor_msgs::ImagePtr ros_image = sensor_msgs::ImagePtr(new sensor_msgs::Image());;
-  ros_image->header.frame_id = attached_frame_property_->getStdString();
-  ros_image->header.stamp = ros::Time::now();
-  ros_image->height = height;
-  ros_image->width = width;
-  ros_image->encoding = sensor_msgs::image_encodings::BGR8;
-  ros_image->is_bigendian = false;
-  ros_image->step = static_cast<unsigned int>(width * outBytesPerPixel);
-  size_t size = width * outBytesPerPixel * height;
-  ros_image->data.resize(size);
-  memcpy((char*)(&ros_image->data[0]), data, size);
+  image_pub_.publish(image_msg);
 
-  image_pub_.publish(ros_image);
+  delete[] (unsigned char*)pixel_box->data;
+}
 
-  delete[] data;
+void CinematographerViewController::getViewImage(std::shared_ptr<Ogre::PixelBox>& pixel_box)
+{
+  const unsigned int image_height = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight();
+  const unsigned int image_width = context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth();
+  
+  // create a PixelBox to store the rendered view image
+  const Ogre::PixelFormat pixel_format = Ogre::PF_BYTE_BGR;
+  const auto bytes_per_pixel = Ogre::PixelUtil::getNumElemBytes(pixel_format);
+  auto image_data = new unsigned char[image_width * image_height * bytes_per_pixel];
+  Ogre::Box image_extents(0, 0, image_width, image_height);
+  pixel_box = std::make_shared<Ogre::PixelBox>(image_extents, pixel_format, image_data);
+  context_->getViewManager()->getRenderPanel()->getRenderWindow()->copyContentsToMemory(*pixel_box,
+                                                                                        Ogre::RenderTarget::FB_AUTO);
+}
+
+void CinematographerViewController::convertImage(std::shared_ptr<Ogre::PixelBox> input_image,
+                                                 sensor_msgs::ImagePtr output_image)
+{
+  const auto bytes_per_pixel = Ogre::PixelUtil::getNumElemBytes(input_image->format);
+  const auto image_height = input_image->getHeight();
+  const auto image_width = input_image->getWidth();
+
+  output_image->header.frame_id = attached_frame_property_->getStdString();
+  output_image->header.stamp = ros::Time::now();
+  output_image->height = image_height;
+  output_image->width = image_width;
+  output_image->encoding = sensor_msgs::image_encodings::BGR8;
+  output_image->is_bigendian = false;
+  output_image->step = static_cast<unsigned int>(image_width * bytes_per_pixel);
+  size_t size = image_width * image_height * bytes_per_pixel;
+  output_image->data.resize(size);
+  memcpy((char*)(&output_image->data[0]), input_image->data, size);
 }
 
 void CinematographerViewController::updateCamera()
