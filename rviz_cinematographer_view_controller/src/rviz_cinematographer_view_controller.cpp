@@ -156,6 +156,11 @@ void CinematographerViewController::onInitialize()
   focal_shape_->setColor(1.0f, 1.0f, 0.0f, 0.5f);
   focal_shape_->getRootNode()->setVisible(false);
 
+  updateWindowSizeProperties();
+}
+
+void CinematographerViewController::updateWindowSizeProperties()
+{
   window_width_property_->setFloat(context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth());
   window_height_property_->setFloat(context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight());
 }
@@ -751,8 +756,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
 
   updateCamera();
   
-  window_width_property_->setFloat(context_->getViewManager()->getRenderPanel()->getRenderWindow()->getWidth());
-  window_height_property_->setFloat(context_->getViewManager()->getRenderPanel()->getRenderWindow()->getHeight());
+  updateWindowSizeProperties();
 }
 
 void CinematographerViewController::pauseAnimationOnRequest()

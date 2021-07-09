@@ -231,6 +231,8 @@ protected Q_SLOTS:
   void updateTopics();
 
 protected:  //methods
+  void updateWindowSizeProperties();
+
   /** @brief Called at 30Hz by ViewManager::update() while this view is active.
    *
    * Performs camera motion if required.
