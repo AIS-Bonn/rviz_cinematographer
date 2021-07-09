@@ -732,7 +732,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
 
     publishCameraPose();
 
-    if(render_frame_by_frame_ && image_pub_.getNumSubscribers() > 0)
+    if(render_frame_by_frame_)
       publishViewImage();
 
     if(finished_current_movement)
@@ -787,15 +787,18 @@ double CinematographerViewController::computeRelativeProgressInTime(const ros::D
 
 void CinematographerViewController::publishViewImage()
 {
-  std::shared_ptr<Ogre::PixelBox> pixel_box = std::make_shared<Ogre::PixelBox>();
-  getViewImage(pixel_box);
+  if(image_pub_.getNumSubscribers() > 0)
+  {
+    std::shared_ptr<Ogre::PixelBox> pixel_box = std::make_shared<Ogre::PixelBox>();
+    getViewImage(pixel_box);
 
-  sensor_msgs::ImagePtr image_msg = sensor_msgs::ImagePtr(new sensor_msgs::Image());
-  convertImage(pixel_box, image_msg);
+    sensor_msgs::ImagePtr image_msg = sensor_msgs::ImagePtr(new sensor_msgs::Image());
+    convertImage(pixel_box, image_msg);
 
-  image_pub_.publish(image_msg);
+    image_pub_.publish(image_msg);
 
-  delete[] (unsigned char*)pixel_box->data;
+    delete[] (unsigned char*)pixel_box->data;
+  }
 }
 
 void CinematographerViewController::getViewImage(std::shared_ptr<Ogre::PixelBox>& pixel_box)
