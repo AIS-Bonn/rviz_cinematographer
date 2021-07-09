@@ -694,8 +694,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
 {
   updateAttachedSceneNode();
 
-  // there has to be at least two positions in the buffer - start and goal
-  if(animate_ && cam_movements_buffer_.size() > 1)
+  if(animate_ && isMovementAvailable())
   {
     pauseAnimationOnRequest();
     
@@ -740,15 +739,10 @@ void CinematographerViewController::update(float dt, float ros_dt)
       // delete current start element in buffer
       cam_movements_buffer_.pop_front();
 
-      // if there are still movements to perform
-      if(cam_movements_buffer_.size() > 1)
-      {
+      if(isMovementAvailable())
         prepareNextMovement(goal->transition_duration);
-      }
       else
-      {
         cancelTransition();
-      }
     }
   }
 

@@ -242,6 +242,9 @@ protected:  //methods
    */
   void update(float dt, float ros_dt) override;
 
+  /** @brief Returns true if buffer contains at least one start and end pose needed for one movement. */
+  bool isMovementAvailable(){ return cam_movements_buffer_.size() >= 2; };
+  
   void pauseAnimationOnRequest();
   
   /** @brief Connects the signals/slots for position properties. */
