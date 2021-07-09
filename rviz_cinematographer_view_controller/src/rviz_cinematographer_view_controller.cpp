@@ -739,13 +739,11 @@ void CinematographerViewController::update(float dt, float ros_dt)
     {
       // delete current start element in buffer
       cam_movements_buffer_.pop_front();
-      rendered_frames_counter_ = 0;
 
       // if there are still movements to perform
       if(cam_movements_buffer_.size() > 1)
       {
-        // update the transition start time with the duration the transition should have taken
-        transition_start_time_ += ros::WallDuration(cam_movements_buffer_.front().transition_duration.toSec());
+        prepareNextMovement(goal->transition_duration);
       }
       else
       {
@@ -833,6 +831,12 @@ void CinematographerViewController::convertImage(std::shared_ptr<Ogre::PixelBox>
   size_t size = image_width * image_height * bytes_per_pixel;
   output_image->data.resize(size);
   memcpy((char*)(&output_image->data[0]), input_image->data, size);
+}
+
+void CinematographerViewController::prepareNextMovement(const ros::Duration& previous_transition_duration)
+{
+  transition_start_time_ += ros::WallDuration(previous_transition_duration.toSec());
+  rendered_frames_counter_ = 0;
 }
 
 void CinematographerViewController::updateCamera()

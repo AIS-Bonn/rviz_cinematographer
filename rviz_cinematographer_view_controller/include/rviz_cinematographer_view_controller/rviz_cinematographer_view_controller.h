@@ -369,7 +369,10 @@ protected:  //methods
 
   void convertImage(std::shared_ptr<Ogre::PixelBox> input_image,
                     sensor_msgs::ImagePtr output_image);
-  
+
+  /** @brief Updates the transition_start_time_ and resets the rendered_frames_counter_ for next movement. */
+  void prepareNextMovement(const ros::Duration& previous_transition_duration);
+
 protected:    //members
 
   ros::NodeHandle nh_;
