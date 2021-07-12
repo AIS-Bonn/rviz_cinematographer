@@ -109,7 +109,6 @@ protected:
   std::string path_to_output_;
   int codec_;
   int target_fps_;
-  int recorded_frames_counter_;
   bool add_watermark_;
   cv::Mat original_watermark_;
   cv::Mat resized_watermark_;
