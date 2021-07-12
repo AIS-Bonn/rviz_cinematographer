@@ -18,6 +18,7 @@ VideoRecorderNodelet::VideoRecorderNodelet()
     , recorded_frames_counter_(0)
     , add_watermark_(true)
     , is_watermark_resized_(false)
+    , is_recording_(false)
 {
 }
 
@@ -70,6 +71,8 @@ void VideoRecorderNodelet::recordParamsCallback(const rviz_cinematographer_msgs:
   if(!process_images_thread_)
     process_images_thread_ = boost::shared_ptr<boost::thread>(
       new boost::thread(boost::bind(&VideoRecorderNodelet::processImages, this)));
+
+  is_recording_ = true;
 }
 
 void
@@ -80,7 +83,9 @@ VideoRecorderNodelet::renderingFinishedCallback(const std_msgs::Bool::ConstPtr& 
   {
     // wait for a second in case there are incoming images being transmitted by the network
     ros::WallDuration d(1); d.sleep();
-    
+
+    is_recording_ = false;
+
     // wait until images in queue are processed 
     while(!image_queue_.empty())
       r.sleep();
@@ -97,6 +102,9 @@ VideoRecorderNodelet::renderingFinishedCallback(const std_msgs::Bool::ConstPtr& 
 
 void VideoRecorderNodelet::imageCallback(const sensor_msgs::ImageConstPtr& input_image)
 {
+  if(!is_recording_)
+    return;
+
   cv_bridge::CvImagePtr cv_image;
   try
   {

@@ -103,6 +103,8 @@ CinematographerViewController::CinematographerViewController()
                                                            "Topic for CameraTrajectory messages", this,
                                                            SLOT(updateTopics()));
   
+  publish_view_images_property_ = new BoolProperty("Publish View Images", false, "If enabled, images of what the user sees in the visualization window are published.", this);
+
   window_width_property_        = new FloatProperty("Window Width", 1000, "The width of the rviz visualization window in pixels.", this);
   window_height_property_       = new FloatProperty("Window Height", 1000, "The height of the rviz visualization window in pixels.", this);
 
@@ -604,6 +606,7 @@ void CinematographerViewController::cameraTrajectoryCallback(const view_controll
   {
     render_frame_by_frame_ = true;
     target_fps_ = static_cast<int>(ct.frames_per_second);
+    publish_view_images_property_->setBool(true);
   }
   
   for(auto& cam_movement : ct.trajectory)
@@ -731,7 +734,7 @@ void CinematographerViewController::update(float dt, float ros_dt)
 
     publishCameraPose();
 
-    if(render_frame_by_frame_)
+    if(publish_view_images_property_->getBool())
       publishViewImage();
 
     if(finished_current_movement)

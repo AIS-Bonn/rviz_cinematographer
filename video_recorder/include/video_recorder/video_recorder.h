@@ -114,6 +114,8 @@ protected:
   cv::Mat original_watermark_;
   cv::Mat resized_watermark_;
   bool is_watermark_resized_;
+  
+  bool is_recording_;
 };
 
 }  // namespace video_recorder
