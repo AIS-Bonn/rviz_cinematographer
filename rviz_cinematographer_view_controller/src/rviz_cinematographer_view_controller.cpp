@@ -567,7 +567,6 @@ void CinematographerViewController::cameraPlacementCallback(const view_controlle
 
   if(cp.time_from_start.toSec() >= 0)
   {
-    // DIFF: transforming camera points instead of whole message
     ROS_DEBUG_STREAM("Received a camera placement request! \n" << cp);
     transformCameraToAttachedFrame(cp.eye,
                                    cp.focus,
