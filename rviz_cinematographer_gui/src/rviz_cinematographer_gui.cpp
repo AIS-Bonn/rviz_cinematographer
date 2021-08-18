@@ -1500,14 +1500,12 @@ void RvizCinematographerGUI::computeDurations(const MarkerList& markers,
   const double frequency = ui_.publish_rate_spin_box->value();
   const bool smooth_velocity = ui_.smooth_velocity_check_box->isChecked();
 
-  bool first = true;
-  std::string prev_marker_name;
+  int counter = 0;
   for(const auto& marker : markers)
   {
-    // first because - when moving from marker A to B we only consider the transition duration of B
-    // check for equal names because - UniformCRSpline needs to be fed with start marker two times (end as well)
-    // this case needs to be handled to prevent errors
-    if(!first && prev_marker_name != marker.marker.name)
+    // skip first because this marker is only used for the spline
+    // skip second because we don't use the timing of the start marker
+    if(counter > 1)
     {
       if(smooth_velocity)
         total_transition_duration += marker.transition_duration;
@@ -1518,8 +1516,7 @@ void RvizCinematographerGUI::computeDurations(const MarkerList& markers,
       }
     }
 
-    first = false;
-    prev_marker_name = marker.marker.name;
+    counter++;
   }
 }
 
