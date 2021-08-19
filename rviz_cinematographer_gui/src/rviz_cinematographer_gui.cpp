@@ -1537,18 +1537,18 @@ void RvizCinematographerGUI::splineToCamTrajectory(const UniformCRSpline<Vector3
   // rate to sample from spline and get points
   rviz_cinematographer_msgs::CameraMovement cam_movement = makeCameraMovement();
   double rate = 1.0 / frequency;
-  float max_t = eye_spline.getMaxT();
+  double max_t = eye_spline.getMaxT();
   double total_length = eye_spline.totalLength();
   bool first = true;
   bool last_run = false;
   int current_transition_id = 0;
   int previous_transition_id = 0;
-  for(double t = 0.f; t <= max_t;)
+  for(double t = 0.0; t <= max_t;)
   {
     // get position in spline
-    auto interpolated_position = eye_spline.getPosition(t);
-    auto interpolated_focus = focus_spline.getPosition(t);
-    auto interpolated_up = up_spline.getPosition(t);
+    auto interpolated_position = eye_spline.getPosition(static_cast<float>(t));
+    auto interpolated_focus = focus_spline.getPosition(static_cast<float>(t));
+    auto interpolated_up = up_spline.getPosition(static_cast<float>(t));
 
     cam_movement.eye.point.x = interpolated_position[0];
     cam_movement.eye.point.y = interpolated_position[1];
@@ -1579,7 +1579,7 @@ void RvizCinematographerGUI::splineToCamTrajectory(const UniformCRSpline<Vector3
     double transition_duration = 0.0;
     if(smooth_velocity)
     {
-      double local_length = eye_spline.arcLength(std::max(t - rate, 0.0), t);
+      double local_length = eye_spline.arcLength(static_cast<float>(std::max(t - rate, 0.0)), static_cast<float>(t));
       transition_duration = total_transition_duration * local_length / total_length;
     }
     else
@@ -1657,7 +1657,7 @@ void RvizCinematographerGUI::markersToSplinedPoses(const MarkerList& markers,
   for(double i = 0.f; i <= max_t;)
   {
     // get position of spline
-    auto interpolated_position = spline.getPosition(i);
+    auto interpolated_position = spline.getPosition(static_cast<float>(i));
     geometry_msgs::Pose pose;
     pose.position.x = interpolated_position[0];
     pose.position.y = interpolated_position[1];

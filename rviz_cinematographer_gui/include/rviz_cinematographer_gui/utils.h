@@ -35,7 +35,7 @@ inline visualization_msgs::Marker makeBox(float scale)
   marker.color.r = 0.f;
   marker.color.g = 0.f;
   marker.color.b = 0.f;
-  marker.color.a = 1.0;
+  marker.color.a = 1.f;
   return marker;
 }
 
@@ -57,7 +57,7 @@ inline visualization_msgs::Marker makeArrow(float scale)
   marker.color.r = 1.f;
   marker.color.g = 1.f;
   marker.color.b = 1.f;
-  marker.color.a = 0.6;
+  marker.color.a = 0.6f;
   return marker;
 }
 
