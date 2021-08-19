@@ -186,6 +186,9 @@ void RvizCinematographerGUI::refillTable()
     }
   }
 
+  auto first_transition_duration_spin_box = qobject_cast<QDoubleSpinBox*>(ui_.marker_table_widget->cellWidget(0, 0));
+  first_transition_duration_spin_box->setEnabled(false);
+  
   ui_.marker_table_widget->resizeColumnsToContents();
   ui_.marker_table_widget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
   ui_.marker_table_widget->horizontalHeader()->setStretchLastSection(true);

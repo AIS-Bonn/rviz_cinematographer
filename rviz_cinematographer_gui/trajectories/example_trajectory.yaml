@@ -9,7 +9,7 @@ rviz_cinematographer_camera_poses:
       y: 0.418488
       z: -0.082962
       w: 0.903609
-    transition_duration: 1.500000
+    transition_duration: 0.000000
     wait_duration: 0.000000
   -
     position:
